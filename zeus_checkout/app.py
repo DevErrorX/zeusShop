@@ -92,25 +92,64 @@ def create_app() -> FastAPI:
     assets_dir = os.path.join(BASE_DIR, "assets")
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-        
+
+    def page_file(name: str):
+        return FileResponse(os.path.join(BASE_DIR, name))
+
     @app.get("/")
     def serve_home():
-        return FileResponse(os.path.join(BASE_DIR, "index.html"))
-        
+        return page_file("index.html")
+
+    @app.get("/products")
+    @app.get("/products.html")
+    def serve_products():
+        return page_file("products.html")
+
+    @app.get("/categories")
+    @app.get("/categories.html")
+    def serve_categories():
+        return page_file("categories.html")
+
+    @app.get("/about")
+    @app.get("/about.html")
+    def serve_about():
+        return page_file("about.html")
+
+    @app.get("/contact")
+    @app.get("/contact.html")
+    def serve_contact():
+        return page_file("contact.html")
+
+    @app.get("/privacy")
+    @app.get("/privacy.html")
+    def serve_privacy():
+        return page_file("privacy.html")
+
+    @app.get("/digital-return-policy")
+    @app.get("/digital-return-policy.html")
+    def serve_return_policy():
+        return page_file("digital-return-policy.html")
+
+    @app.get("/blog")
+    @app.get("/blog.html")
+    def serve_blog():
+        return page_file("blog.html")
+
+    @app.get("/checkout")
     @app.get("/checkout.html")
     def serve_checkout():
-        return FileResponse(os.path.join(BASE_DIR, "checkout.html"))
-        
+        return page_file("checkout.html")
+
     @app.get("/admin.html")
     def serve_admin():
-        return FileResponse(os.path.join(BASE_DIR, "admin.html"))
-        
+        return page_file("admin.html")
+
     @app.get("/legal.html")
     def serve_legal():
-        return FileResponse(os.path.join(BASE_DIR, "legal.html"))
-        
+        return page_file("legal.html")
+
     @app.get("/maintenance.html")
     def serve_maintenance():
-        return FileResponse(os.path.join(BASE_DIR, "maintenance.html"))
+        return page_file("maintenance.html")
 
     return app

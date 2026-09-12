@@ -1,440 +1,123 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>إتمام الطلب والدفع | ZEUS STORE</title>
-    <link rel="icon" href="assets/logo-ar.webp" type="image/webp">
-    <link rel="stylesheet" href="assets/0062d8248a8725a2.css">
-    <link rel="stylesheet" href="assets/4c413b90ebb1cb6f.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        :root {
-            --primary: #f59e0b;
-            --primary-hover: #d97706;
-            --bg-dark: #0b0f19;
-            --bg-card: #111827;
-            --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-accent: rgba(245, 158, 11, 0.35);
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
-        }
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.06) 0%, transparent 50%), var(--bg-dark);
-            color: var(--text-main);
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .navbar {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border-subtle);
-            background: rgba(11, 15, 25, 0.9);
-            backdrop-filter: blur(12px);
-        }
-        .nav-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: #fff;
-            font-weight: 800;
-        }
-        .brand img { width: 34px; height: 34px; border-radius: 8px; }
-        .back-link {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .back-link:hover { color: var(--primary); }
-        .checkout-layout {
-            max-width: 1100px;
-            margin: 36px auto;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 28px;
-            flex: 1;
-            box-sizing: border-box;
-            width: 100%;
-        }
-        @media (max-width: 860px) {
-            .checkout-layout { grid-template-columns: 1fr; }
-        }
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 14px;
-        }
-        .card-header i { color: var(--primary); font-size: 18px; }
-        .card-header h3 { margin: 0; font-size: 17px; font-weight: 700; }
-        .form-group {
-            margin-bottom: 16px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--text-muted);
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 12px 16px;
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus {
-            border-color: var(--primary);
-        }
-        .payment-methods-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 12px;
-        }
-        .payment-option {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 14px 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .payment-option:hover, .payment-option.selected {
-            background: rgba(245, 158, 11, 0.1);
-            border-color: var(--primary);
-        }
-        .payment-option img {
-            height: 24px;
-            margin-bottom: 8px;
-            object-fit: contain;
-        }
-        .payment-option span {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        /* Summary Card */
-        .summary-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 24px;
-            height: fit-content;
-        }
-        .summary-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 14px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .summary-item img {
-            width: 52px;
-            height: 52px;
-            border-radius: 8px;
-            object-fit: cover;
-        }
-        .summary-item-details { flex: 1; }
-        .summary-item-details h4 { margin: 0 0 4px; font-size: 14px; }
-        .summary-item-details span { color: #fbbf24; font-size: 13px; font-weight: 700; }
-        .calc-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin-bottom: 10px;
-            color: var(--text-muted);
-        }
-        .calc-row.total {
-            border-top: 1px solid var(--border-subtle);
-            padding-top: 14px;
-            margin-top: 14px;
-            font-size: 18px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .calc-row.total span:last-child {
-            color: #fbbf24;
-        }
-        .btn-submit-order {
-            width: 100%;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #000;
-            border: none;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: opacity 0.2s;
-        }
-        .btn-submit-order:hover { opacity: 0.95; }
-        .secure-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 16px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-    </style>
-</head>
-<body>
-
-    <header class="navbar">
-        <div class="nav-inner">
-            <a href="index.html" class="brand">
-                <img src="assets/logo-ar.webp" alt="ZEUS STORE">
-                <span>ZEUS STORE</span>
-            </a>
-            <a href="index.html" class="back-link">
-                <i class="fa-solid fa-arrow-right"></i>
-                <span>العودة للمتجر</span>
-            </a>
-        </div>
-    </header>
-
-    <div class="checkout-layout">
-        <!-- Steps Form -->
-        <div>
-            <!-- Step 1: Customer details -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fa-solid fa-user-check"></i>
-                    <h3>1. بيانات العميل والتسليم</h3>
-                </div>
-                <div class="form-group">
-                    <label>الاسم بالكامل</label>
-                    <input type="text" id="custName" placeholder="مثال: محمد علي" required>
-                </div>
-                <div class="form-group">
-                    <label>رقم الواتساب (لاستلام كود التفعيل فوراً)</label>
-                    <input type="tel" id="custPhone" placeholder="مثال: +966 50 123 4567" required>
-                </div>
-                <div class="form-group">
-                    <label>البريد الإلكتروني (اختياري)</label>
-                    <input type="email" id="custEmail" placeholder="name@example.com">
-                </div>
-            </div>
-
-            <!-- Step 2: Payment method -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fa-solid fa-wallet"></i>
-                    <h3>2. طريقة الدفع المعتمدة</h3>
-                </div>
-                <div class="payment-methods-grid">
-                    <div class="payment-option selected" onclick="selectPayment('mada', this)">
-                        <img src="assets/mada.png" alt="Mada">
-                        <span>مدى Mada</span>
-                    </div>
-                    <div class="payment-option" onclick="selectPayment('apple_pay', this)">
-                        <img src="assets/apple_pay.png" alt="Apple Pay">
-                        <span>أبل باي Apple Pay</span>
-                    </div>
-                    <div class="payment-option" onclick="selectPayment('cards', this)">
-                        <img src="assets/visa.png" alt="Cards">
-                        <span>فيزا / ماستركارد</span>
-                    </div>
-                    <div class="payment-option" onclick="selectPayment('instapay', this)">
-                        <img src="assets/instapay.png" alt="InstaPay">
-                        <span>إنستاباي InstaPay</span>
-                    </div>
-                    <div class="payment-option" onclick="selectPayment('usdt', this)">
-                        <img src="assets/usdt.svg" alt="USDT">
-                        <span>العملات الرقمية USDT</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Order Summary -->
-        <div>
-            <div class="summary-card">
-                <div class="card-header">
-                    <i class="fa-solid fa-receipt"></i>
-                    <h3>ملخص الطلب</h3>
-                </div>
-                <div id="orderItemsList">
-                    <!-- Loaded dynamically -->
-                </div>
-
-                <div class="calc-row">
-                    <span>المجموع الفرعي:</span>
-                    <span id="summarySubtotal">0 SAR</span>
-                </div>
-                <div class="calc-row">
-                    <span>رسوم التسليم الرقمي:</span>
-                    <span style="color: #10b981;">مجاناً (فوري)</span>
-                </div>
-                <div class="calc-row total">
-                    <span>المجموع الكلي:</span>
-                    <span id="summaryGrandTotal">0 SAR</span>
-                </div>
-
-                <button class="btn-submit-order" onclick="submitOrder()">
-                    <i class="fa-solid fa-lock"></i>
-                    <span>إتمام الدفع وتأكيد الطلب ⚡️</span>
-                </button>
-
-                <div class="secure-badge">
-                    <i class="fa-solid fa-shield-check" style="color: #10b981;"></i>
-                    <span>عملية دفع مشفرة وآمنة 100% بنظام الحماية SSL</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let selectedMethod = 'mada';
-        let orderItems = [];
-
-        function selectPayment(method, el) {
-            selectedMethod = method;
-            document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
-        async function initCheckout() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const directItemId = urlParams.get('item');
-
-            if (directItemId) {
+<!DOCTYPE html><html lang="ar" dir="rtl" data-theme="midnight" data-scroll-behavior="smooth" class="scroll-smooth"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"/><link rel="stylesheet" href="./assets/0062d8248a8725a2.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="./assets/webpack-8f884d9aeb792969.js"/><script src="./assets/4bd1b696-427c9ac60bb407ee.js" async=""></script><script src="./assets/9826-fce0747aad4b3fde.js" async=""></script><script src="./assets/main-app-d73fd1d9c153a71f.js" async=""></script><script src="./assets/motion-9ce4c6eeba96378a.js" async=""></script><script src="./assets/3549-99197179f231cd83.js" async=""></script><script src="./assets/3981-c86cb3a6190b4461.js" async=""></script><script src="./assets/2179-ca6b11b1b22b9ed9.js" async=""></script><script src="./assets/157-570fbac5a6431d92.js" async=""></script><script src="./assets/8147-6f1284ae16cdb88f.js" async=""></script><script src="./assets/9250-69ee0a18d5efcfca.js" async=""></script><script src="./assets/5307-349fad45f09a7fb5.js" async=""></script><script src="./assets/1963-e2c09cd620850721.js" async=""></script><script src="./assets/9678-d945104b2ca3f628.js" async=""></script><script src="./assets/6610-fbf68f4e24d2f0e7.js" async=""></script><script src="./assets/7156-24f1adc51bd5e718.js" async=""></script><script src="./assets/9437-cc4df20fbb8496c3.js" async=""></script><script src="./assets/layout-41a202f86e255e34.js" async=""></script><script src="./assets/global-error-ce0cc3d15eb7e2f6.js" async=""></script><script src="./assets/5102-5e5aa314e4a287e5.js" async=""></script><script src="./assets/error-7ce6a5535c3a1515.js" async=""></script><script src="./assets/template-7f7d539726e31375.js" async=""></script><script src="./assets/2602-0fb583285fc9ffd1.js" async=""></script><script src="./assets/not-found-94f57caa37729223.js" async=""></script><script src="./assets/6325-5454044fd2d1f6e4.js" async=""></script><script src="./assets/8753-501231ee93200423.js" async=""></script><script src="./assets/9599-7f400c96ee7698ee.js" async=""></script><script src="./assets/9600-bf398fb51112b7f2.js" async=""></script><script src="./assets/7720-d5ce4670a5baabb4.js" async=""></script><script src="./assets/6504-c03ffa7acaccdfa9.js" async=""></script><script src="./assets/5113-f3e677000969e1fc.js" async=""></script><script src="./assets/2841-d8968f8ba5843eb5.js" async=""></script><script src="./assets/7863-ec2ef6ff22c46e83.js" async=""></script><script src="./assets/page-e730b4b44161da1c.js" async=""></script><link rel="preload" href="./assets/theme-bootstrap.php" as="script"/><link rel="preload" href="./assets/default-language.js" as="script"/><link rel="preload" href="./assets/translations.ascii.js" as="script"/><link rel="preload" href="./assets/snap-pixel-bootstrap.php" as="script"/><link rel="dns-prefetch" href="https://sc-static.net"/><link rel="dns-prefetch" href="https://analytics.tiktok.com"/><link rel="dns-prefetch" href="https://connect.facebook.net"/><link rel="dns-prefetch" href="https://flagcdn.com"/><link rel="dns-prefetch" href="https://www.googletagmanager.com"/><link rel="dns-prefetch" href="https://www.google-analytics.com"/><link rel="preconnect" href="https://flagcdn.com" crossorigin="anonymous"/><link rel="preconnect" href="https://www.googletagmanager.com" crossorigin="anonymous"/><meta name="HandheldFriendly" content="true"/><meta name="MobileOptimized" content="width"/><meta name="format-detection" content="telephone=no, date=no, email=no, address=no"/><meta name="x-apple-disable-message-reformatting"/><meta name="theme-color" content="#0f172a"/><title>Checkout | سكواد الخليج | سكواد الخليج</title><meta name="description" content="Complete your purchase at سكواد الخليج."/><meta name="author" content="سكواد الخليج"/><link rel="manifest" href="/manifest.webmanifest"/><meta name="keywords" content="متجر إلكتروني, منتجات رقمية, تسوق أونلاين, online store, digital products, marketplace"/><meta name="creator" content="سكواد الخليج"/><meta name="publisher" content="سكواد الخليج"/><meta name="robots" content="noindex, nofollow"/><meta name="msapplication-TileColor" content="#0f172a"/><meta name="msapplication-config" content="./assets/browserconfig.php"/><link rel="canonical" href="index.html"/><link rel="alternate" hrefLang="en" href="index.html"/><link rel="alternate" hrefLang="ar" href="index.html"/><link rel="alternate" hrefLang="x-default" href="index.html"/><meta property="og:title" content="سكواد الخليج - خدمات رقمية سريعة وآمنة"/><meta property="og:description" content="سكواد الخليج
+منصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️"/><meta property="og:url" content="index.html"/><meta property="og:site_name" content="سكواد الخليج"/><meta property="og:locale" content="ar_AR"/><meta property="og:image" content="./assets/og-image.php"/><meta property="og:image:secure_url" content="./assets/og-image.php"/><meta property="og:image:type" content="image/jpeg"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="سكواد الخليج - خدمات رقمية سريعة وآمنة"/><meta property="og:locale:alternate" content="en_US"/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="سكواد الخليج - خدمات رقمية سريعة وآمنة"/><meta name="twitter:description" content="سكواد الخليج
+منصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️"/><meta name="twitter:image" content="./assets/og-image.php"/><meta name="twitter:image:alt" content="سكواد الخليج - خدمات رقمية سريعة وآمنة"/><meta name="twitter:image:width" content="1200"/><meta name="twitter:image:height" content="630"/><link rel="shortcut icon" href="./assets/favicon.php"/><link rel="icon" href="./assets/favicon.php" sizes="any"/><link rel="apple-touch-icon" href="./assets/favicon.php" sizes="180x180"/><script>(self.__next_s=self.__next_s||[]).push([0,{"children":"\n              (function(){\n                var h=location.hostname;\n                if(h!==\"localhost\"&&h!==\"127.0.0.1\"&&location.protocol===\"http:\"){\n                  location.replace(\"https://\"+h+location.pathname+location.search+location.hash);\n                }\n              })();\n            ","id":"https-redirect"}])</script><script>(self.__next_s=self.__next_s||[]).push(["/api/theme-bootstrap.php",{"id":"theme-bootstrap"}])</script><script>
+              (function(){
                 try {
-                    const res = await fetch('catalog.json');
-                    const catalog = await res.json();
-                    const item = catalog.find(p => p.id === directItemId);
-                    if (item) {
-                        orderItems = [{ ...item, quantity: 1 }];
+                  var raw = localStorage.getItem('loading_screen_settings');
+                  if (!raw) return;
+                  var ls = JSON.parse(raw);
+                  if (!ls) return;
+                  var skip = false;
+                  if (ls.isEnabled === false) {
+                    skip = true;
+                  } else {
+                    var mode = 'digital';
+                    try { var i = localStorage.getItem('init_data'); if (i) { var d = JSON.parse(i); if (d && d.store_mode) mode = d.store_mode; } } catch (e) {}
+                    if (mode === 'digital' && ls.enabledForDigital === false) skip = true;
+                    if (mode !== 'digital' && ls.enabledForPhysical === false) skip = true;
+                  }
+                  if (skip) document.documentElement.classList.add('ls-skip');
+                } catch (e) {}
+              })();
+            </script><style>
+              html:not(.ls-skip) body:not(.hydrated)::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 99999;
+                background: var(--background, #0a0a0f);
+                pointer-events: none;
+              }
+            </style><script id="theme-init">
+              (function() {
+                try {
+                  var root = document.documentElement;
+                  var cachedThemeAnimations = localStorage.getItem('cached_theme_animations');
+                  var cachedThemeTransition = localStorage.getItem('cached_theme_transition');
+
+                  if (cachedThemeAnimations === 'false') {
+                    root.style.setProperty('--theme-transition', '0ms');
+                    root.classList.add('no-theme-transitions');
+                  } else {
+                    root.classList.remove('no-theme-transitions');
+                    if (cachedThemeTransition && /^d+$/.test(cachedThemeTransition)) {
+                      root.style.setProperty('--theme-transition', cachedThemeTransition + 'ms');
                     }
-                } catch(e) {}
-            }
+                  }
 
-            if (!orderItems.length) {
-                const stored = localStorage.getItem('zeus_cart');
-                if (stored) {
-                    orderItems = JSON.parse(stored);
-                }
-            }
+                  var cachedTheme = localStorage.getItem('cached_theme') || 'midnight';
+                  root.setAttribute('data-theme', cachedTheme);
 
-            // Fallback product if nothing selected
-            if (!orderItems.length) {
-                orderItems = [{
-                    id: 'zeus-codm-60',
-                    title: 'اشتراك كود موبايل 60 يوم (ايفون و أيباد)',
-                    price_sar: 299.0,
-                    image: 'assets/6a309dcb657f2_1781571019.webp',
-                    quantity: 1
-                }];
-            }
+                  // Pro path: apply cached full theme CSS vars (covers any theme)
+                  var cachedProCssVars = localStorage.getItem('cached_theme_css_vars');
+                  if (cachedProCssVars) {
+                    try {
+                      var parsed = JSON.parse(cachedProCssVars);
+                      if (parsed && typeof parsed === 'object') {
+                        for (var pk in parsed) {
+                          if (Object.prototype.hasOwnProperty.call(parsed, pk) && pk.indexOf('--') === 0 && typeof parsed[pk] === 'string') {
+                            root.style.setProperty(pk, parsed[pk]);
+                          }
+                        }
+                        // Category class derived from --color-scheme token
+                        var scheme = parsed['--color-scheme'];
+                        if (scheme === 'light') {
+                          root.classList.add('theme-light');
+                          root.classList.remove('theme-dark');
+                        } else if (scheme === 'dark') {
+                          root.classList.add('theme-dark');
+                          root.classList.remove('theme-light');
+                        }
+                        return; // Pro vars applied — skip legacy daylight path
+                      }
+                    } catch (e) { /* fall through to legacy */ }
+                  }
 
-            renderSummary();
-        }
+                  // Legacy fallback: midnight=dark, daylight=light
+                  if (cachedTheme === 'daylight') {
+                    root.classList.add('theme-light');
+                    root.classList.remove('theme-dark');
+                  } else {
+                    root.classList.add('theme-dark');
+                    root.classList.remove('theme-light');
+                  }
 
-        function renderSummary() {
-            const list = document.getElementById('orderItemsList');
-            let total = 0;
-
-            list.innerHTML = orderItems.map(item => {
-                const price = item.price_sar || 299;
-                const sub = price * item.quantity;
-                total += sub;
-                return `
-                    <div class="summary-item">
-                        <img src="${item.image}" alt="${item.title}">
-                        <div class="summary-item-details">
-                            <h4>${item.title}</h4>
-                            <span>${item.quantity} × ${price.toLocaleString()} ر.س</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('summarySubtotal').textContent = `${total.toLocaleString()} ر.س`;
-            document.getElementById('summaryGrandTotal').textContent = `${total.toLocaleString()} ر.س`;
-        }
-
-        async function submitOrder() {
-            const name = document.getElementById('custName').value.trim();
-            const phone = document.getElementById('custPhone').value.trim();
-
-            if (!name || !phone) {
-                alert('يرجى كتابة الاسم ورقم الواتساب لاستلام الكود.');
-                return;
-            }
-
-            const orderPayload = {
-                customer_name: name,
-                customer_phone: phone,
-                customer_email: document.getElementById('custEmail').value.trim(),
-                payment_method: selectedMethod,
-                items: orderItems,
-                timestamp: new Date().toISOString()
-            };
-
-            // Try backend API first
-            try {
-                const res = await fetch('/api/v1/order/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderPayload)
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    alert(`تم تأكيد طلبك بنجاح! رقم الطلب: ${data.order_id || 'ZEUS-' + Math.floor(Math.random()*90000)}`);
-                    localStorage.removeItem('zeus_cart');
-                    window.location.href = 'index.html';
+                  if (cachedTheme !== 'daylight') {
                     return;
+                  }
+
+                  var cachedDaylightPalette = localStorage.getItem('cached_daylight_palette');
+                  var paletteApplied = false;
+                  if (cachedDaylightPalette) {
+                    try {
+                      var parsedPalette = JSON.parse(cachedDaylightPalette);
+                      if (parsedPalette && typeof parsedPalette === 'object') {
+                        for (var key in parsedPalette) {
+                          if (Object.prototype.hasOwnProperty.call(parsedPalette, key) && key.indexOf('--daylight-') === 0) {
+                            root.style.setProperty(key, String(parsedPalette[key]));
+                            paletteApplied = true;
+                          }
+                        }
+                      }
+                    } catch (paletteError) {
+                      paletteApplied = false;
+                    }
+                  }
+                  if (!paletteApplied) {
+                    var cachedDaylightPrimary = localStorage.getItem('cached_daylight_primary');
+                    var cachedDaylightAccent = localStorage.getItem('cached_daylight_accent');
+                    if (cachedDaylightPrimary) {
+                      root.style.setProperty('--daylight-primary-dynamic', cachedDaylightPrimary);
+                    }
+                    if (cachedDaylightAccent) {
+                      root.style.setProperty('--daylight-accent-dynamic', cachedDaylightAccent);
+                    }
+                  }
+                } catch (e) {
+                  document.documentElement.setAttribute('data-theme', 'midnight');
                 }
-            } catch (err) {
-                // Static GitHub Pages fallback
-            }
-
-            const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-            alert(`تم تسجيل طلبك بنجاح!
-رقم الطلب: ${orderId}
-سيتم إرسال كود التفعيل إلى رقمك عبر الواتساب فوراً.`);
-            localStorage.removeItem('zeus_cart');
-            window.location.href = 'index.html';
-        }
-
-        window.onload = initCheckout;
-    </script>
-</body>
-</html>
+              })();
+            </script><script type="speculationrules">{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/admin/*"}},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/checkout/*"}},{"not":{"selector_matches":"[data-no-prefetch]"}}]},"eagerness":"moderate"}]}</script><script id="website-jsonld" type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"سكواد الخليج","alternateName":"سكواد الخليج - خدمات رقمية سريعة وآمنة","url":"index.html","description":"سكواد الخليج\r\nمنصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️","inLanguage":["en","ar"],"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://squadx.store/products?search={search_term_string}"},"query-input":"required name=search_term_string"}}</script><script id="organization-jsonld" type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"سكواد الخليج","url":"index.html","logo":"https://squadx.store/logo.jpg","description":"سكواد الخليج\r\nمنصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️","contactPoint":{"@type":"ContactPoint","contactType":"customer service","availableLanguage":["English","Arabic"]}}</script><script>(self.__next_s=self.__next_s||[]).push(["/js/default-language.js?v=20260620",{"id":"default-language-loader"}])</script><script>(self.__next_s=self.__next_s||[]).push(["/js/translations.ascii.js?v=20260713-2",{"charSet":"utf-8","id":"translations-script"}])</script><script>(self.__next_s=self.__next_s||[]).push([0,{"children":"\n(function(e,t,n){\n  try{\n    var req=new XMLHttpRequest();\n    req.open(\"GET\",\"/api/settings-public.php?keys=snap_pixel_enabled,snap_pixel_id,snap_track_page_view\",true);\n    req.onreadystatechange=function(){\n      if(req.readyState!==4||req.status!==200)return;\n      try{\n        var payload=JSON.parse(req.responseText||\"{}\");\n        var data=payload&&payload.data?payload.data:null;\n        if(!data||data.snap_pixel_enabled!==\"1\"||!data.snap_pixel_id)return;\n        var pixelId=String(data.snap_pixel_id||\"\").trim();\n        if(!pixelId)return;\n        var meta=t.querySelector('meta[name=\"snapchat-pixel-id\"]');\n        if(!meta){\n          meta=t.createElement(\"meta\");\n          meta.setAttribute(\"name\",\"snapchat-pixel-id\");\n          (t.head||t.documentElement).appendChild(meta);\n        }\n        meta.setAttribute(\"content\",pixelId);\n        if(e.snaptr)return;\n        var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};\n        a.queue=[];\n        var s=\"script\";\n        var r=t.createElement(s);\n        r.async=true;\n        r.src=n;\n        var u=t.getElementsByTagName(s)[0];\n        if(u&&u.parentNode){u.parentNode.insertBefore(r,u);}else{(t.head||t.documentElement).appendChild(r);}\n        e.snaptr(\"init\",pixelId,{});\n      }catch(pe){}\n    };\n    req.send(null);\n  }catch(err){}\n})(window,document,\"https://sc-static.net/scevent.min.js\");\n","id":"snap-pixel-inline"}])</script><script>(self.__next_s=self.__next_s||[]).push(["/api/snap-pixel-bootstrap.php",{"id":"snap-pixel-bootstrap"}])</script><script>(self.__next_s=self.__next_s||[]).push([0,{"children":"\n(function(){\n  try{\n    var x=new XMLHttpRequest();\n    x.open(\"GET\",\"/api/settings-public.php?keys=tiktok_pixel_enabled,tiktok_pixel_id,tiktok_track_page_view,meta_pixel_enabled,meta_pixel_id,meta_track_page_view\",true);\n    x.onreadystatechange=function(){\n      if(x.readyState!==4||x.status!==200)return;\n      try{var d=JSON.parse(x.responseText).data;if(!d)return;}catch(e){return;}\n      var tgt=document.body||document.documentElement;\n      if(d.tiktok_pixel_enabled===\"1\"&&d.tiktok_pixel_id){\n        var tid=d.tiktok_pixel_id.trim();\n        if(tid&&!window.TiktokAnalyticsObject){\n          window.TiktokAnalyticsObject=\"ttq\";\n          var q=window.ttq=window.ttq||[];\n          q.methods=[\"page\",\"track\",\"identify\",\"instances\",\"debug\",\"on\",\"off\",\"once\",\"ready\",\"alias\",\"group\",\"enableCookie\",\"disableCookie\",\"holdConsent\",\"revokeConsent\",\"grantConsent\"];\n          q.setAndDefer=function(o,m){o[m]=function(){o.push([m].concat(Array.prototype.slice.call(arguments,0)))}};\n          for(var i=0;i<q.methods.length;i++)q.setAndDefer(q,q.methods[i]);\n          q.instance=function(id){var e=q._i[id]||[];for(var n=0;n<q.methods.length;n++)q.setAndDefer(e,q.methods[n]);return e};\n          q.load=function(e,n){var r=\"https://analytics.tiktok.com/i18n/pixel/events.js\";q._i=q._i||{};q._i[e]=[];q._i[e]._u=r;q._t=q._t||{};q._t[e+\"\"]=+new Date;q._o=q._o||{};q._o[e+\"\"]=n||{};var s=document.createElement(\"script\");s.type=\"text/javascript\";s.async=true;s.src=r+\"?sdkid=\"+e+\"&lib=ttq\";tgt.appendChild(s)};\n          q.load(tid);\n        }\n      }\n      if(d.meta_pixel_enabled===\"1\"&&d.meta_pixel_id){\n        var mid=d.meta_pixel_id.trim();\n        if(mid&&!window.fbq){\n          var f=window.fbq=function(){f.callMethod?f.callMethod.apply(f,arguments):f.queue.push(arguments)};\n          if(!window._fbq)window._fbq=f;\n          f.push=f;f.loaded=true;f.version=\"2.0\";f.queue=[];\n          var ms=document.createElement(\"script\");ms.async=true;ms.src=\"https://connect.facebook.net/en_US/fbevents.js\";\n          tgt.appendChild(ms);\n          window.fbq(\"init\",mid);\n        }\n      }\n    };\n    x.send();\n  }catch(e){}\n})();\n","id":"tiktok-meta-pixel"}])</script><script src="./assets/polyfills-42372ed130431b0a.js" noModule=""></script></head><body class="font-sans antialiased min-h-screen flex flex-col relative bg-background text-foreground"><div hidden=""><!--$--><!--/$--></div><!--$!--><template data-dgst="BAILOUT_TO_CLIENT_SIDE_RENDERING"></template><!--/$--><!--$!--><template data-dgst="BAILOUT_TO_CLIENT_SIDE_RENDERING"></template><!--/$--><script src="./assets/webpack-8f884d9aeb792969.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[92904,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"3981\",\"static/chunks/3981-c86cb3a6190b4461.js\",\"2179\",\"static/chunks/2179-ca6b11b1b22b9ed9.js\",\"157\",\"static/chunks/157-570fbac5a6431d92.js\",\"8147\",\"static/chunks/8147-6f1284ae16cdb88f.js\",\"9250\",\"static/chunks/9250-69ee0a18d5efcfca.js\",\"5307\",\"static/chunks/5307-349fad45f09a7fb5.js\",\"1963\",\"static/chunks/1963-e2c09cd620850721.js\",\"9678\",\"static/chunks/9678-d945104b2ca3f628.js\",\"6610\",\"static/chunks/6610-fbf68f4e24d2f0e7.js\",\"7156\",\"static/chunks/7156-24f1adc51bd5e718.js\",\"9437\",\"static/chunks/9437-cc4df20fbb8496c3.js\",\"7177\",\"static/chunks/app/layout-41a202f86e255e34.js\"],\"\"]\n1c:I[94148,[\"4219\",\"static/chunks/app/global-error-ce0cc3d15eb7e2f6.js\"],\"default\"]\n:HL[\"/_next/static/css/0062d8248a8725a2.css\",\"style\"]\n3:T119d,"])</script><script>self.__next_f.push([1,"\n              (function() {\n                try {\n                  var root = document.documentElement;\n                  var cachedThemeAnimations = localStorage.getItem('cached_theme_animations');\n                  var cachedThemeTransition = localStorage.getItem('cached_theme_transition');\n\n                  if (cachedThemeAnimations === 'false') {\n                    root.style.setProperty('--theme-transition', '0ms');\n                    root.classList.add('no-theme-transitions');\n                  } else {\n                    root.classList.remove('no-theme-transitions');\n                    if (cachedThemeTransition \u0026\u0026 /^d+$/.test(cachedThemeTransition)) {\n                      root.style.setProperty('--theme-transition', cachedThemeTransition + 'ms');\n                    }\n                  }\n\n                  var cachedTheme = localStorage.getItem('cached_theme') || 'midnight';\n                  root.setAttribute('data-theme', cachedTheme);\n\n                  // Pro path: apply cached full theme CSS vars (covers any theme)\n                  var cachedProCssVars = localStorage.getItem('cached_theme_css_vars');\n                  if (cachedProCssVars) {\n                    try {\n                      var parsed = JSON.parse(cachedProCssVars);\n                      if (parsed \u0026\u0026 typeof parsed === 'object') {\n                        for (var pk in parsed) {\n                          if (Object.prototype.hasOwnProperty.call(parsed, pk) \u0026\u0026 pk.indexOf('--') === 0 \u0026\u0026 typeof parsed[pk] === 'string') {\n                            root.style.setProperty(pk, parsed[pk]);\n                          }\n                        }\n                        // Category class derived from --color-scheme token\n                        var scheme = parsed['--color-scheme'];\n                        if (scheme === 'light') {\n                          root.classList.add('theme-light');\n                          root.classList.remove('theme-dark');\n                        } else if (scheme === 'dark') {\n                          root.classList.add('theme-dark');\n                          root.classList.remove('theme-light');\n                        }\n                        return; // Pro vars applied — skip legacy daylight path\n                      }\n                    } catch (e) { /* fall through to legacy */ }\n                  }\n\n                  // Legacy fallback: midnight=dark, daylight=light\n                  if (cachedTheme === 'daylight') {\n                    root.classList.add('theme-light');\n                    root.classList.remove('theme-dark');\n                  } else {\n                    root.classList.add('theme-dark');\n                    root.classList.remove('theme-light');\n                  }\n\n                  if (cachedTheme !== 'daylight') {\n                    return;\n                  }\n\n                  var cachedDaylightPalette = localStorage.getItem('cached_daylight_palette');\n                  var paletteApplied = false;\n                  if (cachedDaylightPalette) {\n                    try {\n                      var parsedPalette = JSON.parse(cachedDaylightPalette);\n                      if (parsedPalette \u0026\u0026 typeof parsedPalette === 'object') {\n                        for (var key in parsedPalette) {\n                          if (Object.prototype.hasOwnProperty.call(parsedPalette, key) \u0026\u0026 key.indexOf('--daylight-') === 0) {\n                            root.style.setProperty(key, String(parsedPalette[key]));\n                            paletteApplied = true;\n                          }\n                        }\n                      }\n                    } catch (paletteError) {\n                      paletteApplied = false;\n                    }\n                  }\n                  if (!paletteApplied) {\n                    var cachedDaylightPrimary = localStorage.getItem('cached_daylight_primary');\n                    var cachedDaylightAccent = localStorage.getItem('cached_daylight_accent');\n                    if (cachedDaylightPrimary) {\n                      root.style.setProperty('--daylight-primary-dynamic', cachedDaylightPrimary);\n                    }\n                    if (cachedDaylightAccent) {\n                      root.style.setProperty('--daylight-accent-dynamic', cachedDaylightAccent);\n                    }\n                  }\n                } catch (e) {\n                  document.documentElement.setAttribute('data-theme', 'midnight');\n                }\n              })();\n            "])</script><script>self.__next_f.push([1,"0:{\"P\":null,\"c\":[\"\",\"checkout\",\"\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"checkout\",{\"children\":[\"__PAGE__\",{}]}]},\"$undefined\",\"$undefined\",16],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/css/0062d8248a8725a2.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"ar\",\"dir\":\"rtl\",\"data-theme\":\"midnight\",\"data-scroll-behavior\":\"smooth\",\"className\":\"scroll-smooth\",\"suppressHydrationWarning\":true,\"children\":[[\"$\",\"head\",null,{\"children\":[[\"$\",\"$L2\",null,{\"id\":\"https-redirect\",\"strategy\":\"beforeInteractive\",\"dangerouslySetInnerHTML\":{\"__html\":\"\\n              (function(){\\n                var h=location.hostname;\\n                if(h!==\\\"localhost\\\"\u0026\u0026h!==\\\"127.0.0.1\\\"\u0026\u0026location.protocol===\\\"http:\\\"){\\n                  location.replace(\\\"https://\\\"+h+location.pathname+location.search+location.hash);\\n                }\\n              })();\\n            \"}}],[\"$\",\"$L2\",null,{\"id\":\"theme-bootstrap\",\"src\":\"/api/theme-bootstrap.php\",\"strategy\":\"beforeInteractive\"}],[\"$\",\"script\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"\\n              (function(){\\n                try {\\n                  var raw = localStorage.getItem('loading_screen_settings');\\n                  if (!raw) return;\\n                  var ls = JSON.parse(raw);\\n                  if (!ls) return;\\n                  var skip = false;\\n                  if (ls.isEnabled === false) {\\n                    skip = true;\\n                  } else {\\n                    var mode = 'digital';\\n                    try { var i = localStorage.getItem('init_data'); if (i) { var d = JSON.parse(i); if (d \u0026\u0026 d.store_mode) mode = d.store_mode; } } catch (e) {}\\n                    if (mode === 'digital' \u0026\u0026 ls.enabledForDigital === false) skip = true;\\n                    if (mode !== 'digital' \u0026\u0026 ls.enabledForPhysical === false) skip = true;\\n                  }\\n                  if (skip) document.documentElement.classList.add('ls-skip');\\n                } catch (e) {}\\n              })();\\n            \"}}],[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"\\n              html:not(.ls-skip) body:not(.hydrated)::before {\\n                content: '';\\n                position: fixed;\\n                top: 0;\\n                left: 0;\\n                width: 100%;\\n                height: 100%;\\n                z-index: 99999;\\n                background: var(--background, #0a0a0f);\\n                pointer-events: none;\\n              }\\n            \"}}],[\"$\",\"script\",null,{\"id\":\"theme-init\",\"dangerouslySetInnerHTML\":{\"__html\":\"$3\"}}],\"$L4\",\"$L5\",\"$L6\",\"$L7\",\"$L8\",\"$L9\",\"$La\",\"$Lb\",\"$Lc\",\"$Ld\",\"$Le\",\"$Lf\",\"$L10\",\"$L11\",\"$L12\",\"$L13\",\"$L14\",\"$L15\",\"$L16\",\"$L17\"]}],\"$L18\"]}]]}],{\"children\":[\"$L19\",{\"children\":[\"$L1a\",{},null,false,null]},null,false,null]},null,false,null],\"$L1b\",false]],\"m\":\"$undefined\",\"G\":[\"$1c\",[]],\"S\":true,\"h\":null,\"s\":\"$undefined\",\"l\":\"$undefined\",\"p\":\"$undefined\",\"d\":\"$undefined\",\"b\":\"ZeY1bUeEPOKDLYAGjAm6h\"}\n"])</script><script>self.__next_f.push([1,"1f:I[24578,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"3981\",\"static/chunks/3981-c86cb3a6190b4461.js\",\"2179\",\"static/chunks/2179-ca6b11b1b22b9ed9.js\",\"157\",\"static/chunks/157-570fbac5a6431d92.js\",\"8147\",\"static/chunks/8147-6f1284ae16cdb88f.js\",\"9250\",\"static/chunks/9250-69ee0a18d5efcfca.js\",\"5307\",\"static/chunks/5307-349fad45f09a7fb5.js\",\"1963\",\"static/chunks/1963-e2c09cd620850721.js\",\"9678\",\"static/chunks/9678-d945104b2ca3f628.js\",\"6610\",\"static/chunks/6610-fbf68f4e24d2f0e7.js\",\"7156\",\"static/chunks/7156-24f1adc51bd5e718.js\",\"9437\",\"static/chunks/9437-cc4df20fbb8496c3.js\",\"7177\",\"static/chunks/app/layout-41a202f86e255e34.js\"],\"default\"]\n20:I[12737,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"3981\",\"static/chunks/3981-c86cb3a6190b4461.js\",\"2179\",\"static/chunks/2179-ca6b11b1b22b9ed9.js\",\"157\",\"static/chunks/157-570fbac5a6431d92.js\",\"8147\",\"static/chunks/8147-6f1284ae16cdb88f.js\",\"9250\",\"static/chunks/9250-69ee0a18d5efcfca.js\",\"5307\",\"static/chunks/5307-349fad45f09a7fb5.js\",\"1963\",\"static/chunks/1963-e2c09cd620850721.js\",\"9678\",\"static/chunks/9678-d945104b2ca3f628.js\",\"6610\",\"static/chunks/6610-fbf68f4e24d2f0e7.js\",\"7156\",\"static/chunks/7156-24f1adc51bd5e718.js\",\"9437\",\"static/chunks/9437-cc4df20fbb8496c3.js\",\"7177\",\"static/chunks/app/layout-41a202f86e255e34.js\"],\"default\"]\n21:\"$Sreact.suspense\"\n22:I[1195,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"3981\",\"static/chunks/3981-c86cb3a6190b4461.js\",\"2179\",\"static/chunks/2179-ca6b11b1b22b9ed9.js\",\"157\",\"static/chunks/157-570fbac5a6431d92.js\",\"8147\",\"static/chunks/8147-6f1284ae16cdb88f.js\",\"9250\",\"static/chunks/9250-69ee0a18d5efcfca.js\",\"5307\",\"static/chunks/5307-349fad45f09a7fb5.js\",\"1963\",\"static/chunks/1963-e2c09cd620850721.js\",\"9678\",\"static/chunks/9678-d945104b2ca3f628.js\",\"6610\",\"static/chunks/6610-fbf68f4e24d2f0e7.js\",\"7156\",\"static/chunks/7156-24f1adc51bd5e718.js\",\"9437\",\"static/chunks/9437-cc4df20fbb8496c3.js\",\"7177\",\"static/chunks/app/layout-41a202f86e255e34.js\"],\"default\"]\n23:I[68172,[],\"\"]\n24:I[52598,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"5102\",\"static/chunks/5102-5e5aa314e4a287e5.js\",\"8039\",\"static/chunks/app/error-7ce6a5535c3a1515.js\"],\"default\"]\n25:I[72142,[\"6397\",\"static/chunks/app/template-7f7d539726e31375.js\"],\"default\"]\n26:I[97210,[],\"\"]\n27:I[46400,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"2602\",\"static/chunks/2602-0fb583285fc9ffd1.js\",\"4345\",\"static/chunks/app/not-found-94f57caa37729223.js\"],\"default\"]\n28:I[28168,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"3981\",\"static/chunks/3981-c86cb3a6190b4461.js\",\"2179\",\"static/chunks/2179-ca6b11b1b22b9ed9.js\",\"157\",\"static/chunks/157-570fbac5a6431d92.js\",\"8147\",\"static/chunks/8147-6f1284ae16cdb88f.js\",\"9250\",\"static/chunks/9250-69ee0a18d5efcfca.js\",\"5307\",\"static/chunks/5307-349fad45f09a7fb5.js\",\"1963\",\"static/chunks/1963-e2c09cd620850721.js\",\"9678\",\"static/chunks/9678-d945104b2ca3f628.js\",\"6610\",\"static/chunks/6610-fbf68f4e24d2f0e7.js\",\"7156\",\"static/chunks/7156-24f1adc51bd5e718.js\",\"9437\",\"static/chunks/9437-cc4df20fbb8496c3.js\",\"7177\",\"static/chunks/app/layout-41a202f86e255e34.js\"],\"default\"]\n29:I[91113,[],\"ClientPageRoot\"]\n2a:I[17863,[\"3909\",\"static/chunks/motion-9ce4c6eeba96378a.js\",\"3549\",\"static/chunks/3549-99197179f231cd83.js\",\"6325\",\"static/chunks/6325-5454044fd2d1f6e4.js\",\"3981\",\"static/chunks/3981-c86cb3a6190b4461.js\",\"8753\",\"static/chunks/8753-501231ee93200423.js\",\"9599\",\"static/chunks/9599-7f400c96ee7698ee.js\",\"157\",\"static/chunks/157-570fbac5a6431d92.js\",\"8147\",\"static/chunks/8147-6f1284ae16cdb88f.js\",\"9600\",\"static/chunks/9600-bf398fb51112b7f2.js\",\"9250\",\"static/chunks/9250-69ee0a18d5efcfca.js\",\"5307\",\"static/chunks/5307-349fad45f09a7fb5.js\",\"1963\",\"static/chunks/1963-e2c09cd620850721.js\",\"7720\",\"static/chunks/7720-d5ce4670a5baabb4.js\",\"6504\",\"static/chunks/6504-c03ffa7acaccdfa9.js\",\"5113\",\"static/chunks/5113-f3e677"])</script><script>self.__next_f.push([1,"000969e1fc.js\",\"2841\",\"static/chunks/2841-d8968f8ba5843eb5.js\",\"7863\",\"static/chunks/7863-ec2ef6ff22c46e83.js\",\"6610\",\"static/chunks/6610-fbf68f4e24d2f0e7.js\",\"8279\",\"static/chunks/app/checkout/page-e730b4b44161da1c.js\"],\"default\"]\n2d:I[78937,[],\"OutletBoundary\"]\n2f:I[78937,[],\"ViewportBoundary\"]\n31:I[78937,[],\"MetadataBoundary\"]\n4:[\"$\",\"link\",null,{\"rel\":\"dns-prefetch\",\"href\":\"https://sc-static.net\"}]\n5:[\"$\",\"link\",null,{\"rel\":\"dns-prefetch\",\"href\":\"https://analytics.tiktok.com\"}]\n6:[\"$\",\"link\",null,{\"rel\":\"dns-prefetch\",\"href\":\"https://connect.facebook.net\"}]\n7:[\"$\",\"link\",null,{\"rel\":\"dns-prefetch\",\"href\":\"https://flagcdn.com\"}]\n8:[\"$\",\"link\",null,{\"rel\":\"dns-prefetch\",\"href\":\"https://www.googletagmanager.com\"}]\n9:[\"$\",\"link\",null,{\"rel\":\"dns-prefetch\",\"href\":\"https://www.google-analytics.com\"}]\na:[\"$\",\"link\",null,{\"rel\":\"preconnect\",\"href\":\"https://flagcdn.com\",\"crossOrigin\":\"anonymous\"}]\nb:[\"$\",\"link\",null,{\"rel\":\"preconnect\",\"href\":\"https://www.googletagmanager.com\",\"crossOrigin\":\"anonymous\"}]\nc:[\"$\",\"script\",null,{\"type\":\"speculationrules\",\"dangerouslySetInnerHTML\":{\"__html\":\"{\\\"prefetch\\\":[{\\\"source\\\":\\\"document\\\",\\\"where\\\":{\\\"and\\\":[{\\\"href_matches\\\":\\\"/*\\\"},{\\\"not\\\":{\\\"href_matches\\\":\\\"/admin/*\\\"}},{\\\"not\\\":{\\\"href_matches\\\":\\\"/api/*\\\"}},{\\\"not\\\":{\\\"href_matches\\\":\\\"/checkout/*\\\"}},{\\\"not\\\":{\\\"selector_matches\\\":\\\"[data-no-prefetch]\\\"}}]},\\\"eagerness\\\":\\\"moderate\\\"}]}\"}}]\nd:[\"$\",\"meta\",null,{\"name\":\"HandheldFriendly\",\"content\":\"true\"}]\ne:[\"$\",\"meta\",null,{\"name\":\"MobileOptimized\",\"content\":\"width\"}]\nf:[\"$\",\"meta\",null,{\"name\":\"format-detection\",\"content\":\"telephone=no, date=no, email=no, address=no\"}]\n10:[\"$\",\"meta\",null,{\"name\":\"x-apple-disable-message-reformatting\"}]\n11:[\"$\",\"script\",null,{\"id\":\"website-jsonld\",\"type\":\"application/ld+json\",\"dangerouslySetInnerHTML\":{\"__html\":\"{\\\"@context\\\":\\\"https://schema.org\\\",\\\"@type\\\":\\\"WebSite\\\",\\\"name\\\":\\\"سكواد الخليج\\\",\\\"alternateName\\\":\\\"سكواد الخليج - خدمات رقمية سريعة وآمنة\\\",\\\"url\\\":\\\"https://squadx.store\\\",\\\"description\\\":\\\"سكواد الخليج\\\\r\\\\nمنصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️\\\",\\\"inLanguage\\\":[\\\"en\\\",\\\"ar\\\"],\\\"potentialAction\\\":{\\\"@type\\\":\\\"SearchAction\\\",\\\"target\\\":{\\\"@type\\\":\\\"EntryPoint\\\",\\\"urlTemplate\\\":\\\"https://squadx.store/products?search={search_term_string}\\\"},\\\"query-input\\\":\\\"required name=search_term_string\\\"}}\"}}]\n12:[\"$\",\"script\",null,{\"id\":\"organization-jsonld\",\"type\":\"application/ld+json\",\"dangerouslySetInnerHTML\":{\"__html\":\"{\\\"@context\\\":\\\"https://schema.org\\\",\\\"@type\\\":\\\"Organization\\\",\\\"name\\\":\\\"سكواد الخليج\\\",\\\"url\\\":\\\"https://squadx.store\\\",\\\"logo\\\":\\\"https://squadx.store/logo.jpg\\\",\\\"description\\\":\\\"سكواد الخليج\\\\r\\\\nمنصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️\\\",\\\"contactPoint\\\":{\\\"@type\\\":\\\"ContactPoint\\\",\\\"contactType\\\":\\\"customer service\\\",\\\"availableLanguage\\\":[\\\"English\\\",\\\"Arabic\\\"]}}\"}}]\n13:[\"$\",\"$L2\",null,{\"id\":\"default-language-loader\",\"src\":\"/js/default-language.js?v=20260620\",\"strategy\":\"beforeInteractive\"}]\n14:[\"$\",\"$L2\",null,{\"id\":\"translations-script\",\"src\":\"/js/translations.ascii.js?v=20260713-2\",\"charSet\":\"utf-8\",\"strategy\":\"beforeInteractive\"}]\n1d:T58c,"])</script><script>self.__next_f.push([1,"\n(function(e,t,n){\n  try{\n    var req=new XMLHttpRequest();\n    req.open(\"GET\",\"/api/settings-public.php?keys=snap_pixel_enabled,snap_pixel_id,snap_track_page_view\",true);\n    req.onreadystatechange=function(){\n      if(req.readyState!==4||req.status!==200)return;\n      try{\n        var payload=JSON.parse(req.responseText||\"{}\");\n        var data=payload\u0026\u0026payload.data?payload.data:null;\n        if(!data||data.snap_pixel_enabled!==\"1\"||!data.snap_pixel_id)return;\n        var pixelId=String(data.snap_pixel_id||\"\").trim();\n        if(!pixelId)return;\n        var meta=t.querySelector('meta[name=\"snapchat-pixel-id\"]');\n        if(!meta){\n          meta=t.createElement(\"meta\");\n          meta.setAttribute(\"name\",\"snapchat-pixel-id\");\n          (t.head||t.documentElement).appendChild(meta);\n        }\n        meta.setAttribute(\"content\",pixelId);\n        if(e.snaptr)return;\n        var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};\n        a.queue=[];\n        var s=\"script\";\n        var r=t.createElement(s);\n        r.async=true;\n        r.src=n;\n        var u=t.getElementsByTagName(s)[0];\n        if(u\u0026\u0026u.parentNode){u.parentNode.insertBefore(r,u);}else{(t.head||t.documentElement).appendChild(r);}\n        e.snaptr(\"init\",pixelId,{});\n      }catch(pe){}\n    };\n    req.send(null);\n  }catch(err){}\n})(window,document,\"https://sc-static.net/scevent.min.js\");\n"])</script><script>self.__next_f.push([1,"15:[\"$\",\"$L2\",null,{\"id\":\"snap-pixel-inline\",\"strategy\":\"beforeInteractive\",\"dangerouslySetInnerHTML\":{\"__html\":\"$1d\"}}]\n16:[\"$\",\"$L2\",null,{\"id\":\"snap-pixel-bootstrap\",\"strategy\":\"beforeInteractive\",\"src\":\"/api/snap-pixel-bootstrap.php\"}]\n1e:T858,"])</script><script>self.__next_f.push([1,"\n(function(){\n  try{\n    var x=new XMLHttpRequest();\n    x.open(\"GET\",\"/api/settings-public.php?keys=tiktok_pixel_enabled,tiktok_pixel_id,tiktok_track_page_view,meta_pixel_enabled,meta_pixel_id,meta_track_page_view\",true);\n    x.onreadystatechange=function(){\n      if(x.readyState!==4||x.status!==200)return;\n      try{var d=JSON.parse(x.responseText).data;if(!d)return;}catch(e){return;}\n      var tgt=document.body||document.documentElement;\n      if(d.tiktok_pixel_enabled===\"1\"\u0026\u0026d.tiktok_pixel_id){\n        var tid=d.tiktok_pixel_id.trim();\n        if(tid\u0026\u0026!window.TiktokAnalyticsObject){\n          window.TiktokAnalyticsObject=\"ttq\";\n          var q=window.ttq=window.ttq||[];\n          q.methods=[\"page\",\"track\",\"identify\",\"instances\",\"debug\",\"on\",\"off\",\"once\",\"ready\",\"alias\",\"group\",\"enableCookie\",\"disableCookie\",\"holdConsent\",\"revokeConsent\",\"grantConsent\"];\n          q.setAndDefer=function(o,m){o[m]=function(){o.push([m].concat(Array.prototype.slice.call(arguments,0)))}};\n          for(var i=0;i\u003cq.methods.length;i++)q.setAndDefer(q,q.methods[i]);\n          q.instance=function(id){var e=q._i[id]||[];for(var n=0;n\u003cq.methods.length;n++)q.setAndDefer(e,q.methods[n]);return e};\n          q.load=function(e,n){var r=\"https://analytics.tiktok.com/i18n/pixel/events.js\";q._i=q._i||{};q._i[e]=[];q._i[e]._u=r;q._t=q._t||{};q._t[e+\"\"]=+new Date;q._o=q._o||{};q._o[e+\"\"]=n||{};var s=document.createElement(\"script\");s.type=\"text/javascript\";s.async=true;s.src=r+\"?sdkid=\"+e+\"\u0026lib=ttq\";tgt.appendChild(s)};\n          q.load(tid);\n        }\n      }\n      if(d.meta_pixel_enabled===\"1\"\u0026\u0026d.meta_pixel_id){\n        var mid=d.meta_pixel_id.trim();\n        if(mid\u0026\u0026!window.fbq){\n          var f=window.fbq=function(){f.callMethod?f.callMethod.apply(f,arguments):f.queue.push(arguments)};\n          if(!window._fbq)window._fbq=f;\n          f.push=f;f.loaded=true;f.version=\"2.0\";f.queue=[];\n          var ms=document.createElement(\"script\");ms.async=true;ms.src=\"https://connect.facebook.net/en_US/fbevents.js\";\n          tgt.appendChild(ms);\n          window.fbq(\"init\",mid);\n        }\n      }\n    };\n    x.send();\n  }catch(e){}\n})();\n"])</script><script>self.__next_f.push([1,"17:[\"$\",\"$L2\",null,{\"id\":\"tiktok-meta-pixel\",\"strategy\":\"beforeInteractive\",\"dangerouslySetInnerHTML\":{\"__html\":\"$1e\"}}]\n18:[\"$\",\"body\",null,{\"className\":\"font-sans antialiased min-h-screen flex flex-col relative bg-background text-foreground\",\"suppressHydrationWarning\":true,\"children\":[[\"$\",\"$L1f\",null,{}],[\"$\",\"$L20\",null,{}],[\"$\",\"$21\",null,{\"children\":[\"$\",\"$L22\",null,{\"children\":[\"$\",\"$L23\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$24\",\"errorStyles\":[],\"errorScripts\":[],\"template\":[\"$\",\"$L25\",null,{\"children\":[\"$\",\"$L26\",null,{}]}],\"templateStyles\":[],\"templateScripts\":[],\"notFound\":[[\"$\",\"$L27\",null,{}],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]}],[\"$\",\"$L28\",null,{}]]}]\n19:[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L23\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L26\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}]\n1a:[\"$\",\"$1\",\"c\",{\"children\":[[\"$\",\"$L29\",null,{\"Component\":\"$2a\",\"serverProvidedParams\":{\"searchParams\":{},\"params\":{},\"promises\":[\"$@2b\",\"$@2c\"]}}],null,[\"$\",\"$L2d\",null,{\"children\":[\"$\",\"$21\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@2e\"}]}]]}]\n1b:[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$L2f\",null,{\"children\":\"$L30\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$L31\",null,{\"children\":[\"$\",\"$21\",null,{\"name\":\"Next.Metadata\",\"children\":\"$L32\"}]}]}],null]}]\n"])</script><script>self.__next_f.push([1,"2b:{}\n2c:\"$1a:props:children:0:props:serverProvidedParams:params\"\n"])</script><script>self.__next_f.push([1,"30:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content\"}],[\"$\",\"meta\",\"2\",{\"name\":\"theme-color\",\"content\":\"#0f172a\"}]]\n"])</script><script>self.__next_f.push([1,"33:I[20556,[],\"IconMark\"]\n2e:null\n"])</script><script>self.__next_f.push([1,"32:[[\"$\",\"title\",\"0\",{\"children\":\"Checkout | سكواد الخليج | سكواد الخليج\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"Complete your purchase at سكواد الخليج.\"}],[\"$\",\"meta\",\"2\",{\"name\":\"author\",\"content\":\"سكواد الخليج\"}],[\"$\",\"link\",\"3\",{\"rel\":\"manifest\",\"href\":\"/manifest.webmanifest\",\"crossOrigin\":\"$undefined\"}],[\"$\",\"meta\",\"4\",{\"name\":\"keywords\",\"content\":\"متجر إلكتروني, منتجات رقمية, تسوق أونلاين, online store, digital products, marketplace\"}],[\"$\",\"meta\",\"5\",{\"name\":\"creator\",\"content\":\"سكواد الخليج\"}],[\"$\",\"meta\",\"6\",{\"name\":\"publisher\",\"content\":\"سكواد الخليج\"}],[\"$\",\"meta\",\"7\",{\"name\":\"robots\",\"content\":\"noindex, nofollow\"}],[\"$\",\"meta\",\"8\",{\"name\":\"msapplication-TileColor\",\"content\":\"#0f172a\"}],[\"$\",\"meta\",\"9\",{\"name\":\"msapplication-config\",\"content\":\"/api/browserconfig.php\"}],[\"$\",\"link\",\"10\",{\"rel\":\"canonical\",\"href\":\"https://squadx.store/\"}],[\"$\",\"link\",\"11\",{\"rel\":\"alternate\",\"hrefLang\":\"en\",\"href\":\"https://squadx.store/\"}],[\"$\",\"link\",\"12\",{\"rel\":\"alternate\",\"hrefLang\":\"ar\",\"href\":\"https://squadx.store/\"}],[\"$\",\"link\",\"13\",{\"rel\":\"alternate\",\"hrefLang\":\"x-default\",\"href\":\"https://squadx.store/\"}],[\"$\",\"meta\",\"14\",{\"property\":\"og:title\",\"content\":\"سكواد الخليج - خدمات رقمية سريعة وآمنة\"}],[\"$\",\"meta\",\"15\",{\"property\":\"og:description\",\"content\":\"سكواد الخليج\\r\\nمنصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️\"}],[\"$\",\"meta\",\"16\",{\"property\":\"og:url\",\"content\":\"https://squadx.store/\"}],[\"$\",\"meta\",\"17\",{\"property\":\"og:site_name\",\"content\":\"سكواد الخليج\"}],[\"$\",\"meta\",\"18\",{\"property\":\"og:locale\",\"content\":\"ar_AR\"}],[\"$\",\"meta\",\"19\",{\"property\":\"og:image\",\"content\":\"https://squadx.store/api/og-image.php\"}],[\"$\",\"meta\",\"20\",{\"property\":\"og:image:secure_url\",\"content\":\"https://squadx.store/api/og-image.php\"}],[\"$\",\"meta\",\"21\",{\"property\":\"og:image:type\",\"content\":\"image/jpeg\"}],[\"$\",\"meta\",\"22\",{\"property\":\"og:image:width\",\"content\":\"1200\"}],[\"$\",\"meta\",\"23\",{\"property\":\"og:image:height\",\"content\":\"630\"}],[\"$\",\"meta\",\"24\",{\"property\":\"og:image:alt\",\"content\":\"سكواد الخليج - خدمات رقمية سريعة وآمنة\"}],[\"$\",\"meta\",\"25\",{\"property\":\"og:locale:alternate\",\"content\":\"en_US\"}],[\"$\",\"meta\",\"26\",{\"property\":\"og:type\",\"content\":\"website\"}],[\"$\",\"meta\",\"27\",{\"name\":\"twitter:card\",\"content\":\"summary_large_image\"}],[\"$\",\"meta\",\"28\",{\"name\":\"twitter:title\",\"content\":\"سكواد الخليج - خدمات رقمية سريعة وآمنة\"}],[\"$\",\"meta\",\"29\",{\"name\":\"twitter:description\",\"content\":\"سكواد الخليج\\r\\nمنصتك لمحتوى الألعاب والخدمات الرقمية لمختلف الأجهزة، مع تحديثات مستمرة وتجربة استخدام سلسة ودعم مباشر ⚡️\"}],[\"$\",\"meta\",\"30\",{\"name\":\"twitter:image\",\"content\":\"https://squadx.store/api/og-image.php\"}],[\"$\",\"meta\",\"31\",{\"name\":\"twitter:image:alt\",\"content\":\"سكواد الخليج - خدمات رقمية سريعة وآمنة\"}],[\"$\",\"meta\",\"32\",{\"name\":\"twitter:image:width\",\"content\":\"1200\"}],[\"$\",\"meta\",\"33\",{\"name\":\"twitter:image:height\",\"content\":\"630\"}],[\"$\",\"link\",\"34\",{\"rel\":\"shortcut icon\",\"href\":\"/api/favicon.php\"}],[\"$\",\"link\",\"35\",{\"rel\":\"icon\",\"href\":\"/api/favicon.php\",\"sizes\":\"any\"}],[\"$\",\"link\",\"36\",{\"rel\":\"apple-touch-icon\",\"href\":\"/api/favicon.php\",\"sizes\":\"180x180\"}],[\"$\",\"$L33\",\"37\",{}]]\n"])</script></body></html>
