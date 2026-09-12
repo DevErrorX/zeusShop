@@ -1,0 +1,15 @@
+zeus.duckdns.org {
+    encode zstd gzip
+    
+    # Static Assets Cache
+    @static path /assets/* *.css *.js *.webp *.png *.svg *.ico
+    header @static Cache-Control "public, max-age=86400"
+    
+    # Reverse proxy to FastAPI backend
+    reverse_proxy 127.0.0.1:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

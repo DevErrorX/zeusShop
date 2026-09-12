@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZEUS STORE — لوحة إدارة المتجر</title>
+    <link rel="icon" href="assets/logo-ar.webp" type="image/webp">
+    <link rel="stylesheet" href="assets/0062d8248a8725a2.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #f59e0b;
+            --bg-dark: #0b0f19;
+            --surface: #111827;
+            --surface-hover: #1f2937;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .sidebar-brand img { width: 36px; height: 36px; border-radius: 8px; }
+        .sidebar-brand strong { font-size: 16px; color: #fbbf24; }
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: right;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+        }
+        .main-workspace {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .topbar h2 { margin: 0; font-size: 22px; font-weight: 800; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+        }
+        .stat-card span { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 8px; }
+        .stat-card h3 { margin: 0; font-size: 24px; font-weight: 800; color: #fbbf24; }
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: right;
+            padding: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .status-paid { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="assets/logo-ar.webp" alt="ZEUS">
+            <div>
+                <strong>ZEUS STORE</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">لوحة تحكم المالك</div>
+            </div>
+        </div>
+
+        <button class="nav-btn active"><i class="fa-solid fa-chart-pie"></i> الإحصائيات العامة</button>
+        <button class="nav-btn"><i class="fa-solid fa-receipt"></i> إدارة الطلبات</button>
+        <button class="nav-btn"><i class="fa-solid fa-box-open"></i> إدارة المنتجات</button>
+        <button class="nav-btn"><i class="fa-solid fa-credit-card"></i> وسائل الدفع والعملات</button>
+        <button class="nav-btn"><i class="fa-solid fa-sliders"></i> إعدادات المتجر</button>
+
+        <div style="margin-top: auto;">
+            <a href="index.html" class="nav-btn" style="color: #60a5fa;" target="_blank">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> عرض المتجر ↗
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-workspace">
+        <div class="topbar">
+            <h2>نظرة عامة على المتجر</h2>
+            <div>
+                <span style="font-size: 13px; color: var(--text-muted);">المستخدم النشط: <strong>Admin (المالك)</strong></span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>إجمالي مبيعات اليوم</span>
+                <h3>14,820 ر.س</h3>
+            </div>
+            <div class="stat-card">
+                <span>الطلبات المكتملة</span>
+                <h3>58 طلب</h3>
+            </div>
+            <div class="stat-card">
+                <span>الزوار النشطين</span>
+                <h3>342 زائر</h3>
+            </div>
+            <div class="stat-card">
+                <span>رصيد المحفظة (USDT)</span>
+                <h3>1,250 ₮</h3>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <h3 style="margin-top: 0; margin-bottom: 16px;">أحدث الطلبات الرقمية</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>العميل</th>
+                        <th>المنتج</th>
+                        <th>القيمة</th>
+                        <th>طريقة الدفع</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>#ZEUS-88219</strong></td>
+                        <td>أحمد الشمري</td>
+                        <td>اشتراك كود موبايل 60 يوم (ايفون)</td>
+                        <td>299 ر.س</td>
+                        <td>مدى Mada</td>
+                        <td><span class="status-badge status-paid">مكتمل ومسلّم</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>#ZEUS-88218</strong></td>
+                        <td>خالد المطيري</td>
+                        <td>اشتراك نتفلكس 4K Ultra HD (3 أشهر)</td>
+                        <td>95 ر.س</td>
+                        <td>أبل باي Apple Pay</td>
+                        <td><span class="status-badge status-paid">مكتمل ومسلّم</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>#ZEUS-88217</strong></td>
+                        <td>سيف العراقي</td>
+                        <td>مفتاح ببجي موبايل 30 يوم VIP</td>
+                        <td>185 ر.س</td>
+                        <td>USDT (TRC20)</td>
+                        <td><span class="status-badge status-pending">قيد التحقق</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+</body>
+</html>

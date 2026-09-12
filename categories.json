@@ -1,0 +1,47 @@
+[
+  {
+    "slug": "gaming-subs",
+    "name": "اشتراكات الألعاب",
+    "name_en": "Gaming Subscriptions",
+    "description": "أكواد واشتراكات الألعاب المعتمدة لأجهزة الآيفون والأندرويد والكمبيوتر",
+    "icon": "fa-gamepad",
+    "active": true,
+    "sort_order": 1
+  },
+  {
+    "slug": "streaming",
+    "name": "بث وترفيه",
+    "name_en": "Streaming & Entertainment",
+    "description": "اشتراكات رسمية ومميزة لمنصات البث والموسيقى بأفضل الأسعار",
+    "icon": "fa-play",
+    "active": true,
+    "sort_order": 2
+  },
+  {
+    "slug": "cards",
+    "name": "بطاقات رقمية",
+    "name_en": "Digital Gift Cards",
+    "description": "بطاقات شحن المتاجر والألعاب العالمية والمحلية الفورية",
+    "icon": "fa-credit-card",
+    "active": true,
+    "sort_order": 3
+  },
+  {
+    "slug": "software",
+    "name": "برامج وتراخيص",
+    "name_en": "Software & Licenses",
+    "description": "مفاتيح وتراخيص البرامج الأصلية وأنظمة التشغيل مع تفعيل دائم",
+    "icon": "fa-shield-halved",
+    "active": true,
+    "sort_order": 4
+  },
+  {
+    "slug": "vip-accounts",
+    "name": "حسابات وباقات VIP",
+    "name_en": "VIP & Special Accounts",
+    "description": "حسابات جاهزة ومميزة مع ضمان كامل ودعم مخصص",
+    "icon": "fa-crown",
+    "active": true,
+    "sort_order": 5
+  }
+]
