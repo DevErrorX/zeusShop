@@ -8,16 +8,111 @@
   'use strict';
 
   // ==========================================
-  // 1. CONSTANTS & RATES
+  // 1. HIGH-PRECISION EXCHANGE RATES & ENGINE
   // ==========================================
   const CURRENCIES = {
-    EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 1.0, flag: '🇪🇬' },
-    SAR: { symbol: 'ر.س', name: 'ريال سعودي', rate: 0.075, flag: '🇸🇦' },
-    USD: { symbol: '$', name: 'دولار أمريكي', rate: 0.020, flag: '🇺🇸' },
-    AED: { symbol: 'د.إ', name: 'درهم إماراتي', rate: 0.074, flag: '🇦🇪' },
-    KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.0062, flag: '🇰🇼' },
-    USDT: { symbol: 'USDT', name: 'تيزر رقمي', rate: 0.020, flag: '💎' }
+    EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 1.0, flag: '🇪🇬', decimals: 0, egpPerUnit: 1.0 },
+    SAR: { symbol: 'ر.س', name: 'ريال سعودي', rate: 0.073039, flag: '🇸🇦', decimals: 2, egpPerUnit: 13.691 },
+    USD: { symbol: '$', name: 'دولار أمريكي', rate: 0.019477, flag: '🇺🇸', decimals: 2, egpPerUnit: 51.342 },
+    AED: { symbol: 'د.إ', name: 'درهم إماراتي', rate: 0.071530, flag: '🇦🇪', decimals: 2, egpPerUnit: 13.980 },
+    KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.006003, flag: '🇰🇼', decimals: 3, egpPerUnit: 166.595 },
+    USDT: { symbol: 'USDT', name: 'تيزر رقمي', rate: 0.019477, flag: '💎', decimals: 2, egpPerUnit: 51.342 }
   };
+
+  const FX_CACHE_KEY = 'zeus_fx_rates_cache';
+  const FX_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+  function updateRatesFromFx(usdToEgp, usdToSar, usdToAed, usdToKwd) {
+    if (!usdToEgp || usdToEgp <= 0) return;
+
+    CURRENCIES.USD.rate = 1.0 / usdToEgp;
+    CURRENCIES.USD.egpPerUnit = usdToEgp;
+
+    CURRENCIES.USDT.rate = 1.0 / usdToEgp;
+    CURRENCIES.USDT.egpPerUnit = usdToEgp;
+
+    if (usdToSar) {
+      CURRENCIES.SAR.rate = usdToSar / usdToEgp;
+      CURRENCIES.SAR.egpPerUnit = usdToEgp / usdToSar;
+    }
+    if (usdToAed) {
+      CURRENCIES.AED.rate = usdToAed / usdToEgp;
+      CURRENCIES.AED.egpPerUnit = usdToEgp / usdToAed;
+    }
+    if (usdToKwd) {
+      CURRENCIES.KWD.rate = usdToKwd / usdToEgp;
+      CURRENCIES.KWD.egpPerUnit = usdToEgp / usdToKwd;
+    }
+  }
+
+  function syncExchangeRates(onComplete) {
+    // 1. Try reading cache first
+    try {
+      const cached = JSON.parse(localStorage.getItem(FX_CACHE_KEY) || 'null');
+      if (cached && (Date.now() - cached.timestamp < FX_CACHE_DURATION)) {
+        updateRatesFromFx(cached.usdToEgp, cached.usdToSar, cached.usdToAed, cached.usdToKwd);
+        if (typeof onComplete === 'function') onComplete();
+        return;
+      }
+    } catch(e) {}
+
+    // 2. Fetch fresh rates asynchronously
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
+
+    fetch('https://open.er-api.com/v6/latest/USD', {
+      signal: controller ? controller.signal : undefined
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (data && data.result === 'success' && data.rates && data.rates.EGP) {
+          const egp = parseFloat(data.rates.EGP);
+          const sar = parseFloat(data.rates.SAR || 3.75);
+          const aed = parseFloat(data.rates.AED || 3.6725);
+          const kwd = parseFloat(data.rates.KWD || 0.308184);
+
+          updateRatesFromFx(egp, sar, aed, kwd);
+
+          try {
+            localStorage.setItem(FX_CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              usdToEgp: egp,
+              usdToSar: sar,
+              usdToAed: aed,
+              usdToKwd: kwd
+            }));
+          } catch(e) {}
+
+          if (typeof onComplete === 'function') onComplete();
+        }
+      })
+      .catch(() => {
+        // High precision built-in rates are used
+      });
+  }
+
+  function formatAmount(num, curr) {
+    const info = CURRENCIES[curr] || CURRENCIES.EGP;
+    const decimals = typeof info.decimals === 'number' ? info.decimals : 2;
+
+    if (curr === 'EGP') {
+      if (Math.abs(num - Math.round(num)) < 0.01) {
+        return Math.round(num).toLocaleString('en-US');
+      }
+      return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (curr === 'KWD') {
+      return num.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    }
+    return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  function formatPriceHtml(amount, curr) {
+    const info = CURRENCIES[curr] || CURRENCIES.EGP;
+    const formatted = formatAmount(amount, curr);
+    return `<span class="tabular-nums font-mono">${formatted}</span> <span class="currency-arabic text-xs font-semibold">${info.symbol}</span>`;
+  }
 
   let catalogData = [];
 
@@ -26,8 +121,7 @@
     .then(r => r.json())
     .then(data => { catalogData = data; })
     .catch(() => {});
-
-  // ==========================================
+// ==========================================
   // 2. STATE HELPERS (LocalStorage)
   // ==========================================
   function getCart() {
@@ -253,8 +347,9 @@
     let total = 0;
     container.innerHTML = cart.map((item, idx) => {
       const priceVal = parseFloat(item.price) || 0;
-      const convertedPrice = Math.round(priceVal * currInfo.rate);
-      const itemSubtotal = convertedPrice * (item.quantity || 1);
+      const itemQty = item.quantity || 1;
+      const convertedUnit = priceVal * currInfo.rate;
+      const itemSubtotal = convertedUnit * itemQty;
       total += itemSubtotal;
 
       return `
@@ -263,12 +358,12 @@
           <div class="flex-1 min-w-0">
             <h4 class="text-xs sm:text-sm font-bold text-white truncate">${item.title}</h4>
             <div class="text-xs text-cyan-400 font-extrabold mt-0.5 tabular-nums">
-              ${convertedPrice} ${currInfo.symbol}
+              ${formatAmount(convertedUnit, curr)} ${currInfo.symbol}
             </div>
             <!-- Quantity controls -->
             <div class="flex items-center gap-2 mt-2">
               <button class="zeus-qty-btn p-1 rounded-md bg-white/10 hover:bg-white/20 text-xs w-6 h-6 flex items-center justify-center font-bold" data-idx="${idx}" data-delta="-1">-</button>
-              <span class="text-xs font-bold tabular-nums">${item.quantity || 1}</span>
+              <span class="text-xs font-bold tabular-nums">${itemQty}</span>
               <button class="zeus-qty-btn p-1 rounded-md bg-white/10 hover:bg-white/20 text-xs w-6 h-6 flex items-center justify-center font-bold" data-idx="${idx}" data-delta="1">+</button>
             </div>
           </div>
@@ -279,7 +374,7 @@
       `;
     }).join('');
 
-    if (totalEl) totalEl.textContent = `${total.toLocaleString()} ${currInfo.symbol}`;
+    if (totalEl) totalEl.textContent = `${formatAmount(total, curr)} ${currInfo.symbol}`;
 
     // Attach listeners
     container.querySelectorAll('.zeus-qty-btn').forEach(btn => {
@@ -320,8 +415,17 @@
     const priceEl = card ? card.querySelector('.price-display, .product-price, [class*="product-price"]') : null;
     let price = 1000; // default fallback
     if (priceEl) {
-      const numMatch = priceEl.textContent.replace(/,/g, '').match(/\d+/);
-      if (numMatch) price = parseFloat(numMatch[0]);
+      const baseEgpAttr = priceEl.getAttribute('data-egp-price') || (priceEl.querySelector('.price-display') ? priceEl.querySelector('.price-display').getAttribute('data-egp-price') : null);
+      if (baseEgpAttr) {
+        price = parseFloat(baseEgpAttr);
+      } else {
+        const numMatch = priceEl.textContent.replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+        if (numMatch) {
+          const curr = getCurrency();
+          const currRate = (CURRENCIES[curr] && CURRENCIES[curr].rate) ? CURRENCIES[curr].rate : 1.0;
+          price = parseFloat(numMatch[0]) / currRate;
+        }
+      }
     }
 
     // Image extraction
@@ -384,20 +488,34 @@
 
     menu = document.createElement('div');
     menu.id = 'zeus-currency-menu';
-    menu.className = 'absolute top-full mt-2 end-0 z-[99995] w-48 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl backdrop-blur-xl p-1.5 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-150';
+    menu.className = 'cur-switch__menu';
 
     const current = getCurrency();
-    menu.innerHTML = Object.entries(CURRENCIES).map(([code, info]) => `
-      <button type="button" class="zeus-curr-opt flex items-center justify-between w-full px-3 py-2 rounded-xl text-start font-medium transition ${
-        code === current ? 'bg-cyan-500/20 text-cyan-400 font-bold' : 'text-slate-300 hover:bg-white/10 text-white'
-      }" data-curr="${code}">
-        <span class="flex items-center gap-2">
-          <span>${info.flag}</span>
-          <span>${info.name}</span>
-        </span>
-        <span class="text-[11px] font-mono text-slate-400">${code}</span>
-      </button>
-    `).join('');
+    const itemsHtml = Object.entries(CURRENCIES).map(([code, info]) => {
+      const isBase = code === 'EGP';
+      const isSelected = code === current;
+      const rateHint = isBase ? 'العملة الأساسية' : `1 ${info.symbol} ≈ ${info.egpPerUnit.toFixed(2)} ج.م`;
+      return `
+        <button type="button" class="cur-switch__item ${isSelected ? 'is-active' : ''} zeus-curr-opt" data-curr="${code}">
+          <span class="text-base shrink-0 leading-none">${info.flag}</span>
+          <span class="flex flex-col flex-1 min-w-0 text-start">
+            <span class="font-bold text-xs leading-tight">${info.name}</span>
+            <span class="text-[10px] text-muted-foreground font-mono mt-0.5">${rateHint}</span>
+          </span>
+          <span class="cur-switch__item-code text-xs font-mono font-bold shrink-0 text-end">${code}</span>
+        </button>
+      `;
+    }).join('');
+
+    menu.innerHTML = `
+      <div class="cur-switch__list">
+        ${itemsHtml}
+      </div>
+      <div class="pt-2 mt-1.5 border-t border-border/50 text-[10.5px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+        <span>أسعار صرف حية وفائقة الدقة</span>
+      </div>
+    `;
 
     btn.parentElement.style.position = 'relative';
     btn.parentElement.appendChild(menu);
@@ -434,25 +552,30 @@
 
     // Recalculate prices in DOM
     document.querySelectorAll('.price-display').forEach(p => {
-      const parent = p.closest('[data-egp-price]') || p;
-      let baseEgp = parent.getAttribute('data-egp-price');
+      let baseEgp = p.getAttribute('data-egp-price');
       if (!baseEgp) {
-        const num = p.textContent.replace(/,/g, '').match(/\d+/);
-        if (num) {
-          baseEgp = num[0];
-          parent.setAttribute('data-egp-price', baseEgp);
+        const cleaned = p.textContent.replace(/,/g, '');
+        const match = cleaned.match(/\d+(?:\.\d+)?/);
+        if (match) {
+          baseEgp = match[0];
+          p.setAttribute('data-egp-price', baseEgp);
         }
       }
       if (baseEgp) {
-        const converted = Math.round(parseFloat(baseEgp) * info.rate);
-        p.innerHTML = `<span>${converted.toLocaleString()}</span> <span class="currency-arabic text-xs font-semibold">${info.symbol}</span>`;
+        const val = parseFloat(baseEgp);
+        const converted = val * info.rate;
+        p.innerHTML = formatPriceHtml(converted, curr);
       }
     });
 
     renderCartDrawer();
-  }
 
-  // ==========================================
+    // If on checkout page, update checkout amounts and rates
+    if (window.location.pathname.includes('checkout') && typeof updateCheckoutAmounts === 'function') {
+      updateCheckoutAmounts();
+    }
+  }
+// ==========================================
   // 7. REALTIME SEARCH MODAL
   // ==========================================
   function initSearchModal() {
@@ -534,8 +657,8 @@
     const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
 
     resultsContainer.innerHTML = matches.map(item => {
-      const priceEgp = item.price_egp || item.price_sar * 13.3 || 1000;
-      const converted = Math.round(priceEgp * currInfo.rate);
+      const priceEgp = item.price_egp || (item.price_sar ? item.price_sar * (CURRENCIES.SAR.egpPerUnit || 13.69) : 1000);
+      const converted = priceEgp * currInfo.rate;
 
       return `
         <div class="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 flex items-center justify-between gap-3 transition">
@@ -543,7 +666,7 @@
             <img src="${item.image || './assets/logo-ar.webp'}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover bg-slate-950 shrink-0">
             <div class="min-w-0">
               <h4 class="text-xs sm:text-sm font-bold text-white truncate">${item.title}</h4>
-              <p class="text-[11px] text-cyan-400 font-extrabold mt-0.5 tabular-nums">${converted} ${currInfo.symbol}</p>
+              <p class="text-[11px] text-cyan-400 font-extrabold mt-0.5 tabular-nums">${formatAmount(converted, curr)} ${currInfo.symbol}</p>
             </div>
           </div>
           <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition" data-title="${item.title}" data-price="${priceEgp}" data-img="${item.image}">
@@ -672,21 +795,117 @@
   // ==========================================
   let selectedPaymentMethod = 'megapay';
 
-  function initCheckoutPage() {
-    if (!window.location.pathname.includes('checkout')) return;
-
+  function updateCheckoutAmounts() {
     const cart = getCart();
     let totalEgp = 3664; // default fallback if cart is empty
     if (cart.length > 0) {
       totalEgp = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1), 0);
     }
-    const totalUsdt = (totalEgp / 50.0).toFixed(2);
+
+    const usdtInfo = CURRENCIES.USDT || { rate: 1.0 / 51.342, egpPerUnit: 51.342 };
+    const egpPerUsdt = usdtInfo.egpPerUnit || (1.0 / usdtInfo.rate);
+    const totalUsdt = (totalEgp * usdtInfo.rate).toFixed(2);
 
     // Update USDT expected amounts in panels
     const binanceAmountEl = document.getElementById('zeus-binance-amount');
     const giftCardAmountEl = document.getElementById('zeus-giftcard-amount');
     if (binanceAmountEl) binanceAmountEl.textContent = `${totalUsdt} USDT`;
     if (giftCardAmountEl) giftCardAmountEl.textContent = `${totalUsdt} USDT`;
+
+    // Update / Inject rate transparency breakdown notes
+    let binanceRateNote = document.getElementById('zeus-binance-rate-note');
+    if (!binanceRateNote && binanceAmountEl) {
+      const container = binanceAmountEl.closest('.rounded-xl') || binanceAmountEl.parentElement;
+      binanceRateNote = document.createElement('div');
+      binanceRateNote.id = 'zeus-binance-rate-note';
+      binanceRateNote.className = 'text-[11px] text-amber-600/90 dark:text-amber-400/90 font-medium pt-1.5 mt-1 border-t border-amber-500/20 flex flex-col gap-0.5';
+      container.appendChild(binanceRateNote);
+    }
+    if (binanceRateNote) {
+      binanceRateNote.innerHTML = `
+        <div class="flex items-center justify-between gap-1">
+          <span>سعر الصرف المعتمد:</span>
+          <span class="font-bold font-mono">1 USDT ≈ ${egpPerUsdt.toFixed(2)} ج.م</span>
+        </div>
+        <div class="text-[10px] text-muted-foreground font-mono">
+          الحسبة: ${totalEgp.toLocaleString('en-US')} ج.م ÷ ${egpPerUsdt.toFixed(2)} = ${totalUsdt} USDT
+        </div>
+      `;
+    }
+
+    let giftCardRateNote = document.getElementById('zeus-giftcard-rate-note');
+    if (!giftCardRateNote && giftCardAmountEl) {
+      const container = giftCardAmountEl.closest('.rounded-xl') || giftCardAmountEl.parentElement;
+      giftCardRateNote = document.createElement('div');
+      giftCardRateNote.id = 'zeus-giftcard-rate-note';
+      giftCardRateNote.className = 'text-[11px] text-purple-600/90 dark:text-purple-400/90 font-medium pt-1.5 mt-1 border-t border-purple-500/20 flex flex-col gap-0.5';
+      container.appendChild(giftCardRateNote);
+    }
+    if (giftCardRateNote) {
+      giftCardRateNote.innerHTML = `
+        <div class="flex items-center justify-between gap-1">
+          <span>سعر الصرف المعتمد:</span>
+          <span class="font-bold font-mono">1 USDT ≈ ${egpPerUsdt.toFixed(2)} ج.م</span>
+        </div>
+        <div class="text-[10px] text-muted-foreground font-mono">
+          القيمة المطلوبة: ${totalUsdt} USDT (${totalEgp.toLocaleString('en-US')} ج.م)
+        </div>
+      `;
+    }
+
+    // Update order summary items on checkout page if cart has items
+    const curr = getCurrency();
+    const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
+    const checkoutItemsContainer = document.querySelector('.co-sec-items');
+    if (checkoutItemsContainer && cart.length > 0) {
+      checkoutItemsContainer.innerHTML = cart.map(item => {
+        const itemPriceVal = parseFloat(item.price) || 0;
+        const itemQty = item.quantity || 1;
+        const itemTotalEgp = itemPriceVal * itemQty;
+        const converted = itemTotalEgp * currInfo.rate;
+
+        return `
+          <div class="ls-skip relative group pt-1">
+            <div class="ls-skip relative overflow-hidden rounded-xl p-2.5 xs:p-3 transition-[background-color,box-shadow] duration-200" style="background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);">
+              <div class="ls-skip flex gap-2.5 xs:gap-3 items-center">
+                <div class="ls-skip relative w-12 h-12 xs:w-14 xs:h-14 rounded-lg overflow-hidden bg-muted/20 shrink-0" style="box-shadow: 0 2px 8px rgba(0,0,0,0.10), 0 0 0 1px color-mix(in srgb, var(--border) 40%, transparent);">
+                  <img alt="${item.title}" class="ls-skip absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" src="${item.image || './assets/logo-ar.webp'}">
+                </div>
+                <div class="ls-skip flex-1 min-w-0 flex flex-col justify-between">
+                  <h3 class="ls-skip font-semibold text-xs xs:text-[13px] sm:text-sm leading-snug mb-1 line-clamp-1 text-foreground">${item.title}</h3>
+                  <div class="ls-skip flex items-center justify-between gap-1.5 xs:gap-2">
+                    <div class="ls-skip flex items-center gap-1.5">
+                      <span class="ls-skip text-foreground font-bold text-xs xs:text-sm sm:text-base product-price" style="color: var(--primary);">
+                        <span class="ls-skip price-display" data-egp-price="${itemTotalEgp}">${formatPriceHtml(converted, curr)}</span>
+                      </span>
+                    </div>
+                    <span class="text-xs text-muted-foreground font-mono">الكمية: ${itemQty}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Update checkout totals elements
+    const totalsContainer = document.querySelector('.co-sec-totals');
+    if (totalsContainer) {
+      totalsContainer.querySelectorAll('.price-display').forEach(p => {
+        p.setAttribute('data-egp-price', totalEgp);
+        const converted = totalEgp * currInfo.rate;
+        p.innerHTML = formatPriceHtml(converted, curr);
+      });
+    }
+
+    return { totalEgp, totalUsdt };
+  }
+
+  function initCheckoutPage() {
+    if (!window.location.pathname.includes('checkout')) return;
+
+    const { totalEgp, totalUsdt } = updateCheckoutAmounts();
 
     // Payment Gateway Options Selection
     const payOptions = document.querySelectorAll('.zeus-pay-option');
@@ -799,9 +1018,13 @@
           extraInfo = `كود القسيمة: ${code}`;
         }
 
+        const amounts = updateCheckoutAmounts();
+        const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
+        const currentEgp = amounts ? amounts.totalEgp : totalEgp;
+
         // Generate Order ID
         const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-        showOrderSuccessModal(orderId, email, phone, selectedPaymentMethod, extraInfo, totalUsdt);
+        showOrderSuccessModal(orderId, email, phone, selectedPaymentMethod, extraInfo, currentUsdt, currentEgp);
       };
     }
 
@@ -816,13 +1039,23 @@
     });
   }
 
-  function showOrderSuccessModal(orderId, email, phone, method, extraInfo, totalUsdt) {
+  function showOrderSuccessModal(orderId, email, phone, method, extraInfo, totalUsdt, totalEgp) {
     const methodNames = {
       megapay: 'MEGA PAY (بطاقة ائتمان)',
       binance_uid: 'باينانس UID (Binance Pay)',
       binance_giftcard: 'باينانس GIFT CARD'
     };
     const methodName = methodNames[method] || method;
+    const egpText = typeof totalEgp === 'number' ? ` (${totalEgp.toLocaleString('en-US')} ج.م)` : '';
+
+    const waLines = [
+      'مرحبا زيوس ستور، قمت بعمل طلب جديد:',
+      `رقم الطلب: ${orderId}`,
+      `وسيلة الدفع: ${methodName}`,
+      extraInfo ? extraInfo : '',
+      `المبلغ: ${totalUsdt} USDT${egpText}`
+    ].filter(Boolean);
+    const waUrl = 'https://wa.me/201000000000?text=' + encodeURIComponent(waLines.join('\n'));
 
     const modalHtml = `
       <div id="zeus-order-modal" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
@@ -837,6 +1070,7 @@
           </div>
           <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-start space-y-1 text-slate-300">
             <div><span class="text-slate-400">طريقة الدفع:</span> <strong class="text-white">${methodName}</strong></div>
+            <div><span class="text-slate-400">المبلغ المطلوب:</span> <strong class="text-cyan-400 font-mono">${totalUsdt} USDT${egpText}</strong></div>
             <div><span class="text-slate-400">البريد:</span> <strong class="text-white">${email}</strong></div>
             <div><span class="text-slate-400">الهاتف:</span> <strong class="text-white">${phone}</strong></div>
             ${extraInfo ? `<div class="text-amber-400 pt-1 border-t border-white/10 font-mono text-[11px]">${extraInfo}</div>` : ''}
@@ -844,7 +1078,7 @@
           <p class="text-xs text-slate-400">تم تسجيل بيانات الدفع، اضغط أدناه لتأكيد الطلب واستلام كود التفعيل فوراً عبر واتساب أو تيليجرام.</p>
           
           <div class="pt-2 flex flex-col gap-2.5">
-            <a href="https://wa.me/201000000000?text=${encodeURIComponent(`مرحبا زيوس ستور، قمت بعمل طلب جديد:\nرقم الطلب: ${orderId}\nوسيلة الدفع: ${methodName}\n${extraInfo ? extraInfo + '\n' : ''}المبلغ: ${totalUsdt} USDT`)}" target="_blank" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition">
+            <a href="${waUrl}" target="_blank" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition">
               <span>تأكيد واستلام الكود عبر واتساب</span>
             </a>
             <button onclick="document.getElementById('zeus-order-modal').remove(); window.location.href='index.html';" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold transition">
@@ -858,7 +1092,7 @@
     localStorage.removeItem('zeus_cart');
     updateCartBadges();
   }
-  // ==========================================
+// ==========================================
   // 12. GLOBAL INITIALIZATION & DELEGATION
   // ==========================================
   function initZeusStore() {
@@ -869,6 +1103,11 @@
     initScrollToTop();
     updateWishlistIcons();
     initCheckoutPage();
+
+    // Background FX rate synchronization & instant UI update
+    syncExchangeRates(() => {
+      applyCurrency(getCurrency());
+    });
 
     // Event Delegation for dynamic/static buttons across all cards
     document.addEventListener('click', function(e) {
@@ -903,6 +1142,16 @@
         return;
       }
     });
+
+    window.ZeusStore = {
+      applyCurrency,
+      updateCheckoutAmounts,
+      syncExchangeRates,
+      CURRENCIES,
+      getCart,
+      saveCart,
+      formatAmount
+    };
 
     console.log('⚡️ ZEUS STORE Engine loaded and fully active.');
   }
