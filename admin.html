@@ -2,221 +2,2695 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZEUS STORE — لوحة إدارة المتجر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>لوحة التحكم الشاملة | ZEUS STORE — نظام الإدارة المتقدم</title>
     <link rel="icon" href="assets/logo-ar.webp" type="image/webp">
-    <link rel="stylesheet" href="assets/0062d8248a8725a2.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome 6.5.1 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <style>
         :root {
             --primary: #f59e0b;
-            --bg-dark: #0b0f19;
-            --surface: #111827;
-            --surface-hover: #1f2937;
+            --primary-light: #fbbf24;
+            --primary-dark: #d97706;
+            --primary-glow: rgba(245, 158, 11, 0.22);
+            
+            --bg-base: #090d16;
+            --bg-surface: #0f172a;
+            --bg-card: #151f32;
+            --bg-card-hover: #1c2942;
+            
             --border: rgba(255, 255, 255, 0.08);
-            --text: #f9fafb;
-            --text-muted: #9ca3af;
+            --border-hover: rgba(245, 158, 11, 0.4);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --info: #06b6d4;
+            --purple: #8b5cf6;
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 22px;
+            
+            --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            display: flex;
-            min-height: 100vh;
+            padding: 0;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        body {
+            font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* Typography & Helpers */
+        .font-en { font-family: 'Inter', sans-serif; }
+        .text-primary { color: var(--primary); }
+        .text-success { color: var(--success); }
+        .text-warning { color: var(--warning); }
+        .text-danger { color: var(--danger); }
+        .text-info { color: var(--info); }
+        .text-purple { color: var(--purple); }
+
+        /* Glassmorphic Background */
+        .glass-panel {
+            background: rgba(21, 31, 50, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+        }
+
+        /* AUTH SCREEN */
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #172554 0%, #090d16 80%);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 36px 30px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px var(--primary-glow);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            inset-inline: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        .auth-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 24px var(--primary-glow);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            display: block;
+        }
+        .auth-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            margin-bottom: 14px;
+            transition: var(--transition);
+        }
+        .auth-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        /* SIDEBAR */
         .sidebar {
-            width: 250px;
-            background: var(--surface);
+            width: 270px;
+            background: var(--bg-surface);
             border-left: 1px solid var(--border);
             padding: 24px 16px;
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: var(--transition);
         }
         .sidebar-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             padding-bottom: 20px;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
-        .sidebar-brand img { width: 36px; height: 36px; border-radius: 8px; }
-        .sidebar-brand strong { font-size: 16px; color: #fbbf24; }
-        .nav-btn {
+        .sidebar-brand img {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+        .brand-text h1 {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #fff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .brand-text span {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: block;
+        }
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 12px 14px;
-            border-radius: 10px;
+            border-radius: var(--radius-md);
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            background: none;
+            background: transparent;
             width: 100%;
             text-align: right;
-            margin-bottom: 6px;
-            transition: all 0.2s;
+            transition: var(--transition);
+            position: relative;
         }
-        .nav-btn:hover, .nav-btn.active {
-            background: rgba(245, 158, 11, 0.12);
-            color: #fbbf24;
+        .nav-item i {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+            transition: var(--transition);
         }
-        .main-workspace {
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+            color: var(--primary-light);
+            border-right: 3px solid var(--primary);
+        }
+        .nav-item.active i {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+        .nav-badge {
+            margin-inline-start: auto;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 99px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+        .nav-badge.badge-amber { background: rgba(245, 158, 11, 0.2); color: var(--primary-light); }
+        .nav-badge.badge-green { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        /* MAIN WORKSPACE */
+        .workspace {
             flex: 1;
-            padding: 32px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
             overflow-y: auto;
         }
+
+        /* TOPBAR */
         .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-        }
-        .topbar h2 { margin: 0; font-size: 22px; font-weight: 800; }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
-            margin-bottom: 32px;
-        }
-        .stat-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 20px;
-        }
-        .stat-card span { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 8px; }
-        .stat-card h3 { margin: 0; font-size: 24px; font-weight: 800; color: #fbbf24; }
-        .table-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 24px;
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        th {
-            text-align: right;
-            padding: 12px;
-            color: var(--text-muted);
+            height: 70px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 90;
         }
-        td {
-            padding: 14px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 6px;
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-box {
+            position: relative;
+            width: 280px;
+        }
+        .search-box input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 9px 38px 9px 16px;
+            font-size: 13px;
+            color: #fff;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .search-box input:focus {
+            border-color: var(--primary);
+            width: 320px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .search-box i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+        .server-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 99px;
             font-size: 11px;
             font-weight: 700;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.25);
         }
-        .status-paid { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* WORKSPACE CONTENT */
+        .content-area {
+            padding: 30px;
+            flex: 1;
+        }
+
+        /* TAB PANELS */
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* KPI STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-hover);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        .stat-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .stat-card-header span {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .stat-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .stat-amount {
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+        .stat-footer {
+            font-size: 11.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-dim);
+        }
+
+        /* CHARTS SECTION */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .chart-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* CARDS & TABLES */
+        .panel-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .panel-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .panel-card-header h3 {
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Table Styling */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        table.zeus-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13.5px;
+        }
+        table.zeus-table th {
+            text-align: right;
+            padding: 14px 16px;
+            color: var(--text-muted);
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        table.zeus-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+            color: #f1f5f9;
+        }
+        table.zeus-table tr:hover td {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .badge-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-paid { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-delivered { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+        .badge-cancelled { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #000;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+            color: #000;
+        }
+        .btn-outline {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text-main);
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+        }
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Filter Tabs */
+        .filter-pills {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .filter-pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .filter-pill:hover, .filter-pill.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+
+        /* Forms & Inputs */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        .form-control {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 11px 14px;
+            color: #fff;
+            font-size: 13.5px;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        textarea.form-control {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        /* MODAL */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-backdrop.active {
+            display: flex;
+        }
+        .modal-content {
+            width: 100%;
+            max-width: 680px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            position: relative;
+            animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .modal-close:hover { color: #fff; transform: scale(1.1); }
+
+        /* SWITCH TOGGLE */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.12);
+            transition: .3s;
+            border-radius: 99px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            right: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider { background-color: var(--success); }
+        input:checked + .toggle-slider:before { transform: translateX(-22px); }
+
+        /* TOAST NOTIFICATION */
+        #toast-box {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast-msg {
+            pointer-events: auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-size: 13.5px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-right: 4px solid var(--primary);
+        }
+        @keyframes toastIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .charts-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                right: -280px;
+                top: 0;
+                bottom: 0;
+                box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+            }
+            .sidebar.open {
+                right: 0;
+            }
+            .menu-toggle { display: block; }
+            .topbar { padding: 0 16px; }
+            .search-box { display: none; }
+            .content-area { padding: 18px 14px; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
+    <!-- AUTH OVERLAY -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <img src="assets/logo-ar.webp" alt="ZEUS STORE" class="auth-logo">
+            <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">ZEUS STORE ADMIN</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">لوحة تحكم الإدارة العليا للمتجر الرقمي</p>
+            
+            <div id="auth-error" style="display:none; color: var(--danger); font-size: 12px; margin-bottom: 12px; font-weight: bold;"></div>
+
+            <form id="auth-form" onsubmit="handleLogin(event)">
+                <input type="text" id="auth-username" class="auth-input" placeholder="اسم المستخدم (admin)" value="admin" required autocomplete="username">
+                <input type="password" id="auth-password" class="auth-input" placeholder="كلمة المرور (zeus2026)" value="zeus2026" required autocomplete="current-password">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; font-size: 12px; color: var(--text-muted);">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="auth-remember" checked> تذكر جلستي
+                    </label>
+                    <span style="color: var(--primary);">حماية مشفرة 🔒</span>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> دخول إلى لوحة التحكم
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="main-sidebar">
         <div class="sidebar-brand">
             <img src="assets/logo-ar.webp" alt="ZEUS">
-            <div>
-                <strong>ZEUS STORE</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">لوحة تحكم المالك</div>
+            <div class="brand-text">
+                <h1>ZEUS STORE</h1>
+                <span>لوحة تحكم ريس المتكاملة ⚡️</span>
             </div>
         </div>
 
-        <button class="nav-btn active"><i class="fa-solid fa-chart-pie"></i> الإحصائيات العامة</button>
-        <button class="nav-btn"><i class="fa-solid fa-receipt"></i> إدارة الطلبات</button>
-        <button class="nav-btn"><i class="fa-solid fa-box-open"></i> إدارة المنتجات</button>
-        <button class="nav-btn"><i class="fa-solid fa-credit-card"></i> وسائل الدفع والعملات</button>
-        <button class="nav-btn"><i class="fa-solid fa-sliders"></i> إعدادات المتجر</button>
+        <ul class="nav-list">
+            <li>
+                <button class="nav-item active" onclick="switchTab('tab-dashboard')">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>الرئيسية والإحصائيات</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-orders')">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>إدارة الطلبات</span>
+                    <span class="nav-badge badge-amber" id="badge-pending-orders">0</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-products')">
+                    <i class="fa-solid fa-box-open"></i>
+                    <span>قائمة المنتجات</span>
+                    <span class="nav-badge" id="badge-total-products">0</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-keys')">
+                    <i class="fa-solid fa-key"></i>
+                    <span>مخزن الأكواد الرقمية</span>
+                    <span class="nav-badge badge-green" id="badge-available-keys">0</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-categories')">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>الأقسام والتصنيفات</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-gateways')">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <span>بوابات الدفع والمحافظ</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-rates')">
+                    <i class="fa-solid fa-coins"></i>
+                    <span>العملات وأسعار الصرف</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="switchTab('tab-settings')">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>إعدادات المتجر والبكسل</span>
+                </button>
+            </li>
+        </ul>
 
-        <div style="margin-top: auto;">
-            <a href="index.html" class="nav-btn" style="color: #60a5fa;" target="_blank">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> عرض المتجر ↗
+        <div style="padding-top: 16px; border-top: 1px solid var(--border); display:flex; flex-direction:column; gap:8px;">
+            <a href="index.html" target="_blank" class="nav-item" style="color: var(--info);">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span>عرض المتجر المباشر ↗</span>
             </a>
+            <button class="nav-item" style="color: var(--danger);" onclick="handleLogout()">
+                <i class="fa-solid fa-power-off"></i>
+                <span>تسجيل الخروج</span>
+            </button>
         </div>
     </aside>
 
-    <main class="main-workspace">
-        <div class="topbar">
-            <h2>نظرة عامة على المتجر</h2>
-            <div>
-                <span style="font-size: 13px; color: var(--text-muted);">المستخدم النشط: <strong>Admin (المالك)</strong></span>
+    <!-- WORKSPACE -->
+    <main class="workspace">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <h2 id="topbar-title" style="font-size: 18px; font-weight: 800;">نظرة عامة على المتجر</h2>
+                <div class="server-status">
+                    <span class="pulse-dot"></span>
+                    <span id="sync-mode-text">المزامنة السحابية نشطة</span>
+                </div>
             </div>
-        </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span>إجمالي مبيعات اليوم</span>
-                <h3>14,820 ر.س</h3>
-            </div>
-            <div class="stat-card">
-                <span>الطلبات المكتملة</span>
-                <h3>58 طلب</h3>
-            </div>
-            <div class="stat-card">
-                <span>الزوار النشطين</span>
-                <h3>342 زائر</h3>
-            </div>
-            <div class="stat-card">
-                <span>رصيد المحفظة (USDT)</span>
-                <h3>1,250 ₮</h3>
-            </div>
-        </div>
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="global-search" placeholder="بحث برقم الطلب، العميل..." oninput="handleGlobalSearch(this.value)">
+                </div>
 
-        <div class="table-card">
-            <h3 style="margin-top: 0; margin-bottom: 16px;">أحدث الطلبات الرقمية</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>رقم الطلب</th>
-                        <th>العميل</th>
-                        <th>المنتج</th>
-                        <th>القيمة</th>
-                        <th>طريقة الدفع</th>
-                        <th>الحالة</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>#ZEUS-88219</strong></td>
-                        <td>أحمد الشمري</td>
-                        <td>اشتراك كود موبايل 60 يوم (ايفون)</td>
-                        <td>299 ر.س</td>
-                        <td>مدى Mada</td>
-                        <td><span class="status-badge status-paid">مكتمل ومسلّم</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>#ZEUS-88218</strong></td>
-                        <td>خالد المطيري</td>
-                        <td>اشتراك نتفلكس 4K Ultra HD (3 أشهر)</td>
-                        <td>95 ر.س</td>
-                        <td>أبل باي Apple Pay</td>
-                        <td><span class="status-badge status-paid">مكتمل ومسلّم</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>#ZEUS-88217</strong></td>
-                        <td>سيف العراقي</td>
-                        <td>مفتاح ببجي موبايل 30 يوم VIP</td>
-                        <td>185 ر.س</td>
-                        <td>USDT (TRC20)</td>
-                        <td><span class="status-badge status-pending">قيد التحقق</span></td>
-                    </tr>
-                </tbody>
-            </table>
+                <button class="btn btn-outline btn-sm" onclick="exportOrdersCsv()" title="تصدير كـ CSV">
+                    <i class="fa-solid fa-file-export"></i> تصدير
+                </button>
+
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #fbbf24;">Admin (المالك)</span>
+                    <img src="assets/logo-ar.webp" style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);">
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENT AREA -->
+        <div class="content-area">
+
+            <!-- TAB 1: DASHBOARD OVERVIEW -->
+            <div class="tab-panel active" id="tab-dashboard">
+                <!-- STATS CARDS -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span>إجمالي المبيعات المؤكدة</span>
+                            <div class="stat-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: var(--primary);">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                            </div>
+                        </div>
+                        <div class="stat-amount" id="stat-total-revenue">0 ج.م</div>
+                        <div class="stat-footer">
+                            <span class="text-success"><i class="fa-solid fa-arrow-trend-up"></i> +18.4%</span> مقارنة بالأسبوع الماضي
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span>إجمالي الطلبات</span>
+                            <div class="stat-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: var(--success);">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                            </div>
+                        </div>
+                        <div class="stat-amount" id="stat-total-orders">0 طلب</div>
+                        <div class="stat-footer">
+                            <span class="text-warning" id="stat-pending-orders-hint">0 طلب قيد المراجعة</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span>رصيد الكريبتو المجمع</span>
+                            <div class="stat-icon-wrap" style="background: rgba(139, 92, 246, 0.15); color: var(--purple);">
+                                <i class="fa-brands fa-bitcoin"></i>
+                            </div>
+                        </div>
+                        <div class="stat-amount font-en" id="stat-crypto-revenue">0.00 USDT</div>
+                        <div class="stat-footer">
+                            <span class="text-info">Binance Pay & Tron TRC20</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span>المخزون الرقمي المتاح</span>
+                            <div class="stat-icon-wrap" style="background: rgba(6, 182, 212, 0.15); color: var(--info);">
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                        </div>
+                        <div class="stat-amount" id="stat-keys-count">0 كود</div>
+                        <div class="stat-footer">
+                            <span>جاهز للتسليم الفوري التلقائي ⚡️</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS ROW -->
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3><i class="fa-solid fa-chart-line text-primary"></i> منحنى مبيعات الأسبوع المنصرم</h3>
+                            <span style="font-size: 12px; color: var(--text-muted);">محدث لحظياً</span>
+                        </div>
+                        <div style="height: 260px; position: relative;">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3><i class="fa-solid fa-chart-pie text-purple"></i> وسائل الدفع الأكثر استخداماً</h3>
+                        </div>
+                        <div style="height: 260px; position: relative;">
+                            <canvas id="paymentPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECENT ORDERS MINI TABLE -->
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> أحدث الطلبات المستلمة</h3>
+                        <button class="btn btn-outline btn-sm" onclick="switchTab('tab-orders')">عرض كافة الطلبات →</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="zeus-table">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلب</th>
+                                    <th>العميل</th>
+                                    <th>المنتجات المطلوبة</th>
+                                    <th>المبلغ</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>الحالة</th>
+                                    <th>إجراء سريع</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-orders-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ORDERS MANAGEMENT -->
+            <div class="tab-panel" id="tab-orders">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <div class="filter-pills">
+                            <button class="filter-pill active" onclick="filterOrders('all', this)">كافة الطلبات</button>
+                            <button class="filter-pill" onclick="filterOrders('pending', this)">قيد الانتظار ⏳</button>
+                            <button class="filter-pill" onclick="filterOrders('paid', this)">تم الدفع بنجاح 💰</button>
+                            <button class="filter-pill" onclick="filterOrders('delivered', this)">مكتمل ومسلّم 🔑</button>
+                            <button class="filter-pill" onclick="filterOrders('cancelled', this)">ملغي ❌</button>
+                        </div>
+
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-primary btn-sm" onclick="openNewOrderModal()">
+                                <i class="fa-solid fa-plus"></i> إضافة طلب يدوي
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="zeus-table">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلب</th>
+                                    <th>التاريخ</th>
+                                    <th>العميل</th>
+                                    <th>المنتج والكمية</th>
+                                    <th>المبلغ الإجمالي</th>
+                                    <th>وسيلة الدفع</th>
+                                    <th>الحالة</th>
+                                    <th>تسليم الكود</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-tbody">
+                                <!-- Dynamic orders -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: PRODUCTS CATALOG -->
+            <div class="tab-panel" id="tab-products">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-boxes-stacked text-primary"></i> إدارة كتالوج المنتجات الرقمية</h3>
+                        <button class="btn btn-primary" onclick="openProductModal()">
+                            <i class="fa-solid fa-plus"></i> إضافة منتج جديد
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="zeus-table">
+                            <thead>
+                                <tr>
+                                    <th>الصورة</th>
+                                    <th>اسم المنتج</th>
+                                    <th>التصنيف</th>
+                                    <th>السعر (ج.م)</th>
+                                    <th>السعر (ر.س)</th>
+                                    <th>السعر ($ / USDT)</th>
+                                    <th>الحالة</th>
+                                    <th>مميز</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-tbody">
+                                <!-- Dynamic products -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: DIGITAL KEYS VAULT -->
+            <div class="tab-panel" id="tab-keys">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-vault text-info"></i> مخزن الأكواد والمفاتيح الرقمية (Serial Keys Vault)</h3>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <select id="vault-product-select" class="form-control" style="width: auto;" onchange="renderVaultTable()">
+                                <!-- Dynamic options -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px;">
+                        <!-- Add Bulk Keys Form -->
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
+                            <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--primary);">
+                                <i class="fa-solid fa-upload"></i> إضافة أكواد وسيريالات بالجملة
+                            </h4>
+                            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">
+                                أدخل كل كود أو مفتاح أو حساب في سطر منفصل. سيتم تسليمها تلقائياً للعملاء فور إتمام الدفع.
+                            </p>
+                            <textarea id="bulk-keys-input" class="form-control" placeholder="KEY-XXXX-YYYY-ZZZZ&#10;KEY-AAAA-BBBB-CCCC&#10;user@mail.com:password123" style="height: 140px; font-family: monospace; font-size: 12px;"></textarea>
+                            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 12px;" onclick="saveBulkKeys()">
+                                <i class="fa-solid fa-circle-check"></i> حفظ الأكواد في المخزن
+                            </button>
+                        </div>
+
+                        <!-- Vault Statistics & Status -->
+                        <div style="display:flex; flex-direction:column; justify-content:space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
+                            <div>
+                                <h4 style="font-size: 14px; margin-bottom: 8px;">حالة المخزون الرقمي للمنتج المحدد</h4>
+                                <div style="display:flex; gap: 16px; margin-top: 16px;">
+                                    <div style="flex:1; background: rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:12px; padding:16px; text-align:center;">
+                                        <div style="font-size: 26px; font-weight:800; color:var(--success);" id="vault-count-available">0</div>
+                                        <div style="font-size: 12px; color:var(--text-muted);">أكواد متاحة وجاهزة</div>
+                                    </div>
+                                    <div style="flex:1; background: rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.25); border-radius:12px; padding:16px; text-align:center;">
+                                        <div style="font-size: 26px; font-weight:800; color:var(--info);" id="vault-count-used">0</div>
+                                        <div style="font-size: 12px; color:var(--text-muted);">أكواد تم تسليمها</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 10px; margin-top: 12px;">
+                                <i class="fa-solid fa-shield-halved text-success"></i> الأكواد مشفرة ومحفوظة بأمان تام.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="zeus-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>الكود / المفتاح الرقمي</th>
+                                    <th>المنتج</th>
+                                    <th>الحالة</th>
+                                    <th>رقم الطلب المرتبط</th>
+                                    <th>تاريخ الإضافة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vault-tbody">
+                                <!-- Dynamic keys -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: CATEGORIES -->
+            <div class="tab-panel" id="tab-categories">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-tags text-primary"></i> إدارة تصنيفات وأقسام المتجر</h3>
+                        <button class="btn btn-primary" onclick="openCategoryModal()">
+                            <i class="fa-solid fa-plus"></i> إضافة قسم جديد
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="zeus-table">
+                            <thead>
+                                <tr>
+                                    <th>الأيقونة</th>
+                                    <th>اسم القسم</th>
+                                    <th>المعرف (Slug)</th>
+                                    <th>عدد المنتجات</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-tbody">
+                                <!-- Dynamic categories -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: PAYMENT GATEWAYS -->
+            <div class="tab-panel" id="tab-gateways">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-wallet text-primary"></i> بوابات الدفع وطرق التحويل</h3>
+                        <button class="btn btn-primary" onclick="saveGatewaysSettings()">
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ كافة وسائل الدفع
+                        </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                        <!-- MEGA PAY -->
+                        <div class="stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
+                                    <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
+                                    MEGA PAY (الدفع المباشر)
+                                </h4>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gate-megapay-active" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label>رقم الحساب / المحفظة</label>
+                                <input type="text" id="gate-megapay-account" class="form-control" value="01099238412">
+                            </div>
+                            <div class="form-group">
+                                <label>اسم المستلم</label>
+                                <input type="text" id="gate-megapay-name" class="form-control" value="ZEUS STORE LTD">
+                            </div>
+                        </div>
+
+                        <!-- BINANCE PAY UID -->
+                        <div class="stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-brands fa-btc text-warning"></i>
+                                    Binance Pay (معرف UID)
+                                </h4>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gate-binance-active" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label>Binance UID (معرف الحساب)</label>
+                                <input type="text" id="gate-binance-uid" class="form-control" value="849201948">
+                            </div>
+                            <div class="form-group">
+                                <label>اسم الحساب المستلم</label>
+                                <input type="text" id="gate-binance-name" class="form-control" value="Zeus_Merchant">
+                            </div>
+                        </div>
+
+                        <!-- BINANCE GIFT CARD -->
+                        <div class="stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
+                                    <i class="fa-solid fa-gift text-purple"></i>
+                                    Binance Gift Card
+                                </h4>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gate-giftcard-active" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>تعليمات استلام الكرت</label>
+                                <input type="text" id="gate-giftcard-hint" class="form-control" value="أرسل كود البطاقة المكون من 16 حرفاً">
+                            </div>
+                        </div>
+
+                        <!-- USDT TRC20 -->
+                        <div class="stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
+                                    <span style="color:#26a17b; font-weight:bold;">₮</span>
+                                    محفظة USDT (TRC20)
+                                </h4>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="gate-usdt-active" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>عنوان المحفظة (TRON)</label>
+                                <input type="text" id="gate-usdt-address" class="form-control font-en" value="TYDzsxdjh7812kjhAKJSH19827391">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: EXCHANGE RATES -->
+            <div class="tab-panel" id="tab-rates">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-scale-balanced text-primary"></i> إدارة أسعار الصرف الحية والعملات</h3>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-outline btn-sm" onclick="resetDefaultRates()">
+                                <i class="fa-solid fa-rotate-left"></i> استرجاع الافتراضي
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="saveCustomRates()">
+                                <i class="fa-solid fa-check"></i> حفظ أسعار الصرف
+                            </button>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                        يتم استخدام هذه الأسعار لتحويل قيمة المنتجات تلقائياً بين العملات المختلفة في واجهة المتجر وصفحة الدفع.
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="zeus-table">
+                            <thead>
+                                <tr>
+                                    <th>العملة</th>
+                                    <th>الرمز</th>
+                                    <th>سعر 1 وحدة مقابل الجنيه (ج.م)</th>
+                                    <th>سعر 1 وحدة مقابل الدولار ($)</th>
+                                    <th>تعديل يدوي (ج.م)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rates-tbody">
+                                <!-- Dynamic rates -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: STORE SETTINGS & PIXELS -->
+            <div class="tab-panel" id="tab-settings">
+                <div class="panel-card">
+                    <div class="panel-card-header">
+                        <h3><i class="fa-solid fa-gear text-primary"></i> إعدادات المتجر العامة والبكسلات التسويقية</h3>
+                        <button class="btn btn-primary" onclick="saveStoreSettings()">
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات
+                        </button>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>اسم المتجر (عربي)</label>
+                            <input type="text" id="set-store-name-ar" class="form-control" value="زيوس ستور">
+                        </div>
+                        <div class="form-group">
+                            <label>اسم المتجر (إنجليزي)</label>
+                            <input type="text" id="set-store-name-en" class="form-control" value="ZEUS STORE">
+                        </div>
+                        <div class="form-group">
+                            <label>رقم واتساب الدعم الفني</label>
+                            <input type="text" id="set-whatsapp" class="form-control font-en" value="+4447723274122">
+                        </div>
+                        <div class="form-group">
+                            <label>معرف تيليجرام الدعم</label>
+                            <input type="text" id="set-telegram" class="form-control font-en" value="@zeus_support">
+                        </div>
+                    </div>
+
+                    <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
+
+                    <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--primary);">
+                        <i class="fa-solid fa-bullhorn"></i> شريط الإعلانات العلوي (Announcement Bar)
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>نص الإعلان في أعلى الموقع</label>
+                            <input type="text" id="set-announcement-text" class="form-control" value="ضمان استرجاع سعر الاشتراك كاملاً لمدة 14 يوماً (تطبق سياسة الاسترداد) ⚡️">
+                        </div>
+                        <div class="form-group">
+                            <label>تفعيل شريط الإعلان</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="set-announcement-active" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
+
+                    <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--info);">
+                        <i class="fa-solid fa-chart-simple"></i> بكسلات التتبع الإعلاني والتسويق (Tracking Pixels)
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><i class="fa-brands fa-tiktok"></i> TikTok Pixel ID</label>
+                            <input type="text" id="set-tiktok-pixel" class="form-control font-en" placeholder="D8MAKHBC77U18TH8HL10">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-brands fa-facebook"></i> Meta Facebook Pixel ID</label>
+                            <input type="text" id="set-meta-pixel" class="form-control font-en" placeholder="109283719283719">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-brands fa-snapchat"></i> Snapchat Pixel ID</label>
+                            <input type="text" id="set-snap-pixel" class="form-control font-en" placeholder="372a238f-da08-46db-b16b-4f19539ec634">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-brands fa-google"></i> Google Analytics Tag</label>
+                            <input type="text" id="set-ga-tag" class="form-control font-en" placeholder="G-XXXXXXXXXX">
+                        </div>
+                    </div>
+
+                    <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
+
+                    <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--warning);">
+                        <i class="fa-brands fa-telegram"></i> إشعارات بوت تيليجرام للطلبات الفورية (Instant Alerts)
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Telegram Bot Token</label>
+                            <input type="text" id="set-tg-token" class="form-control font-en" placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ">
+                        </div>
+                        <div class="form-group">
+                            <label>Telegram Chat ID</label>
+                            <input type="text" id="set-tg-chat" class="form-control font-en" placeholder="987654321">
+                        </div>
+                    </div>
+                    <div style="margin-top: 14px;">
+                        <button class="btn btn-outline btn-sm" onclick="sendTestTelegramAlert()">
+                            <i class="fa-solid fa-paper-plane text-info"></i> إرسال تنبيه تجريبي لهاتفك
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
+    <!-- ORDER DETAIL MODAL -->
+    <div class="modal-backdrop" id="modal-order">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-order-title" style="font-size: 17px; font-weight:800;">تفاصيل الطلب #ZEUS-XXXX</h3>
+                <button class="modal-close" onclick="closeOrderModal()">&times;</button>
+            </div>
+
+            <div id="modal-order-body">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCT ADD/EDIT MODAL -->
+    <div class="modal-backdrop" id="modal-product">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-product-title" style="font-size: 17px; font-weight:800;">إضافة / تعديل منتج</h3>
+                <button class="modal-close" onclick="closeProductModal()">&times;</button>
+            </div>
+
+            <form id="product-form" onsubmit="saveProductForm(event)">
+                <input type="hidden" id="prod-id">
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>عنوان المنتج (عربي)</label>
+                        <input type="text" id="prod-title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>التصنيف</label>
+                        <select id="prod-category" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>رابط الصورة</label>
+                        <input type="text" id="prod-image" class="form-control font-en" value="assets/product_sample.webp">
+                    </div>
+                    <div class="form-group">
+                        <label>السعر بالجنيه (ج.م)</label>
+                        <input type="number" step="any" id="prod-price-egp" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>السعر بالريال (ر.س)</label>
+                        <input type="number" step="any" id="prod-price-sar" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>السعر بالدولار ($)</label>
+                        <input type="number" step="any" id="prod-price-usd" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>السعر بالـ USDT</label>
+                        <input type="number" step="any" id="prod-price-usdt" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>السعر قبل الخصم (ر.س)</label>
+                        <input type="number" step="any" id="prod-original-price" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>شارة المنتج (Badge)</label>
+                        <input type="text" id="prod-badge" class="form-control" placeholder="الأكثر طلباً / خصم 20%">
+                    </div>
+                    <div class="form-group">
+                        <label>المدة</label>
+                        <input type="text" id="prod-duration" class="form-control" value="30 يوماً">
+                    </div>
+                    <div class="form-group">
+                        <label>المنصة المدعومة</label>
+                        <input type="text" id="prod-platform" class="form-control" value="iOS / Android / PC">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>الوصف</label>
+                        <textarea id="prod-desc" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>متوفر بالمخزن؟</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="prod-in-stock" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>منتج مميز (Featured)؟</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="prod-featured">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" class="btn btn-outline" onclick="closeProductModal()">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ المنتج</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CATEGORY MODAL -->
+    <div class="modal-backdrop" id="modal-category">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 style="font-size: 17px; font-weight:800;">إضافة قسم جديد</h3>
+                <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
+            </div>
+            <form onsubmit="saveCategoryForm(event)">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>اسم القسم</label>
+                    <input type="text" id="cat-name" class="form-control" required placeholder="مثال: اشتراكات نتفلكس">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>المعرف (Slug)</label>
+                    <input type="text" id="cat-slug" class="form-control font-en" required placeholder="netflix-subs">
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>رمز الأيقونة (FontAwesome class)</label>
+                    <input type="text" id="cat-icon" class="form-control font-en" value="fa-solid fa-gamepad">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">إضافة القسم</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-box"></div>
+
+    <!-- MAIN ZEUS ADMIN JAVASCRIPT ENGINE -->
+    <script>
+    (function() {
+        // ==========================================
+        // 1. DATA INITIALIZATION & STATE
+        // ==========================================
+        const DEFAULT_ORDERS = [
+            {
+                id: "ZEUS-88219",
+                customer_name: "أحمد الشمري",
+                customer_phone: "+966501234567",
+                customer_email: "ahmed@example.com",
+                total_amount: 3664,
+                currency: "EGP",
+                payment_method: "megapay",
+                status: "delivered",
+                delivered_key: "CODM-60D-VIP-992019481",
+                created_at: new Date(Date.now() - 3600000).toISOString(),
+                items: [{ title: "اشتراك كود موبايل 60 يوم (ايفون و أيباد)", price: 3664, quantity: 1 }]
+            },
+            {
+                id: "ZEUS-88218",
+                customer_name: "خالد المطيري",
+                customer_phone: "+966559876543",
+                customer_email: "khaled@example.com",
+                total_amount: 2054,
+                currency: "EGP",
+                payment_method: "binance_uid",
+                status: "paid",
+                delivered_key: null,
+                created_at: new Date(Date.now() - 7200000).toISOString(),
+                items: [{ title: "اشتراك ببجي كود 30 يوم (ايباد)", price: 2054, quantity: 1 }]
+            },
+            {
+                id: "ZEUS-88217",
+                customer_name: "سيف العراقي",
+                customer_phone: "+9647701122334",
+                customer_email: "saif@example.com",
+                total_amount: 40.01,
+                currency: "USDT",
+                payment_method: "usdt_crypto",
+                status: "pending",
+                delivered_key: null,
+                created_at: new Date(Date.now() - 14400000).toISOString(),
+                items: [{ title: "مفتاح ببجي موبايل 30 يوم VIP", price: 40.01, quantity: 1 }]
+            }
+        ];
+
+        const DEFAULT_KEYS = [
+            { id: 1, product_id: "zeus-codm-60", serial_key: "CODM-60D-VIP-992019481", is_used: 1, order_id: "ZEUS-88219", created_at: "2026-09-13 14:20" },
+            { id: 2, product_id: "zeus-codm-60", serial_key: "CODM-60D-VIP-881920394", is_used: 0, order_id: null, created_at: "2026-09-13 15:00" },
+            { id: 3, product_id: "zeus-codm-60", serial_key: "CODM-60D-VIP-110293847", is_used: 0, order_id: null, created_at: "2026-09-13 15:00" },
+            { id: 4, product_id: "zeus-codm-30", serial_key: "CODM-30D-KEY-772819384", is_used: 0, order_id: null, created_at: "2026-09-13 16:10" },
+            { id: 5, product_id: "zeus-pubg-global", serial_key: "PUBG-GLOBAL-VIP-4401928", is_used: 0, order_id: null, created_at: "2026-09-13 16:15" }
+        ];
+
+        let state = {
+            authenticated: !!sessionStorage.getItem('zeus_admin_token') || !!localStorage.getItem('zeus_admin_token'),
+            activeTab: 'tab-dashboard',
+            orders: [],
+            products: [],
+            categories: [],
+            keys: [],
+            rates: {
+                EGP: 1.0,
+                SAR: 13.68,
+                USD: 51.34,
+                USDT: 51.342,
+                AED: 13.98,
+                KWD: 167.50,
+                IQD: 0.039
+            },
+            currentFilter: 'all',
+            charts: {}
+        };
+
+        // Load or initialize storage
+        function loadStorageData() {
+            try {
+                const storedOrders = localStorage.getItem('zeus_orders');
+                state.orders = storedOrders ? JSON.parse(storedOrders) : DEFAULT_ORDERS;
+
+                const storedKeys = localStorage.getItem('zeus_vault_keys');
+                state.keys = storedKeys ? JSON.parse(storedKeys) : DEFAULT_KEYS;
+
+                const storedRates = localStorage.getItem('zeus_rates');
+                if (storedRates) state.rates = JSON.parse(storedRates);
+
+                // Fetch catalog.json & categories.json if products empty
+                fetch('catalog.json')
+                    .then(r => r.json())
+                    .then(prods => {
+                        const localProds = localStorage.getItem('zeus_custom_products');
+                        state.products = localProds ? JSON.parse(localProds) : prods;
+                        renderProductsTable();
+                        populateProductSelectors();
+                        updateDashboardKpis();
+                    })
+                    .catch(() => {
+                        const localProds = localStorage.getItem('zeus_custom_products');
+                        if (localProds) state.products = JSON.parse(localProds);
+                    });
+
+                fetch('categories.json')
+                    .then(r => r.json())
+                    .then(cats => {
+                        state.categories = cats;
+                        renderCategoriesTable();
+                        populateCategoryDropdown();
+                    })
+                    .catch(() => {});
+
+            } catch(e) {
+                console.error("Storage load error:", e);
+                state.orders = DEFAULT_ORDERS;
+                state.keys = DEFAULT_KEYS;
+            }
+        }
+
+        // ==========================================
+        // 2. AUTHENTICATION
+        // ==========================================
+        window.handleLogin = function(e) {
+            e.preventDefault();
+            const u = document.getElementById('auth-username').value.trim();
+            const p = document.getElementById('auth-password').value.trim();
+            const remember = document.getElementById('auth-remember').checked;
+            const errEl = document.getElementById('auth-error');
+
+            if (u === 'admin' && p === 'zeus2026') {
+                const token = 'zeus_token_' + Date.now();
+                if (remember) {
+                    localStorage.setItem('zeus_admin_token', token);
+                } else {
+                    sessionStorage.setItem('zeus_admin_token', token);
+                }
+                state.authenticated = true;
+                document.getElementById('auth-overlay').style.display = 'none';
+                showToast('مرحباً بك يا مدير المتجر! تم تسجيل الدخول بنجاح 👑');
+                initDashboard();
+            } else {
+                errEl.style.display = 'block';
+                errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة! (الافتراضي: admin / zeus2026)';
+            }
+        };
+
+        window.handleLogout = function() {
+            sessionStorage.removeItem('zeus_admin_token');
+            localStorage.removeItem('zeus_admin_token');
+            document.getElementById('auth-overlay').style.display = 'flex';
+            state.authenticated = false;
+            showToast('تم تسجيل الخروج بأمان', 'info');
+        };
+
+        // ==========================================
+        // 3. TABS SWITCHING
+        // ==========================================
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+
+            const panel = document.getElementById(tabId);
+            if (panel) panel.classList.add('active');
+
+            const activeBtn = Array.from(document.querySelectorAll('.nav-item')).find(btn => {
+                const onclick = btn.getAttribute('onclick') || '';
+                return onclick.includes(tabId);
+            });
+            if (activeBtn) activeBtn.classList.add('active');
+
+            state.activeTab = tabId;
+
+            // Title update
+            const titles = {
+                'tab-dashboard': 'الرئيسية والإحصائيات الحية',
+                'tab-orders': 'إدارة ومتابعة طلبات العملاء',
+                'tab-products': 'إدارة وتعديل كتالوج المنتجات',
+                'tab-keys': 'مخزن الأكواد والمفاتيح الرقمية',
+                'tab-categories': 'إدارة تصنيفات وأقسام المتجر',
+                'tab-gateways': 'بوابات الدفع والمحافظ الرقمية',
+                'tab-rates': 'العملات وأسعار الصرف الفورية',
+                'tab-settings': 'إعدادات المتجر العامة والبكسل'
+            };
+            document.getElementById('topbar-title').textContent = titles[tabId] || 'لوحة التحكم';
+
+            // Re-render specifics
+            if (tabId === 'tab-dashboard') updateDashboardKpis();
+            if (tabId === 'tab-orders') renderOrdersTable();
+            if (tabId === 'tab-products') renderProductsTable();
+            if (tabId === 'tab-keys') renderVaultTable();
+            if (tabId === 'tab-categories') renderCategoriesTable();
+            if (tabId === 'tab-rates') renderRatesTable();
+
+            // Mobile close sidebar
+            if (window.innerWidth <= 768) {
+                document.getElementById('main-sidebar').classList.remove('open');
+            }
+        };
+
+        window.toggleSidebar = function() {
+            document.getElementById('main-sidebar').classList.toggle('open');
+        };
+
+        // ==========================================
+        // 4. DASHBOARD KPIS & CHARTS
+        // ==========================================
+        function updateDashboardKpis() {
+            const totalOrders = state.orders.length;
+            const pendingOrders = state.orders.filter(o => o.status === 'pending').length;
+            const paidOrders = state.orders.filter(o => o.status === 'paid' || o.status === 'delivered');
+
+            let totalEgp = paidOrders.reduce((sum, o) => {
+                let amt = parseFloat(o.total_amount) || 0;
+                if (o.currency === 'SAR') amt *= 13.68;
+                else if (o.currency === 'USD' || o.currency === 'USDT') amt *= 51.34;
+                return sum + amt;
+            }, 0);
+
+            let totalUsdt = (totalEgp / 51.34).toFixed(2);
+
+            const availableKeys = state.keys.filter(k => k.is_used === 0).length;
+
+            document.getElementById('stat-total-revenue').textContent = Math.round(totalEgp).toLocaleString('en-US') + ' ج.م';
+            document.getElementById('stat-total-orders').textContent = totalOrders + ' طلب';
+            document.getElementById('stat-pending-orders-hint').textContent = pendingOrders + ' طلب بانتظار المراجعة';
+            document.getElementById('stat-crypto-revenue').textContent = totalUsdt + ' USDT';
+            document.getElementById('stat-keys-count').textContent = availableKeys + ' كود متاح';
+
+            // Badges in sidebar
+            document.getElementById('badge-pending-orders').textContent = pendingOrders;
+            document.getElementById('badge-total-products').textContent = state.products.length;
+            document.getElementById('badge-available-keys').textContent = availableKeys;
+
+            renderRecentOrdersTable();
+            initCharts();
+        }
+
+        function initCharts() {
+            if (state.charts.sales) state.charts.sales.destroy();
+            if (state.charts.pie) state.charts.pie.destroy();
+
+            // Sales Trend Chart
+            const ctxSales = document.getElementById('salesChart');
+            if (ctxSales) {
+                state.charts.sales = new Chart(ctxSales, {
+                    type: 'line',
+                    data: {
+                        labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'اليوم'],
+                        datasets: [{
+                            label: 'المبيعات اليومية (ج.م)',
+                            data: [4200, 6800, 5400, 8900, 11200, 9400, 14820],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#fbbf24',
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            }
+
+            // Payment Methods Pie Chart
+            const ctxPie = document.getElementById('paymentPieChart');
+            if (ctxPie) {
+                state.charts.pie = new Chart(ctxPie, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['MEGA PAY', 'Binance UID', 'USDT TRC20', 'بطاقات مدى / فيزا'],
+                        datasets: [{
+                            data: [45, 28, 18, 9],
+                            backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981', '#06b6d4'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#94a3b8', font: { family: 'Tajawal', size: 11 } }
+                            }
+                        },
+                        cutout: '72%'
+                    }
+                });
+            }
+        }
+
+        // ==========================================
+        // 5. ORDERS RENDERING & ACTIONS
+        // ==========================================
+        function renderRecentOrdersTable() {
+            const tbody = document.getElementById('recent-orders-tbody');
+            if (!tbody) return;
+            const recent = state.orders.slice(0, 5);
+            tbody.innerHTML = recent.map(o => `
+                <tr>
+                    <td><strong class="font-en text-primary">#${o.id}</strong></td>
+                    <td>
+                        <div style="font-weight:700;">${o.customer_name}</div>
+                        <div style="font-size:11px; color:var(--text-dim);" class="font-en">${o.customer_phone || ''}</div>
+                    </td>
+                    <td>${o.items && o.items[0] ? o.items[0].title : 'منتج رقمي'}</td>
+                    <td><strong class="font-en">${parseFloat(o.total_amount).toLocaleString('en-US')} ${o.currency}</strong></td>
+                    <td><span class="badge" style="background:rgba(255,255,255,0.08);">${getPaymentBadgeText(o.payment_method)}</span></td>
+                    <td>${getStatusBadgeHtml(o.status)}</td>
+                    <td>
+                        <button class="btn btn-outline btn-sm btn-icon" title="عرض التفاصيل" onclick="openOrderModal('${o.id}')">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.renderOrdersTable = function() {
+            const tbody = document.getElementById('orders-tbody');
+            if (!tbody) return;
+
+            let filtered = state.orders;
+            if (state.currentFilter !== 'all') {
+                filtered = filtered.filter(o => o.status === state.currentFilter);
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">لا توجد طلبات مطابقة</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(o => `
+                <tr>
+                    <td>
+                        <strong class="font-en text-primary">#${o.id}</strong>
+                        <button onclick="navigator.clipboard.writeText('${o.id}'); showToast('تم نسخ رقم الطلب');" style="background:none; border:none; color:var(--text-dim); cursor:pointer; margin-right:4px;">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </td>
+                    <td style="font-size:11px; color:var(--text-muted);" class="font-en">
+                        ${formatDate(o.created_at)}
+                    </td>
+                    <td>
+                        <div style="font-weight:700;">${o.customer_name}</div>
+                        <a href="https://wa.me/${(o.customer_phone||'').replace(/[^0-9]/g,'')}" target="_blank" style="font-size:11px; color:var(--success); text-decoration:none;" class="font-en">
+                            <i class="fa-brands fa-whatsapp"></i> ${o.customer_phone || 'بدون هاتف'}
+                        </a>
+                    </td>
+                    <td>
+                        <div style="font-weight:600; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${o.items && o.items[0] ? o.items[0].title : 'منتج رقمي'}
+                        </div>
+                        <span style="font-size:11px; color:var(--text-dim);">الكمية: ${o.items && o.items[0] ? (o.items[0].quantity||1) : 1}</span>
+                    </td>
+                    <td>
+                        <strong class="font-en" style="color:#fbbf24;">${parseFloat(o.total_amount).toLocaleString('en-US')} ${o.currency}</strong>
+                    </td>
+                    <td>
+                        <span class="badge" style="background:rgba(255,255,255,0.08);">${getPaymentBadgeText(o.payment_method)}</span>
+                    </td>
+                    <td>${getStatusBadgeHtml(o.status)}</td>
+                    <td>
+                        ${o.delivered_key ? 
+                            `<span class="badge badge-delivered font-en" title="${o.delivered_key}"><i class="fa-solid fa-key"></i> تم التسليم</span>` : 
+                            `<button class="btn btn-outline btn-sm" style="color:var(--primary); font-size:11px;" onclick="quickDeliverKey('${o.id}')"><i class="fa-solid fa-paper-plane"></i> تسليم كود</button>`
+                        }
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-outline btn-sm btn-icon" title="عرض وتعديل" onclick="openOrderModal('${o.id}')">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            ${o.status === 'pending' ? `
+                                <button class="btn btn-success btn-sm btn-icon" title="تأكيد الدفع" onclick="setOrderStatus('${o.id}', 'paid')">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            ` : ''}
+                            ${o.status !== 'cancelled' ? `
+                                <button class="btn btn-danger btn-sm btn-icon" title="إلغاء الطلب" onclick="setOrderStatus('${o.id}', 'cancelled')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.filterOrders = function(status, btn) {
+            state.currentFilter = status;
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderOrdersTable();
+        };
+
+        window.setOrderStatus = function(orderId, newStatus) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                saveOrdersToStorage();
+                renderOrdersTable();
+                updateDashboardKpis();
+                showToast(`تم تحديث حالة الطلب #${orderId} إلى: ${getStatusText(newStatus)}`);
+            }
+        };
+
+        window.openOrderModal = function(orderId) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            document.getElementById('modal-order-title').textContent = `تفاصيل الطلب #${order.id}`;
+            const body = document.getElementById('modal-order-body');
+
+            const item = (order.items && order.items[0]) ? order.items[0] : { title: "اشتراك رقمي", price: order.total_amount, quantity: 1 };
+            const cleanPhone = (order.customer_phone || '').replace(/[^0-9]/g, '');
+
+            body.innerHTML = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom: 20px;">
+                    <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid var(--border);">
+                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">معلومات العميل</div>
+                        <div style="font-weight:800; font-size:15px; margin-bottom:4px;">${order.customer_name}</div>
+                        <div style="font-size:12px; color:var(--text-dim);" class="font-en">📞 ${order.customer_phone || 'لا يوجد'}</div>
+                        <div style="font-size:12px; color:var(--text-dim);" class="font-en">✉️ ${order.customer_email || 'لا يوجد'}</div>
+                        <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('مرحباً بك ' + order.customer_name + '، بخصوص طلبك في ZEUS STORE رقم #' + order.id)}" target="_blank" class="btn btn-outline btn-sm" style="margin-top:10px; color:var(--success); width:100%;">
+                            <i class="fa-brands fa-whatsapp"></i> محادثة واتساب سريعة
+                        </a>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid var(--border);">
+                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">تفاصيل الدفع والمبلغ</div>
+                        <div style="font-size:22px; font-weight:800; color:#fbbf24; margin-bottom:4px;" class="font-en">
+                            ${parseFloat(order.total_amount).toLocaleString('en-US')} ${order.currency}
+                        </div>
+                        <div style="font-size:12px;">طريقة الدفع: <strong>${getPaymentBadgeText(order.payment_method)}</strong></div>
+                        <div style="font-size:12px; margin-top:4px;">الحالة الحالية: ${getStatusBadgeHtml(order.status)}</div>
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:6px;" class="font-en">تاريخ الطلب: ${formatDate(order.created_at)}</div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
+                    <h4 style="font-size:13px; font-weight:700; margin-bottom:10px; color:var(--primary);">المنتجات المطلوبة</h4>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>${item.title}</strong>
+                            <div style="font-size:11px; color:var(--text-muted);">الكمية: ${item.quantity || 1}</div>
+                        </div>
+                        <div style="font-weight:700;" class="font-en">${parseFloat(item.price || order.total_amount).toLocaleString('en-US')} ${order.currency}</div>
+                    </div>
+                </div>
+
+                <!-- DIGITAL KEY DELIVERY BOX -->
+                <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:16px; margin-bottom:20px;">
+                    <h4 style="font-size:14px; font-weight:700; color:var(--primary); margin-bottom:8px;">
+                        <i class="fa-solid fa-key"></i> تسليم الكود الرقمي للعميل (Digital Key)
+                    </h4>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="modal-delivered-key" class="form-control font-en" value="${order.delivered_key || ''}" placeholder="أدخل الكود أو السيريال هنا">
+                        <button class="btn btn-outline btn-sm" onclick="autoPickKeyForModal('${item.id || ''}')" title="جلب كود تلقائي من المخزن">
+                            <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> كود من المخزن
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-success btn-sm" onclick="deliverKeyViaModal('${order.id}')">
+                            <i class="fa-solid fa-check"></i> حفظ وتسليم الكود
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="sendWhatsAppDelivery('${order.id}')">
+                            <i class="fa-brands fa-whatsapp text-success"></i> إرسال الكود في رسالة واتساب
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:16px;">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span style="font-size:12px; color:var(--text-muted);">تغيير الحالة:</span>
+                        <select id="modal-change-status" class="form-control" style="width:auto; padding:6px 12px; font-size:12px;">
+                            <option value="pending" ${order.status==='pending'?'selected':''}>قيد الانتظار</option>
+                            <option value="paid" ${order.status==='paid'?'selected':''}>تم الدفع</option>
+                            <option value="delivered" ${order.status==='delivered'?'selected':''}>مكتمل ومسلّم</option>
+                            <option value="cancelled" ${order.status==='cancelled'?'selected':''}>ملغي</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="saveOrderStatusFromModal('${order.id}')">تحديث</button>
+                    </div>
+
+                    <button class="btn btn-outline btn-sm" onclick="printInvoice('${order.id}')">
+                        <i class="fa-solid fa-print"></i> طباعة الفاتورة
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('modal-order').classList.add('active');
+        };
+
+        window.closeOrderModal = function() {
+            document.getElementById('modal-order').classList.remove('active');
+        };
+
+        window.autoPickKeyForModal = function(productId) {
+            const avail = state.keys.find(k => k.is_used === 0);
+            if (avail) {
+                document.getElementById('modal-delivered-key').value = avail.serial_key;
+                showToast(`تم جلب كود متوفر: ${avail.serial_key}`);
+            } else {
+                showToast('لا توجد أكواد متوفرة في المخزن! أضف أكواداً من تبويب المخزن', 'info');
+            }
+        };
+
+        window.deliverKeyViaModal = function(orderId) {
+            const keyVal = document.getElementById('modal-delivered-key').value.trim();
+            if (!keyVal) {
+                showToast('يرجى إدخال الكود الرقمي أولاً', 'error');
+                return;
+            }
+            const order = state.orders.find(o => o.id === orderId);
+            if (order) {
+                order.delivered_key = keyVal;
+                order.status = 'delivered';
+
+                // Mark key used in vault
+                const vaultKey = state.keys.find(k => k.serial_key === keyVal);
+                if (vaultKey) {
+                    vaultKey.is_used = 1;
+                    vaultKey.order_id = orderId;
+                    saveVaultToStorage();
+                }
+
+                saveOrdersToStorage();
+                closeOrderModal();
+                renderOrdersTable();
+                updateDashboardKpis();
+                showToast(`تم تسليم الكود وتحديث الطلب #${orderId} لمكتمل بنجاح! 🔑`);
+            }
+        };
+
+        window.sendWhatsAppDelivery = function(orderId) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+            const key = document.getElementById('modal-delivered-key').value.trim() || order.delivered_key;
+            if (!key) {
+                showToast('يرجى تعيين الكود أولاً قبل الإرسال', 'error');
+                return;
+            }
+            const cleanPhone = (order.customer_phone || '').replace(/[^0-9]/g, '');
+            const msg = `⚡️ تحية طيبة من ZEUS STORE!\nعزيزي العميل ${order.customer_name}، تم تأكيد طلبك رقم #${order.id}.\n\n🔑 كود التفعيل الخاص بك:\n${key}\n\nشكراً لثقتكم بنا، ونتمنى لكم تجربة مميزة!`;
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        window.saveOrderStatusFromModal = function(orderId) {
+            const newStatus = document.getElementById('modal-change-status').value;
+            setOrderStatus(orderId, newStatus);
+            closeOrderModal();
+        };
+
+        window.quickDeliverKey = function(orderId) {
+            openOrderModal(orderId);
+            setTimeout(() => {
+                autoPickKeyForModal();
+            }, 100);
+        };
+
+        // ==========================================
+        // 6. PRODUCTS CATALOG
+        // ==========================================
+        function renderProductsTable() {
+            const tbody = document.getElementById('products-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = state.products.map(p => `
+                <tr>
+                    <td>
+                        <img src="${p.image || 'assets/logo-ar.webp'}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--border);">
+                    </td>
+                    <td>
+                        <div style="font-weight:700;">${p.title}</div>
+                        <div style="font-size:11px; color:var(--text-dim);" class="font-en">${p.platform || 'iOS / Android'} — ${p.duration || '30D'}</div>
+                    </td>
+                    <td><span class="badge" style="background:rgba(255,255,255,0.06);">${p.category_slug || 'gaming'}</span></td>
+                    <td class="font-en"><strong>${p.price_egp || Math.round(p.price_sar * 13.68)} ج.م</strong></td>
+                    <td class="font-en">${p.price_sar} ر.س</td>
+                    <td class="font-en text-primary">${p.price_usd || p.price_usdt || 0} $</td>
+                    <td>
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${p.in_stock !== false ? 'checked' : ''} onchange="toggleProductStock('${p.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <button onclick="toggleProductFeatured('${p.id}')" style="background:none; border:none; color:${p.featured ? '#fbbf24' : 'var(--text-dim)'}; font-size:16px; cursor:pointer;">
+                            <i class="fa-solid fa-star"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-outline btn-sm btn-icon" onclick="editProduct('${p.id}')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteProduct('${p.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.openProductModal = function() {
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-id').value = '';
+            document.getElementById('modal-product-title').textContent = 'إضافة منتج رقمي جديد';
+            populateCategoryDropdown();
+            document.getElementById('modal-product').classList.add('active');
+        };
+
+        window.closeProductModal = function() {
+            document.getElementById('modal-product').classList.remove('active');
+        };
+
+        window.editProduct = function(productId) {
+            const p = state.products.find(x => x.id === productId);
+            if (!p) return;
+            populateCategoryDropdown();
+            document.getElementById('modal-product-title').textContent = 'تعديل المنتج';
+            document.getElementById('prod-id').value = p.id;
+            document.getElementById('prod-title').value = p.title;
+            document.getElementById('prod-category').value = p.category_slug || 'gaming-subs';
+            document.getElementById('prod-image').value = p.image || 'assets/product_sample.webp';
+            document.getElementById('prod-price-egp').value = p.price_egp || 0;
+            document.getElementById('prod-price-sar').value = p.price_sar || 0;
+            document.getElementById('prod-price-usd').value = p.price_usd || 0;
+            document.getElementById('prod-price-usdt').value = p.price_usdt || p.price_usd || 0;
+            document.getElementById('prod-original-price').value = p.original_price_sar || 0;
+            document.getElementById('prod-badge').value = p.badge || '';
+            document.getElementById('prod-duration').value = p.duration || '30 يوماً';
+            document.getElementById('prod-platform').value = p.platform || 'الكل';
+            document.getElementById('prod-desc').value = p.description || '';
+            document.getElementById('prod-in-stock').checked = p.in_stock !== false;
+            document.getElementById('prod-featured').checked = !!p.featured;
+
+            document.getElementById('modal-product').classList.add('active');
+        };
+
+        window.saveProductForm = function(e) {
+            e.preventDefault();
+            const pid = document.getElementById('prod-id').value || ('zeus-' + Date.now().toString(36));
+            const existingIdx = state.products.findIndex(x => x.id === pid);
+
+            const productData = {
+                id: pid,
+                title: document.getElementById('prod-title').value.trim(),
+                slug: pid,
+                category_slug: document.getElementById('prod-category').value,
+                image: document.getElementById('prod-image').value.trim() || 'assets/product_sample.webp',
+                price_egp: parseFloat(document.getElementById('prod-price-egp').value) || 0,
+                price_sar: parseFloat(document.getElementById('prod-price-sar').value) || 0,
+                price_usd: parseFloat(document.getElementById('prod-price-usd').value) || 0,
+                price_usdt: parseFloat(document.getElementById('prod-price-usdt').value) || 0,
+                original_price_sar: parseFloat(document.getElementById('prod-original-price').value) || 0,
+                badge: document.getElementById('prod-badge').value.trim(),
+                duration: document.getElementById('prod-duration').value.trim(),
+                platform: document.getElementById('prod-platform').value.trim(),
+                description: document.getElementById('prod-desc').value.trim(),
+                in_stock: document.getElementById('prod-in-stock').checked,
+                featured: document.getElementById('prod-featured').checked
+            };
+
+            if (existingIdx > -1) {
+                state.products[existingIdx] = productData;
+            } else {
+                state.products.unshift(productData);
+            }
+
+            localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
+            closeProductModal();
+            renderProductsTable();
+            populateProductSelectors();
+            updateDashboardKpis();
+            showToast('تم حفظ بيانات المنتج بنجاح! 🛒');
+        };
+
+        window.deleteProduct = function(productId) {
+            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                state.products = state.products.filter(p => p.id !== productId);
+                localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
+                renderProductsTable();
+                updateDashboardKpis();
+                showToast('تم حذف المنتج بنجاح', 'info');
+            }
+        };
+
+        window.toggleProductStock = function(productId, inStock) {
+            const p = state.products.find(x => x.id === productId);
+            if (p) {
+                p.in_stock = inStock;
+                localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
+                showToast(inStock ? 'تم تفعيل توفر المنتج بالمخزن' : 'تم تعيين المنتج كنافذ المخزون');
+            }
+        };
+
+        window.toggleProductFeatured = function(productId) {
+            const p = state.products.find(x => x.id === productId);
+            if (p) {
+                p.featured = !p.featured;
+                localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
+                renderProductsTable();
+                showToast(p.featured ? 'تم تمييز المنتج في الصفحة الرئيسية ⭐' : 'تمت إزالة التمييز');
+            }
+        };
+
+        // ==========================================
+        // 7. DIGITAL KEYS VAULT
+        // ==========================================
+        function populateProductSelectors() {
+            const select = document.getElementById('vault-product-select');
+            if (!select) return;
+            select.innerHTML = state.products.map(p => `
+                <option value="${p.id}">${p.title}</option>
+            `).join('');
+            renderVaultTable();
+        }
+
+        window.renderVaultTable = function() {
+            const tbody = document.getElementById('vault-tbody');
+            const select = document.getElementById('vault-product-select');
+            if (!tbody || !select) return;
+
+            const selectedProdId = select.value;
+            const keysForProd = state.keys.filter(k => !selectedProdId || k.product_id === selectedProdId);
+
+            const availCount = keysForProd.filter(k => k.is_used === 0).length;
+            const usedCount = keysForProd.filter(k => k.is_used === 1).length;
+
+            document.getElementById('vault-count-available').textContent = availCount;
+            document.getElementById('vault-count-used').textContent = usedCount;
+
+            if (keysForProd.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">لا توجد أكواد مضافة لهذا المنتج حتى الآن</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = keysForProd.map((k, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>
+                        <span class="font-en" style="letter-spacing:1px; font-weight:700; color:#fff;">${k.serial_key}</span>
+                        <button onclick="navigator.clipboard.writeText('${k.serial_key}'); showToast('تم نسخ الكود');" style="background:none; border:none; color:var(--text-dim); cursor:pointer; margin-right:6px;">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </td>
+                    <td><small>${getProductName(k.product_id)}</small></td>
+                    <td>
+                        ${k.is_used === 1 ? 
+                            '<span class="badge badge-delivered">مستخدم / مسلّم</span>' : 
+                            '<span class="badge badge-paid">جاهز للتسليم</span>'
+                        }
+                    </td>
+                    <td class="font-en text-primary">${k.order_id ? '#' + k.order_id : '—'}</td>
+                    <td class="font-en" style="font-size:11px; color:var(--text-muted);">${k.created_at || '2026-09-13'}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteVaultKey(${k.id})" title="حذف الكود"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.saveBulkKeys = function() {
+            const select = document.getElementById('vault-product-select');
+            const textarea = document.getElementById('bulk-keys-input');
+            const prodId = select.value;
+            const text = textarea.value.trim();
+
+            if (!text) {
+                showToast('يرجى كتابة كود واحد على الأقل', 'error');
+                return;
+            }
+
+            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            lines.forEach(keyStr => {
+                state.keys.push({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    product_id: prodId,
+                    serial_key: keyStr,
+                    is_used: 0,
+                    order_id: null,
+                    created_at: new Date().toISOString().slice(0, 16).replace('T', ' ')
+                });
+            });
+
+            saveVaultToStorage();
+            textarea.value = '';
+            renderVaultTable();
+            updateDashboardKpis();
+            showToast(`تمت إضافة ${lines.length} أكواد رقمية إلى المخزن بنجاح! 🔑`);
+        };
+
+        window.deleteVaultKey = function(keyId) {
+            state.keys = state.keys.filter(k => k.id !== keyId);
+            saveVaultToStorage();
+            renderVaultTable();
+            updateDashboardKpis();
+            showToast('تم حذف الكود من المخزن');
+        };
+
+        function saveVaultToStorage() {
+            localStorage.setItem('zeus_vault_keys', JSON.stringify(state.keys));
+        }
+
+        // ==========================================
+        // 8. CATEGORIES
+        // ==========================================
+        function populateCategoryDropdown() {
+            const sel = document.getElementById('prod-category');
+            if (!sel) return;
+            sel.innerHTML = state.categories.map(c => `
+                <option value="${c.slug}">${c.name}</option>
+            `).join('');
+        }
+
+        function renderCategoriesTable() {
+            const tbody = document.getElementById('categories-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = state.categories.map(c => `
+                <tr>
+                    <td><i class="${c.icon || 'fa-solid fa-gamepad'} text-primary" style="font-size:18px;"></i></td>
+                    <td><strong>${c.name}</strong></td>
+                    <td class="font-en text-muted">${c.slug}</td>
+                    <td><span class="badge" style="background:rgba(255,255,255,0.08);">${c.count || 0} منتج</span></td>
+                    <td>
+                        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteCategory('${c.id||c.slug}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.openCategoryModal = function() {
+            document.getElementById('modal-category').classList.add('active');
+        };
+        window.closeCategoryModal = function() {
+            document.getElementById('modal-category').classList.remove('active');
+        };
+        window.saveCategoryForm = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('cat-name').value.trim();
+            const slug = document.getElementById('cat-slug').value.trim();
+            const icon = document.getElementById('cat-icon').value.trim() || 'fa-solid fa-gamepad';
+
+            state.categories.push({ id: slug, name, slug, icon, count: 0 });
+            renderCategoriesTable();
+            populateCategoryDropdown();
+            closeCategoryModal();
+            showToast('تمت إضافة القسم الجديد بنجاح!');
+        };
+        window.deleteCategory = function(catId) {
+            state.categories = state.categories.filter(c => (c.id !== catId && c.slug !== catId));
+            renderCategoriesTable();
+            populateCategoryDropdown();
+            showToast('تم حذف القسم بنجاح');
+        };
+
+        // ==========================================
+        // 9. PAYMENT GATEWAYS SETTINGS
+        // ==========================================
+        window.saveGatewaysSettings = function() {
+            const gateways = {
+                megapay: {
+                    active: document.getElementById('gate-megapay-active').checked,
+                    account: document.getElementById('gate-megapay-account').value.trim(),
+                    name: document.getElementById('gate-megapay-name').value.trim()
+                },
+                binance_uid: {
+                    active: document.getElementById('gate-binance-active').checked,
+                    uid: document.getElementById('gate-binance-uid').value.trim(),
+                    name: document.getElementById('gate-binance-name').value.trim()
+                },
+                binance_giftcard: {
+                    active: document.getElementById('gate-giftcard-active').checked,
+                    hint: document.getElementById('gate-giftcard-hint').value.trim()
+                },
+                usdt_crypto: {
+                    active: document.getElementById('gate-usdt-active').checked,
+                    address: document.getElementById('gate-usdt-address').value.trim()
+                }
+            };
+
+            localStorage.setItem('zeus_payment_gateways', JSON.stringify(gateways));
+            showToast('تم حفظ إعدادات بوابات الدفع والمحافظ بنجاح! 💳');
+        };
+
+        // ==========================================
+        // 10. RATES & CURRENCIES
+        // ==========================================
+        function renderRatesTable() {
+            const tbody = document.getElementById('rates-tbody');
+            if (!tbody) return;
+
+            const names = {
+                EGP: 'الجنيه المصري (العملة الأساسية)',
+                SAR: 'الريال السعودي',
+                USD: 'الدولار الأمريكي',
+                USDT: 'التيثر الرقمي (Tether USD)',
+                AED: 'الدرهم الإماراتي',
+                KWD: 'الدينار الكويتي',
+                IQD: 'الدينار العراقي'
+            };
+
+            tbody.innerHTML = Object.entries(state.rates).map(([code, rateToEgp]) => {
+                const rateToUsd = (rateToEgp / (state.rates.USD || 51.34)).toFixed(3);
+                return `
+                    <tr>
+                        <td><strong>${names[code] || code}</strong></td>
+                        <td class="font-en text-primary"><strong>${code}</strong></td>
+                        <td class="font-en">${parseFloat(rateToEgp).toFixed(2)} ج.م</td>
+                        <td class="font-en">${rateToUsd} $</td>
+                        <td>
+                            <input type="number" step="0.01" class="form-control font-en rate-override-input" data-code="${code}" value="${rateToEgp}" style="width:120px; padding:6px 10px;">
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.saveCustomRates = function() {
+            document.querySelectorAll('.rate-override-input').forEach(inp => {
+                const code = inp.dataset.code;
+                const val = parseFloat(inp.value);
+                if (code && !isNaN(val)) state.rates[code] = val;
+            });
+            localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
+            renderRatesTable();
+            showToast('تم حفظ أسعار الصرف الجديدة بنجاح! 💱');
+        };
+
+        window.resetDefaultRates = function() {
+            state.rates = { EGP: 1.0, SAR: 13.68, USD: 51.34, USDT: 51.342, AED: 13.98, KWD: 167.50, IQD: 0.039 };
+            localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
+            renderRatesTable();
+            showToast('تم استرجاع أسعار الصرف الافتراضية');
+        };
+
+        // ==========================================
+        // 11. STORE SETTINGS & MARKETING
+        // ==========================================
+        window.saveStoreSettings = function() {
+            const settings = {
+                nameAr: document.getElementById('set-store-name-ar').value.trim(),
+                nameEn: document.getElementById('set-store-name-en').value.trim(),
+                whatsapp: document.getElementById('set-whatsapp').value.trim(),
+                telegram: document.getElementById('set-telegram').value.trim(),
+                announcement: {
+                    active: document.getElementById('set-announcement-active').checked,
+                    text: document.getElementById('set-announcement-text').value.trim()
+                },
+                pixels: {
+                    tiktok: document.getElementById('set-tiktok-pixel').value.trim(),
+                    meta: document.getElementById('set-meta-pixel').value.trim(),
+                    snapchat: document.getElementById('set-snap-pixel').value.trim(),
+                    ga: document.getElementById('set-ga-tag').value.trim()
+                },
+                telegramBot: {
+                    token: document.getElementById('set-tg-token').value.trim(),
+                    chatId: document.getElementById('set-tg-chat').value.trim()
+                }
+            };
+
+            localStorage.setItem('zeus_store_settings', JSON.stringify(settings));
+            showToast('تم حفظ إعدادات المتجر والبكسلات بنجاح! ⚙️');
+        };
+
+        window.sendTestTelegramAlert = function() {
+            const token = document.getElementById('set-tg-token').value.trim();
+            const chatId = document.getElementById('set-tg-chat').value.trim();
+            if (!token || !chatId) {
+                showToast('يرجى إدخال Bot Token و Chat ID أولاً', 'error');
+                return;
+            }
+            const msg = '⚡️ *تجربة إشعار ZEUS STORE*\nتم ربط لوحة التحكم بنجاح! ستصلك تنبيهات فورية بكل طلب جديد 👑';
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.ok) {
+                    showToast('تم إرسال التنبيه التجريبي بنجاح إلى تيليجرام! 🔔');
+                } else {
+                    showToast('فشل الإرسال: ' + (res.description || 'تحقق من البيانات'), 'error');
+                }
+            })
+            .catch(() => {
+                showToast('تعذر الاتصال بـ Telegram API', 'error');
+            });
+        };
+
+        // ==========================================
+        // 12. UTILITIES & HELPERS
+        // ==========================================
+        function saveOrdersToStorage() {
+            localStorage.setItem('zeus_orders', JSON.stringify(state.orders));
+        }
+
+        function getProductName(productId) {
+            const p = state.products.find(x => x.id === productId);
+            return p ? p.title : productId;
+        }
+
+        function getPaymentBadgeText(method) {
+            const map = {
+                megapay: 'MEGA PAY',
+                binance_uid: 'Binance UID',
+                binance_giftcard: 'Binance Card',
+                usdt_crypto: 'USDT (TRC20)',
+                mada: 'مدى Mada',
+                card: 'بطاقة بنكية',
+                apple_pay: 'Apple Pay'
+            };
+            return map[method] || method || 'دفع إلكتروني';
+        }
+
+        function getStatusBadgeHtml(status) {
+            const map = {
+                pending: '<span class="badge badge-pending"><i class="fa-regular fa-clock"></i> قيد الانتظار</span>',
+                paid: '<span class="badge badge-paid"><i class="fa-solid fa-check"></i> تم الدفع</span>',
+                delivered: '<span class="badge badge-delivered"><i class="fa-solid fa-key"></i> تم التسليم</span>',
+                cancelled: '<span class="badge badge-cancelled"><i class="fa-solid fa-xmark"></i> ملغي</span>'
+            };
+            return map[status] || `<span class="badge">${status}</span>`;
+        }
+
+        function getStatusText(status) {
+            const map = { pending: 'قيد الانتظار', paid: 'تم الدفع', delivered: 'مكتمل ومسلّم', cancelled: 'ملغي' };
+            return map[status] || status;
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '—';
+            try {
+                const d = new Date(isoStr);
+                return d.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch(e) { return isoStr; }
+        }
+
+        window.exportOrdersCsv = function() {
+            if (state.orders.length === 0) {
+                showToast('لا توجد طلبات لتصديرها');
+                return;
+            }
+            let csv = "Order ID,Customer,Phone,Amount,Currency,Payment,Status,Date\n";
+            state.orders.forEach(o => {
+                csv += `"${o.id}","${o.customer_name}","${o.customer_phone}","${o.total_amount}","${o.currency}","${o.payment_method}","${o.status}","${o.created_at}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zeus_orders_${Date.now()}.csv`;
+            a.click();
+            showToast('تم تصدير ملف الطلبات بنجاح 📁');
+        };
+
+        window.printInvoice = function(orderId) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+            const w = window.open('', '_blank');
+            w.document.write(`
+                <html dir="rtl">
+                <head><title>فاتورة رقم #${order.id} | ZEUS STORE</title>
+                <style>body{font-family:sans-serif; padding:40px; text-align:right;} .box{border:1px solid #ccc; padding:20px; border-radius:10px;} table{width:100%; border-collapse:collapse; margin-top:20px;} th,td{padding:10px; border-bottom:1px solid #eee; text-align:right;}</style>
+                </head>
+                <body>
+                    <div class="box">
+                        <h2>فاتورة طلب رقم #${order.id}</h2>
+                        <p><strong>المتجر:</strong> ZEUS STORE (زيوس ستور)</p>
+                        <p><strong>العميل:</strong> ${order.customer_name} (${order.customer_phone})</p>
+                        <p><strong>طريقة الدفع:</strong> ${getPaymentBadgeText(order.payment_method)}</p>
+                        <p><strong>الحالة:</strong> ${getStatusText(order.status)}</p>
+                        ${order.delivered_key ? `<p><strong>الكود الرقمي المسلّم:</strong> <code>${order.delivered_key}</code></p>` : ''}
+                        <table>
+                            <tr><th>المنتج</th><th>المبلغ</th></tr>
+                            <tr><td>${order.items && order.items[0] ? order.items[0].title : 'منتج رقمي'}</td><td>${order.total_amount} ${order.currency}</td></tr>
+                        </table>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `);
+            w.document.close();
+        };
+
+        window.handleGlobalSearch = function(query) {
+            const q = query.trim().toLowerCase();
+            if (!q) {
+                renderOrdersTable();
+                return;
+            }
+            const tbody = document.getElementById('orders-tbody');
+            if (!tbody) return;
+            const matches = state.orders.filter(o => 
+                (o.id && o.id.toLowerCase().includes(q)) ||
+                (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+                (o.customer_phone && o.customer_phone.includes(q))
+            );
+            if (state.activeTab !== 'tab-orders') switchTab('tab-orders');
+            tbody.innerHTML = matches.map(o => `
+                <tr>
+                    <td><strong class="font-en text-primary">#${o.id}</strong></td>
+                    <td class="font-en">${formatDate(o.created_at)}</td>
+                    <td><strong>${o.customer_name}</strong></td>
+                    <td>${o.items && o.items[0] ? o.items[0].title : 'منتج رقمي'}</td>
+                    <td class="font-en">${o.total_amount} ${o.currency}</td>
+                    <td>${getPaymentBadgeText(o.payment_method)}</td>
+                    <td>${getStatusBadgeHtml(o.status)}</td>
+                    <td>${o.delivered_key || '—'}</td>
+                    <td><button class="btn btn-outline btn-sm btn-icon" onclick="openOrderModal('${o.id}')"><i class="fa-solid fa-eye"></i></button></td>
+                </tr>
+            `).join('');
+        };
+
+        function showToast(msg, type = 'success') {
+            const box = document.getElementById('toast-box');
+            if (!box) return;
+            const t = document.createElement('div');
+            t.className = 'toast-msg';
+            const icon = type === 'error' ? 'fa-circle-xmark text-danger' : (type === 'info' ? 'fa-circle-info text-info' : 'fa-circle-check text-success');
+            t.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
+            box.appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transform = 'translateY(10px)';
+                t.style.transition = 'all 0.3s';
+                setTimeout(() => t.remove(), 300);
+            }, 3500);
+        }
+
+        // ==========================================
+        // 13. INITIALIZATION
+        // ==========================================
+        function initDashboard() {
+            loadStorageData();
+            updateDashboardKpis();
+            renderOrdersTable();
+        }
+
+        // Check auth on load
+        if (state.authenticated) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            initDashboard();
+        } else {
+            document.getElementById('auth-overlay').style.display = 'flex';
+        }
+
+    })();
+    </script>
 </body>
 </html>
