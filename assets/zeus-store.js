@@ -121,34 +121,62 @@
     .then(r => r.json())
     .then(data => { catalogData = data; })
     .catch(() => {});
-// ==========================================
-  // 2. STATE HELPERS (LocalStorage)
   // ==========================================
+  // 2. STATE HELPERS (Safe Storage with in-memory fallback)
+  // ==========================================
+  const _storage = {
+    getItem(key) {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          return window.localStorage.getItem(key);
+        }
+        return this[key] || null;
+      } catch(e) {
+        return this[key] || null;
+      }
+    },
+    setItem(key, val) {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(key, val);
+          return;
+        }
+        this[key] = String(val);
+      } catch(e) {
+        this[key] = String(val);
+      }
+    }
+  };
+
   function getCart() {
     try {
-      return JSON.parse(localStorage.getItem('zeus_cart') || '[]');
+      return JSON.parse(_storage.getItem('zeus_cart') || '[]');
     } catch(e) { return []; }
   }
 
   function saveCart(cart) {
-    localStorage.setItem('zeus_cart', JSON.stringify(cart));
+    try {
+      _storage.setItem('zeus_cart', JSON.stringify(cart));
+    } catch(e) {}
     updateCartBadges();
     renderCartDrawer();
   }
 
   function getCurrency() {
-    return localStorage.getItem('zeus_currency') || 'EGP';
+    return _storage.getItem('zeus_currency') || 'EGP';
   }
 
   function setCurrency(curr) {
     if (!CURRENCIES[curr]) return;
-    localStorage.setItem('zeus_currency', curr);
+    try {
+      _storage.setItem('zeus_currency', curr);
+    } catch(e) {}
     applyCurrency(curr);
   }
 
   function getWishlist() {
     try {
-      return JSON.parse(localStorage.getItem('zeus_wishlist') || '[]');
+      return JSON.parse(_storage.getItem('zeus_wishlist') || '[]');
     } catch(e) { return []; }
   }
 
@@ -162,7 +190,9 @@
       list.push(title);
       added = true;
     }
-    localStorage.setItem('zeus_wishlist', JSON.stringify(list));
+    try {
+      _storage.setItem('zeus_wishlist', JSON.stringify(list));
+    } catch(e) {}
     showToast(added ? 'تمت إضافة المنتج للمفضلة ❤️' : 'تمت إزالة المنتج من المفضلة', 'info');
     updateWishlistIcons();
   }
@@ -407,12 +437,23 @@
   // 5. ADD TO CART & BUY NOW HANDLERS
   // ==========================================
   function extractProductInfo(element) {
-    const card = element.closest('.pcv-media, .pcv-press, .group, [class*="product"], [class*="pcv"]') || element.parentElement;
-    const titleEl = card ? card.querySelector('h3, [class*="font-medium"], [class*="line-clamp"]') : null;
+    // Traverse parentElement first to avoid matching the clicked button itself (which has class pcv-press)
+    const card = element.parentElement ? (
+      element.parentElement.closest('.product-card-item, .pcv-flash, [data-product-card], [class*="product-card"], .group, [class*="pcv"]') ||
+      element.parentElement
+    ) : element;
+
+    const titleEl = card ? card.querySelector('h1, h2, h3, h4, [class*="title"], [class*="line-clamp"], [class*="font-semibold"], [class*="font-medium"]') : null;
     const title = titleEl ? titleEl.textContent.trim() : 'منتج رقمي';
 
-    // Price extraction
-    const priceEl = card ? card.querySelector('.price-display, .product-price, [class*="product-price"]') : null;
+    // Price extraction: prioritize active selling price (exclude strikethrough/old price)
+    const priceEl = card ? (
+      card.querySelector('.product-price:not(.line-through) .price-display') ||
+      card.querySelector('.product-price:not(.line-through)') ||
+      card.querySelector('.price-display') ||
+      card.querySelector('[class*="product-price"]')
+    ) : null;
+
     let price = 1000; // default fallback
     if (priceEl) {
       const baseEgpAttr = priceEl.getAttribute('data-egp-price') || (priceEl.querySelector('.price-display') ? priceEl.querySelector('.price-display').getAttribute('data-egp-price') : null);
@@ -428,8 +469,8 @@
       }
     }
 
-    // Image extraction
-    const imgEl = card ? card.querySelector('img') : null;
+    // Image extraction: exclude navigation icons or small logos
+    const imgEl = card ? card.querySelector('img:not(.cur-switch__btn img):not(.nv-brand__img)') : null;
     const image = imgEl ? (imgEl.src || imgEl.getAttribute('src')) : './assets/logo-ar.webp';
 
     return { id: title.replace(/\s+/g, '-').toLowerCase(), title, price, image, quantity: 1 };
@@ -802,6 +843,9 @@
       totalEgp = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1), 0);
     }
 
+    const curr = getCurrency();
+    const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
+
     const usdtInfo = CURRENCIES.USDT || { rate: 1.0 / 51.342, egpPerUnit: 51.342 };
     const egpPerUsdt = usdtInfo.egpPerUnit || (1.0 / usdtInfo.rate);
     const totalUsdt = (totalEgp * usdtInfo.rate).toFixed(2);
@@ -852,10 +896,21 @@
         </div>
       `;
     }
+    if (binanceAmountEl) {
+      binanceAmountEl.textContent = `${totalUsdt} USDT`;
+    }
+
+    // Update amounts in MegaPay panel & buttons
+    const megaAmountHint = document.getElementById('zeus-megapay-amount-hint');
+    if (megaAmountHint) {
+      megaAmountHint.innerHTML = `
+        <div class="text-[10px] text-muted-foreground font-mono">
+          القيمة المطلوبة: ${totalUsdt} USDT (${totalEgp.toLocaleString('en-US')} ج.م)
+        </div>
+      `;
+    }
 
     // Update order summary items on checkout page if cart has items
-    const curr = getCurrency();
-    const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
     const checkoutItemsContainer = document.querySelector('.co-sec-items');
     if (checkoutItemsContainer && cart.length > 0) {
       checkoutItemsContainer.innerHTML = cart.map(item => {
@@ -889,14 +944,49 @@
       }).join('');
     }
 
-    // Update checkout totals elements
+    // Update checkout totals elements with mathematically accurate values
+    const originalEgp = Math.round(totalEgp / 0.9); // 10% promo discount
+    const discountEgp = originalEgp - totalEgp;
+    const subtotalEgp = totalEgp;
+
+    const origEl = document.getElementById('zeus-co-original');
+    if (origEl) {
+      origEl.setAttribute('data-egp-price', originalEgp);
+      origEl.innerHTML = formatPriceHtml(originalEgp * currInfo.rate, curr);
+    }
+    const discEl = document.getElementById('zeus-co-discount');
+    if (discEl) {
+      discEl.setAttribute('data-egp-price', discountEgp);
+      discEl.innerHTML = formatPriceHtml(discountEgp * currInfo.rate, curr);
+    }
+    const subEl = document.getElementById('zeus-co-subtotal');
+    if (subEl) {
+      subEl.setAttribute('data-egp-price', subtotalEgp);
+      subEl.innerHTML = formatPriceHtml(subtotalEgp * currInfo.rate, curr);
+    }
+    const totEl = document.getElementById('zeus-co-total');
+    if (totEl) {
+      totEl.setAttribute('data-egp-price', totalEgp);
+      totEl.innerHTML = formatPriceHtml(totalEgp * currInfo.rate, curr);
+    }
+
+    // Fallback if elements do not have explicit IDs
     const totalsContainer = document.querySelector('.co-sec-totals');
-    if (totalsContainer) {
-      totalsContainer.querySelectorAll('.price-display').forEach(p => {
-        p.setAttribute('data-egp-price', totalEgp);
-        const converted = totalEgp * currInfo.rate;
-        p.innerHTML = formatPriceHtml(converted, curr);
-      });
+    if (totalsContainer && (!origEl || !discEl || !subEl || !totEl)) {
+      const priceDisplays = totalsContainer.querySelectorAll('.price-display');
+      if (priceDisplays.length >= 4) {
+        priceDisplays[0].setAttribute('data-egp-price', originalEgp);
+        priceDisplays[0].innerHTML = formatPriceHtml(originalEgp * currInfo.rate, curr);
+
+        priceDisplays[1].setAttribute('data-egp-price', discountEgp);
+        priceDisplays[1].innerHTML = formatPriceHtml(discountEgp * currInfo.rate, curr);
+
+        priceDisplays[2].setAttribute('data-egp-price', subtotalEgp);
+        priceDisplays[2].innerHTML = formatPriceHtml(subtotalEgp * currInfo.rate, curr);
+
+        priceDisplays[3].setAttribute('data-egp-price', totalEgp);
+        priceDisplays[3].innerHTML = formatPriceHtml(totalEgp * currInfo.rate, curr);
+      }
     }
 
     return { totalEgp, totalUsdt };
@@ -904,6 +994,14 @@
 
   function initCheckoutPage() {
     if (!window.location.pathname.includes('checkout')) return;
+
+    // Window wheel delegation for desktop
+    window.addEventListener('wheel', function(e) {
+      const scroller = document.querySelector('.app-scroller');
+      if (scroller && e.target && !scroller.contains(e.target)) {
+        scroller.scrollTop += e.deltaY;
+      }
+    }, { passive: true });
 
     const { totalEgp, totalUsdt } = updateCheckoutAmounts();
 
@@ -1127,7 +1225,7 @@
 
       // Buy Now buttons
       const buyNowBtn = e.target.closest('button');
-      if (buyNowBtn && buyNowBtn.textContent.includes('اشتر الآن')) {
+      if (buyNowBtn && (buyNowBtn.textContent.includes('اشتر') || buyNowBtn.textContent.includes('شراء')) && !buyNowBtn.closest('.co-page')) {
         handleBuyNow(e, buyNowBtn);
         return;
       }
@@ -1150,7 +1248,8 @@
       CURRENCIES,
       getCart,
       saveCart,
-      formatAmount
+      formatAmount,
+      _storage
     };
 
     console.log('⚡️ ZEUS STORE Engine loaded and fully active.');
