@@ -95,6 +95,7 @@
 
         /* AUTH SCREEN */
         #auth-overlay {
+            display: none !important;
             position: fixed;
             inset: 0;
             background: radial-gradient(circle at center, #172554 0%, #090d16 80%);
@@ -862,10 +863,7 @@
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 <span>عرض المتجر المباشر ↗</span>
             </a>
-            <button class="nav-item" style="color: var(--danger);" onclick="handleLogout()">
-                <i class="fa-solid fa-power-off"></i>
-                <span>تسجيل الخروج</span>
-            </button>
+            <a href="products.html" target="_blank" class="nav-item" style="color: var(--primary);"><i class="fa-solid fa-cart-shopping"></i><span>تصفح المنتجات ↗</span></a>
         </div>
     </aside>
 
@@ -1592,7 +1590,7 @@
         ];
 
         let state = {
-            authenticated: !!sessionStorage.getItem('zeus_admin_token') || !!localStorage.getItem('zeus_admin_token'),
+            authenticated: true,
             activeTab: 'tab-dashboard',
             orders: [],
             products: [],
@@ -2682,13 +2680,10 @@
             renderOrdersTable();
         }
 
-        // Check auth on load
-        if (state.authenticated) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            initDashboard();
-        } else {
-            document.getElementById('auth-overlay').style.display = 'flex';
-        }
+        // Direct Access: No login barrier
+        const overlay = document.getElementById('auth-overlay');
+        if (overlay) overlay.style.display = 'none';
+        initDashboard();
 
     })();
     </script>
