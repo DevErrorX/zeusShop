@@ -708,25 +708,24 @@
 
         if (m === method) {
           // Highlight active option
-          opt.classList.remove('border-white/10');
           if (m === 'megapay') {
-            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-cyan-500 bg-cyan-500/10 border-cyan-500/30';
-            if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-cyan-400 flex items-center justify-center bg-cyan-500/20';
-            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400';
+            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-primary bg-primary/5 border-primary/40 shadow-sm';
+            if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-primary flex items-center justify-center bg-primary/20 shrink-0';
+            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-primary';
           } else if (m === 'binance_uid') {
-            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-amber-500 bg-amber-500/10 border-amber-500/30';
-            if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-amber-400 flex items-center justify-center bg-amber-500/20';
-            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-amber-500 bg-amber-500/5 border-amber-500/40 shadow-sm';
+            if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-amber-500 flex items-center justify-center bg-amber-500/20 shrink-0';
+            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
           } else if (m === 'binance_giftcard') {
-            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-purple-500 bg-purple-500/10 border-purple-500/30';
-            if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-purple-400 flex items-center justify-center bg-purple-500/20';
-            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-400';
+            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-purple-500 bg-purple-500/5 border-purple-500/40 shadow-sm';
+            if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-purple-500 flex items-center justify-center bg-purple-500/20 shrink-0';
+            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-500';
           }
           if (panel) panel.classList.remove('hidden');
         } else {
           // Deactivate
-          opt.className = 'zeus-pay-option rounded-2xl border border-white/10 bg-slate-900/60 hover:bg-slate-900/90 transition-all duration-300 overflow-hidden';
-          if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center';
+          opt.className = 'zeus-pay-option rounded-2xl border border-border/70 bg-card hover:bg-muted/30 transition-all duration-300 overflow-hidden shadow-xs';
+          if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-border/80 flex items-center justify-center shrink-0';
           if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-transparent';
           if (panel) panel.classList.add('hidden');
         }
@@ -759,7 +758,7 @@
     });
 
     // Handle "اضغط هنا للدفع الآن" / Submit Checkout Button
-    const payBtn = Array.from(document.querySelectorAll('button')).find(b => 
+    const payBtn = document.getElementById('zeus-checkout-submit-btn') || Array.from(document.querySelectorAll('button')).find(b => 
       b.textContent.includes('اضغط هنا للدفع') || b.textContent.includes('الدفع الآن') || b.closest('.co-sec-submit')
     );
     if (payBtn) {
