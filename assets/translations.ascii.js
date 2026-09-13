@@ -1694,7 +1694,7 @@ window.translations = {
       getItOn: 'Get it on',
       downloadOn: 'Download on',
       terahPowered: 'Powered by Terah',
-      terahLinkAria: 'Squadx',
+      terahLinkAria: 'ZEUS STORE',
       noLinkSet: 'No link set',
       companyTitle: 'Company',
       supportTitle: 'Support',
