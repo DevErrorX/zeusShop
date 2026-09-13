@@ -670,28 +670,98 @@
   // ==========================================
   // 11. CHECKOUT PAGE ENHANCEMENTS (checkout.html)
   // ==========================================
+  let selectedPaymentMethod = 'megapay';
+
   function initCheckoutPage() {
     if (!window.location.pathname.includes('checkout')) return;
 
-    // Populate checkout items from cart
     const cart = getCart();
-    const curr = getCurrency();
-    const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
+    let totalEgp = 3664; // default fallback if cart is empty
+    if (cart.length > 0) {
+      totalEgp = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1), 0);
+    }
+    const totalUsdt = (totalEgp / 50.0).toFixed(2);
 
-    // Payment Gateway Selection
-    const gatewayCards = document.querySelectorAll('[class*="border"][class*="rounded"]');
-    gatewayCards.forEach(card => {
-      if (card.querySelector('img[alt*="USDT"], img[alt*="باي بال"], img[alt*="موبايل"], img[alt*="فيزا"]')) {
-        card.style.cursor = 'pointer';
-        card.onclick = function() {
-          gatewayCards.forEach(c => c.classList.remove('ring-2', 'ring-cyan-500', 'bg-cyan-500/10'));
-          card.classList.add('ring-2', 'ring-cyan-500', 'bg-cyan-500/10');
-        };
-      }
+    // Update USDT expected amounts in panels
+    const binanceAmountEl = document.getElementById('zeus-binance-amount');
+    const giftCardAmountEl = document.getElementById('zeus-giftcard-amount');
+    if (binanceAmountEl) binanceAmountEl.textContent = `${totalUsdt} USDT`;
+    if (giftCardAmountEl) giftCardAmountEl.textContent = `${totalUsdt} USDT`;
+
+    // Payment Gateway Options Selection
+    const payOptions = document.querySelectorAll('.zeus-pay-option');
+    payOptions.forEach(opt => {
+      const header = opt.querySelector('.zeus-pay-header') || opt;
+      header.onclick = function() {
+        const method = opt.dataset.method;
+        selectPaymentMethod(method);
+      };
     });
 
-    // Handle "اضغط هنا للدفع الآن" button
-    const payBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('اضغط هنا للدفع الآن'));
+    function selectPaymentMethod(method) {
+      selectedPaymentMethod = method;
+      payOptions.forEach(opt => {
+        const m = opt.dataset.method;
+        const panel = document.getElementById(`panel-${m}`);
+        const dot = opt.querySelector('.zeus-radio-dot');
+        const innerDot = dot ? dot.querySelector('div') : null;
+
+        if (m === method) {
+          // Highlight active option
+          opt.classList.remove('border-white/10');
+          if (m === 'megapay') {
+            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-cyan-500 bg-cyan-500/10 border-cyan-500/30';
+            if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-cyan-400 flex items-center justify-center bg-cyan-500/20';
+            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400';
+          } else if (m === 'binance_uid') {
+            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-amber-500 bg-amber-500/10 border-amber-500/30';
+            if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-amber-400 flex items-center justify-center bg-amber-500/20';
+            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+          } else if (m === 'binance_giftcard') {
+            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-purple-500 bg-purple-500/10 border-purple-500/30';
+            if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-purple-400 flex items-center justify-center bg-purple-500/20';
+            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-400';
+          }
+          if (panel) panel.classList.remove('hidden');
+        } else {
+          // Deactivate
+          opt.className = 'zeus-pay-option rounded-2xl border border-white/10 bg-slate-900/60 hover:bg-slate-900/90 transition-all duration-300 overflow-hidden';
+          if (dot) dot.className = 'zeus-radio-dot w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center';
+          if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-transparent';
+          if (panel) panel.classList.add('hidden');
+        }
+      });
+
+      // Update submit button text
+      const payBtnText = document.querySelector('.co-sec-submit span');
+      if (payBtnText) {
+        if (method === 'megapay') payBtnText.textContent = 'الانتقال إلى Mega Pay للدفع الآن';
+        else if (method === 'binance_uid') payBtnText.textContent = 'تأكيد تحويل Binance UID واعتماد الطلب';
+        else if (method === 'binance_giftcard') payBtnText.textContent = 'استبدال قسيمة باينانس واعتماد الطلب';
+      }
+    }
+
+    // Copy Buttons inside payment panels
+    document.querySelectorAll('.zeus-copy-btn').forEach(btn => {
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        const targetId = this.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          const textToCopy = targetEl.textContent.trim().replace(' USDT', '');
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast(`تم النسخ إلى الحافظة بنجاح: ${textToCopy} 📋`, 'success');
+          }).catch(() => {
+            showToast(`تم النسخ: ${textToCopy}`, 'info');
+          });
+        }
+      };
+    });
+
+    // Handle "اضغط هنا للدفع الآن" / Submit Checkout Button
+    const payBtn = Array.from(document.querySelectorAll('button')).find(b => 
+      b.textContent.includes('اضغط هنا للدفع') || b.textContent.includes('الدفع الآن') || b.closest('.co-sec-submit')
+    );
     if (payBtn) {
       payBtn.onclick = function(e) {
         e.preventDefault();
@@ -708,9 +778,31 @@
           return;
         }
 
+        // Method-specific validations
+        let extraInfo = '';
+        if (selectedPaymentMethod === 'binance_uid') {
+          const txInput = document.getElementById('zeus-binance-txid');
+          const txid = txInput ? txInput.value.trim() : '';
+          if (!txid) {
+            showToast('يرجى لصق رقم عملية التحويل (Transaction ID) من تطبيق باينانس', 'info');
+            if (txInput) txInput.focus();
+            return;
+          }
+          extraInfo = `رقم العملية: ${txid}`;
+        } else if (selectedPaymentMethod === 'binance_giftcard') {
+          const cardInput = document.getElementById('zeus-giftcard-code');
+          const code = cardInput ? cardInput.value.trim() : '';
+          if (!code) {
+            showToast('يرجى إدخال رمز كرت أو قسيمة باينانس (Redemption Code)', 'info');
+            if (cardInput) cardInput.focus();
+            return;
+          }
+          extraInfo = `كود القسيمة: ${code}`;
+        }
+
         // Generate Order ID
         const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-        showOrderSuccessModal(orderId, email, phone);
+        showOrderSuccessModal(orderId, email, phone, selectedPaymentMethod, extraInfo, totalUsdt);
       };
     }
 
@@ -725,7 +817,14 @@
     });
   }
 
-  function showOrderSuccessModal(orderId, email, phone) {
+  function showOrderSuccessModal(orderId, email, phone, method, extraInfo, totalUsdt) {
+    const methodNames = {
+      megapay: 'MEGA PAY (بطاقة ائتمان)',
+      binance_uid: 'باينانس UID (Binance Pay)',
+      binance_giftcard: 'باينانس GIFT CARD'
+    };
+    const methodName = methodNames[method] || method;
+
     const modalHtml = `
       <div id="zeus-order-modal" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
         <div class="w-full max-w-md bg-slate-900 border border-cyan-500/30 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
@@ -737,10 +836,16 @@
           <div class="px-4 py-2 bg-slate-950 rounded-xl font-mono text-cyan-400 text-lg font-black tracking-wider border border-white/10 select-all">
             ${orderId}
           </div>
-          <p class="text-xs text-slate-400">سيتم إرسال كود التفعيل إلى بريدك (${email}) والتواصل معك عبر الواتساب (${phone}).</p>
+          <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-start space-y-1 text-slate-300">
+            <div><span class="text-slate-400">طريقة الدفع:</span> <strong class="text-white">${methodName}</strong></div>
+            <div><span class="text-slate-400">البريد:</span> <strong class="text-white">${email}</strong></div>
+            <div><span class="text-slate-400">الهاتف:</span> <strong class="text-white">${phone}</strong></div>
+            ${extraInfo ? `<div class="text-amber-400 pt-1 border-t border-white/10 font-mono text-[11px]">${extraInfo}</div>` : ''}
+          </div>
+          <p class="text-xs text-slate-400">تم تسجيل بيانات الدفع، اضغط أدناه لتأكيد الطلب واستلام كود التفعيل فوراً عبر واتساب أو تيليجرام.</p>
           
           <div class="pt-2 flex flex-col gap-2.5">
-            <a href="https://wa.me/201000000000?text=${encodeURIComponent('مرحبا زيوس ستور، قمت بعمل طلب جديد برقم: ' + orderId)}" target="_blank" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition">
+            <a href="https://wa.me/201000000000?text=${encodeURIComponent(`مرحبا زيوس ستور، قمت بعمل طلب جديد:\nرقم الطلب: ${orderId}\nوسيلة الدفع: ${methodName}\n${extraInfo ? extraInfo + '\n' : ''}المبلغ: ${totalUsdt} USDT`)}" target="_blank" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition">
               <span>تأكيد واستلام الكود عبر واتساب</span>
             </a>
             <button onclick="document.getElementById('zeus-order-modal').remove(); window.location.href='index.html';" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold transition">
@@ -754,7 +859,6 @@
     localStorage.removeItem('zeus_cart');
     updateCartBadges();
   }
-
   // ==========================================
   // 12. GLOBAL INITIALIZATION & DELEGATION
   // ==========================================

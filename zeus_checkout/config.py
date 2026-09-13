@@ -30,8 +30,17 @@ class Settings(BaseModel):
     telegram_bot_token: str | None = Field(default_factory=lambda: os.getenv("TELEGRAM_BOT_TOKEN"))
     telegram_chat_id: str | None = Field(default_factory=lambda: os.getenv("TELEGRAM_CHAT_ID"))
     
-    # Crypto / USDT
+    # Crypto & Binance (Pay / UID / Gift Card)
     usdt_trc20_address: str = Field(default_factory=lambda: os.getenv("USDT_TRC20_ADDRESS", "TZeusOfficialStoreTRC20AddressHold"))
     binance_pay_id: str = Field(default_factory=lambda: os.getenv("BINANCE_PAY_ID", "987654321"))
+    binance_uid: str = Field(default_factory=lambda: os.getenv("BINANCE_UID", "987654321"))
+    binance_api_key: str = Field(default_factory=lambda: os.getenv("BINANCE_API_KEY", ""))
+    binance_api_secret: str = Field(default_factory=lambda: os.getenv("BINANCE_API_SECRET", ""))
+    
+    # MegaPay
+    megapay_api_url: str = Field(default_factory=lambda: os.getenv("MEGAPAY_API_URL", "https://api.mega-pay.cc/v1"))
+    megapay_merchant_id: str = Field(default_factory=lambda: os.getenv("MEGAPAY_MERCHANT_ID", ""))
+    megapay_secret: str = Field(default_factory=lambda: os.getenv("MEGAPAY_SECRET", ""))
 
 settings = Settings()
+
