@@ -379,40 +379,61 @@
     
     <div class="space-y-3.5 sm:space-y-4" id="zeus-payment-methods-container">
   
-  <!-- 1. MEGA PAY -->
+  <!-- 1. MEGA PAY (100% SAME AS RAES) -->
   <div class="zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-primary bg-primary/5 border-primary/40 shadow-sm" data-method="megapay">
     <div class="p-3 xs:p-3.5 sm:p-5 cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 zeus-pay-header select-none">
       <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0 shadow-xs">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0 shadow-xs text-primary">
+          <i class="fa-solid fa-credit-card text-lg sm:text-xl"></i>
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-1.5 xs:gap-2 flex-wrap">
-            <h3 class="text-foreground font-bold text-sm xs:text-base sm:text-lg">MEGA PAY</h3>
-            <span class="px-2 py-0.5 rounded-full text-[9px] xs:text-[10px] font-extrabold bg-primary/15 text-primary border border-primary/30 shrink-0">موصى به</span>
+            <h3 class="text-foreground font-bold text-sm xs:text-base sm:text-lg">بطاقة ائتمان / دفع مباشر (MEGA PAY)</h3>
+            <span class="px-2 py-0.5 rounded-full text-[9px] xs:text-[10px] font-extrabold bg-primary/15 text-primary border border-primary/30 shrink-0">فوري ومباشر ⚡️</span>
           </div>
-          <p class="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2 sm:line-clamp-none">الدفع السريع والفوري عبر بوابات الدفع المحلية والبطاقات البنكية</p>
+          <p class="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2 sm:line-clamp-none">دفع آمن بالدينار العراقي والبطاقات البنكية مع تفعيل وتسليم فوري</p>
         </div>
       </div>
       <div class="zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-primary flex items-center justify-center bg-primary/20 shrink-0">
         <div class="w-2.5 h-2.5 rounded-full bg-primary"></div>
       </div>
     </div>
-    
+
     <!-- MegaPay Details Panel -->
-    <div class="zeus-pay-panel px-3.5 xs:px-4 sm:px-5 pb-4 sm:pb-5 pt-3 border-t border-border/40 space-y-3 bg-muted/20" id="panel-megapay">
-      <p class="text-xs text-foreground/90 leading-relaxed">
-        سيتم توجيهك بأمان إلى بوابة <strong>MEGA PAY</strong> لإتمام عملية الدفع بواسطة:
-      </p>
-      <div class="flex items-center gap-2 flex-wrap text-xs">
-        <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-medium shadow-2xs">💳 فيزا وماستركارد</span>
-        <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-medium shadow-2xs">📱 فودافون كاش والمحافظ</span>
-        <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-medium shadow-2xs">⚡️ انستاباي InstaPay</span>
+    <div class="zeus-pay-panel px-3.5 xs:px-4 sm:px-5 pb-4 sm:pb-5 pt-3.5 border-t border-border/40 space-y-3 bg-muted/20" id="panel-megapay">
+      <div class="p-3 sm:p-3.5 rounded-xl bg-card border border-border/70 space-y-1.5 shadow-2xs">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] text-muted-foreground font-medium">قيمة الطلب بالدينار العراقي لدى MegaPay:</span>
+          <span id="zeus-megapay-iqd-amount" class="text-sm sm:text-base font-black text-primary font-mono tabular-nums">0 د.ع</span>
+        </div>
+        <div id="zeus-megapay-amount-hint" class="text-[10px] text-muted-foreground">
+          يتم احتساب السعر تلقائياً وفق أدق تسعير مصرفي معتمد
+        </div>
       </div>
+
+      <p class="text-xs text-foreground/90 leading-relaxed">
+        سيتم توجيهك مباشرة وبأمان تام إلى منصة <strong>MEGA PAY</strong> الرسمية لإتمام الدفع بواسطة:
+      </p>
+      <div class="flex items-center gap-1.5 xs:gap-2 flex-wrap text-xs">
+        <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-medium shadow-2xs flex items-center gap-1.5">
+          <i class="fa-solid fa-credit-card text-primary"></i> <span>فيزا / ماستركارد / مدى</span>
+        </span>
+        <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-medium shadow-2xs flex items-center gap-1.5">
+          <i class="fa-solid fa-mobile-screen-button text-amber-500"></i> <span>زين كاش / كي كارد / آسيا حوالة</span>
+        </span>
+        <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-medium shadow-2xs flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-warning"></i> <span>تسليم وتفعيل تلقائي فوري</span>
+        </span>
+      </div>
+
+      <p class="text-[10.5px] text-muted-foreground leading-relaxed pt-1 flex items-center gap-1.5">
+        <i class="fa-solid fa-shield-halved text-emerald-500 text-xs shrink-0"></i>
+        <span>معاملة مشفرة 256-bit بمعايير الأمان المصرفية العالمية PCI-DSS. لا حاجة لتسجيل حساب.</span>
+      </p>
     </div>
   </div>
 
-  <!-- 2. BINANCE UID -->
+    <!-- 2. BINANCE UID -->
   <div class="zeus-pay-option rounded-2xl border border-border/70 bg-card hover:bg-muted/30 transition-all duration-300 overflow-hidden shadow-xs" data-method="binance_uid">
     <div class="p-3 xs:p-3.5 sm:p-5 cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 zeus-pay-header select-none">
       <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
@@ -519,6 +540,47 @@
   </div>
 
 </div>
+
+    <!-- RAES-STYLE MEGAPAY PENDING PAYMENT STATE -->
+    <div id="zeus-payment-pending-state" class="hidden my-5 p-5 sm:p-7 rounded-3xl border border-primary/30 bg-card/95 shadow-2xl backdrop-blur-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
+      <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
+        <i class="fa-solid fa-bolt text-primary text-2xl animate-pulse"></i>
+      </div>
+      <div>
+        <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-primary/15 text-primary border border-primary/30 mb-2">جاري التحقق تلقائياً ⚡</span>
+        <h3 class="text-lg sm:text-xl font-black text-foreground">بانتظار تأكيد عملية الدفع</h3>
+        <p class="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto mt-1 leading-relaxed">
+          أكمل العملية في صفحة <strong>Mega Pay</strong>. ستظهر نتيجة الطلب هنا بعد وصول إشعار الدفع الموقّع وتسليم كود التفعيل فوراً.
+        </p>
+      </div>
+      
+      <div class="p-3.5 sm:p-4 rounded-2xl bg-muted/40 border border-border/60 max-w-sm mx-auto">
+        <div class="text-xs text-muted-foreground font-medium">المبلغ المطلوب للدفع</div>
+        <div class="text-xl sm:text-2xl font-black text-primary mt-0.5" id="zeus-pending-amount-val">0 د.ع</div>
+        <div class="text-[11px] text-muted-foreground/80 mt-1 font-mono" id="zeus-pending-order-ref">رقم العملية: #ZEUS-WAITING</div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <a id="zeus-pending-open-link" href="#" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs sm:text-sm shadow-md hover:brightness-110 flex items-center gap-2 transition-all">
+          <span>فتح صفحة الدفع</span>
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+        <button type="button" id="zeus-pending-refresh-btn" class="px-4 py-2.5 rounded-xl bg-card border border-border hover:bg-muted/50 text-foreground font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer">
+          <i class="fa-solid fa-rotate text-primary"></i>
+          <span>تحقق الآن</span>
+        </button>
+        <button type="button" id="zeus-pending-cancel-btn" class="px-4 py-2.5 rounded-xl bg-card border border-destructive/30 hover:bg-destructive/10 text-destructive font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer">
+          <i class="fa-solid fa-ban"></i>
+          <span>إلغاء العملية</span>
+        </button>
+      </div>
+
+      <p class="text-[11px] text-muted-foreground/70 max-w-xs mx-auto leading-normal">
+        يتم التحقق تلقائياً كل عدة ثوانٍ. لا تعتمد عملية التسليم على رجوع المتصفح.
+      </p>
+    </div>
+
     
     <div class="ls-skip mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-border/40 flex items-center justify-center gap-2 text-center text-muted-foreground">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-shield-check text-emerald-500 shrink-0"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>

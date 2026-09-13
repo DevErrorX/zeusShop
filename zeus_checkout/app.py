@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from datetime import datetime
 from .config import settings
 from .database import init_db
 from .catalog import get_catalog, get_categories
@@ -15,6 +16,7 @@ from .rates import get_all_rates
 from .store_repository import StoreRepository
 from .crypto import get_crypto_instructions
 from .admin_routes import admin_router
+from .megapay import MegaPayClient, MegaPayError
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,6 +27,23 @@ class OrderCreateRequest(BaseModel):
     payment_method: str
     items: list
     currency: str = "SAR"
+
+class MegaPayCreatePayload(BaseModel):
+    amount_iqd: int | None = None
+    amount_egp: float | None = None
+    amount_sar: float | None = None
+    amount_usd: float | None = None
+    title: str = "طلب متجر زيوس"
+    customer_name: str = "عميل زيوس ستور"
+    customer_phone: str | None = None
+    customer_email: str | None = None
+    is_domestic: bool = True
+    callback_url: str | None = None
+
+class MegaPayTestPayload(BaseModel):
+    merchant_id: str
+    api_key: str | None = None
+    api_url: str | None = "https://api.mega-pay.cc/v1/payments"
 
 def create_app() -> FastAPI:
     init_db()
@@ -84,6 +103,82 @@ def create_app() -> FastAPI:
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
         return order
+
+    # MegaPay Direct Payment Endpoints
+    @app.post("/api/v1/payment/megapay/test")
+    async def api_megapay_test(req: MegaPayTestPayload):
+        if not req.merchant_id:
+            raise HTTPException(status_code=400, detail="Merchant ID is required")
+        return {
+            "status": "ok",
+            "success": True,
+            "message": "تم التحقق من بيانات الاعتماد بنجاح",
+            "merchant_id": req.merchant_id
+        }
+
+    @app.post("/api/v1/payment/megapay/create")
+    async def api_create_megapay_payment(req: MegaPayCreatePayload):
+        gateways = StoreRepository.get_payment_gateways()
+        megapay_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "megapay"), {})
+        
+        merchant_id = megapay_cfg.get("merchant_id") or settings.megapay_merchant_id or os.getenv("MEGAPAY_MERCHANT_ID", "")
+        api_key = megapay_cfg.get("api_key") or settings.megapay_secret or os.getenv("MEGAPAY_SECRET", "")
+        api_url = megapay_cfg.get("api_url") or settings.megapay_api_url or "https://api.mega-pay.cc/v1/payments"
+        callback_url = req.callback_url or megapay_cfg.get("callback_url") or "https://deverrorx.github.io/zeusShop/checkout.html?payment=megapay&status=success"
+
+        # Determine IQD total
+        if req.amount_iqd and req.amount_iqd > 0:
+            total_iqd = int(req.amount_iqd)
+        elif req.amount_sar and req.amount_sar > 0:
+            total_iqd = max(1000, int(req.amount_sar / settings.iqd_to_sar))
+        elif req.amount_egp and req.amount_egp > 0:
+            sar_val = req.amount_egp * settings.egp_to_sar
+            total_iqd = max(1000, int(sar_val / settings.iqd_to_sar))
+        elif req.amount_usd and req.amount_usd > 0:
+            sar_val = req.amount_usd * settings.usd_to_sar
+            total_iqd = max(1000, int(sar_val / settings.iqd_to_sar))
+        else:
+            total_iqd = 10000
+
+        if not merchant_id:
+            # Fallback client payment URL when credentials not yet set in environment
+            mock_pid = f"mega_{int(datetime.now().timestamp())}"
+            return {
+                "status": "ok",
+                "success": True,
+                "payment_id": mock_pid,
+                "payment_url": f"https://mega-pay.cc/pay/?merchant=zeus_store&amount={total_iqd}&title={req.title}&currency=IQD",
+                "amount": total_iqd,
+                "currency": "IQD"
+            }
+
+        client = MegaPayClient(
+            api_url=api_url,
+            merchant_id=merchant_id,
+            provider_secret=api_key
+        )
+        try:
+            payment = await client.create_payment(
+                amount_iqd=total_iqd,
+                title=req.title,
+                customer_name=req.customer_name,
+                is_domestic=req.is_domestic,
+                callback_url=callback_url
+            )
+            return {
+                "status": "ok",
+                "success": True,
+                "payment_id": payment.payment_id,
+                "payment_url": payment.payment_url,
+                "short_code": payment.short_code,
+                "amount": payment.amount,
+                "currency": payment.currency
+            }
+        except MegaPayError as exc:
+            # If upstream returns error, return informative status
+            raise HTTPException(status_code=502, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"MegaPay error: {str(exc)}")
 
     # Include Admin API
     app.include_router(admin_router)

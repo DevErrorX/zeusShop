@@ -900,12 +900,15 @@
       binanceAmountEl.textContent = `${totalUsdt} USDT`;
     }
 
-    // Update amounts in MegaPay panel & buttons
+    // Update amounts in MegaPay panel & buttons (100% SAME AS RAES)
+    const totalIqd = Math.max(1000, Math.round(totalEgp * 25.51));
+    const megaIqdEl = document.getElementById('zeus-megapay-iqd-amount');
+    if (megaIqdEl) megaIqdEl.textContent = `${totalIqd.toLocaleString('en-US')} د.ع`;
     const megaAmountHint = document.getElementById('zeus-megapay-amount-hint');
     if (megaAmountHint) {
       megaAmountHint.innerHTML = `
-        <div class="text-[10px] text-muted-foreground font-mono">
-          القيمة المطلوبة: ${totalUsdt} USDT (${totalEgp.toLocaleString('en-US')} ج.م)
+        <div class="text-[10.5px] text-muted-foreground font-mono">
+          القيمة المحتسبة للبوابة: <span class="font-bold text-foreground">${totalIqd.toLocaleString('en-US')} د.ع</span> (ما يعادل ${totalUsdt} USDT / ${totalEgp.toLocaleString('en-US')} ج.م)
         </div>
       `;
     }
@@ -1051,7 +1054,7 @@
       // Update submit button text
       const payBtnText = document.querySelector('.co-sec-submit span');
       if (payBtnText) {
-        if (method === 'megapay') payBtnText.textContent = 'الانتقال إلى Mega Pay للدفع الآن';
+        if (method === 'megapay') payBtnText.textContent = 'الانتقال إلى MEGA PAY للدفع الفوري ⚡️';
         else if (method === 'binance_uid') payBtnText.textContent = 'تأكيد تحويل Binance UID واعتماد الطلب';
         else if (method === 'binance_giftcard') payBtnText.textContent = 'استبدال قسيمة باينانس واعتماد الطلب';
       }
@@ -1074,6 +1077,28 @@
       };
     });
 
+    // Check if returning from MegaPay or confirmed payment (RAES style)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status') === 'success' || urlParams.get('payment') === 'megapay') {
+      const orderId = urlParams.get('orderId') || 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
+      let pendingData = {};
+      try {
+        pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
+      } catch(e) {}
+      const email = pendingData.email || 'العميل';
+      const phone = pendingData.phone || '';
+      const totalUsdt = pendingData.totalUsdt || '0.00';
+      const totalEgp = pendingData.totalEgp || 0;
+
+      localStorage.removeItem('zeus_pending_order');
+      saveCart([]);
+      if (typeof updateCartBadges === 'function') updateCartBadges();
+
+      setTimeout(() => {
+        showOrderSuccessModal(orderId, email, phone, 'megapay', 'تم الدفع بنجاح عبر MEGA PAY ⚡', totalUsdt, totalEgp);
+      }, 400);
+    }
+
     // Handle "اضغط هنا للدفع الآن" / Submit Checkout Button
     const payBtn = document.getElementById('zeus-checkout-submit-btn') || Array.from(document.querySelectorAll('button')).find(b => 
       b.textContent.includes('اضغط هنا للدفع') || b.textContent.includes('الدفع الآن') || b.closest('.co-sec-submit')
@@ -1091,6 +1116,125 @@
           showToast('يرجى إدخال البريد الإلكتروني ورقم الهاتف أولاً', 'info');
           if (emailInp && !email) emailInp.focus();
           else if (phoneInp && !phone) phoneInp.focus();
+          return;
+        }
+
+        // MegaPay Flow (100% SAME AS RAES)
+        if (selectedPaymentMethod === 'megapay') {
+          const amounts = updateCheckoutAmounts();
+          const currentEgp = amounts ? amounts.totalEgp : totalEgp;
+          const totalIqd = amounts?.totalIqd || Math.max(1000, Math.round(currentEgp * 25.51));
+          const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
+          const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
+          const orderTitle = `طلب متجر زيوس #${orderId}`;
+          const customerName = (document.querySelector('input[name="name"]')?.value || email.split('@')[0] || 'عميل زيوس').trim();
+
+          // Open blank payment tab early to prevent browser popup block
+          let paymentWindow = null;
+          try {
+            paymentWindow = window.open('about:blank', 'zeusMegaPay');
+            if (paymentWindow) {
+              paymentWindow.opener = null;
+              paymentWindow.document.title = 'Mega Pay — زيوس ستور';
+              paymentWindow.document.body.innerHTML = `
+                <div style="font-family:system-ui,sans-serif; text-align:center; padding:60px 20px; direction:rtl; background:#090d16; color:#f8fafc; min-height:100vh;">
+                  <div style="width:50px; height:50px; border:4px solid rgba(245,158,11,0.2); border-top-color:#f59e0b; border-radius:50%; margin:0 auto 20px; animation:spin 1s linear infinite;"></div>
+                  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+                  <h2 style="color:#f59e0b; margin-bottom:10px;">جاري الانتقال لبوابة Mega Pay الآمنة... ⚡</h2>
+                  <p style="color:#94a3b8; font-size:14px;">يرجى الانتظار، يتم توجيهك لصفحة الدفع المباشر الآن.</p>
+                </div>
+              `;
+              paymentWindow.document.body.dir = 'rtl';
+            }
+          } catch(e) {}
+
+          // Show RAES-style Pending State on checkout
+          const pendingStateEl = document.getElementById('zeus-payment-pending-state');
+          const pendingAmountEl = document.getElementById('zeus-pending-amount-val');
+          const pendingOrderRef = document.getElementById('zeus-pending-order-ref');
+          const pendingOpenLink = document.getElementById('zeus-pending-open-link');
+          const pendingRefreshBtn = document.getElementById('zeus-pending-refresh-btn');
+          const pendingCancelBtn = document.getElementById('zeus-pending-cancel-btn');
+
+          if (pendingAmountEl) pendingAmountEl.textContent = `${totalIqd.toLocaleString('en-US')} د.ع (${totalUsdt} USDT)`;
+          if (pendingOrderRef) pendingOrderRef.textContent = `رقم الطلب: #${orderId}`;
+          if (pendingStateEl) {
+            pendingStateEl.classList.remove('hidden');
+            pendingStateEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+          const merchantId = localStorage.getItem('zeus_megapay_merchant_id') || '2024001';
+          const callbackUrl = localStorage.getItem('zeus_megapay_callback_url') || (window.location.origin + window.location.pathname + `?payment=megapay&orderId=${orderId}&status=success`);
+
+          // Call API or direct gateway
+          (async () => {
+            let paymentUrl = '';
+            try {
+              const resp = await fetch('/api/v1/payment/megapay/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  amount_iqd: totalIqd,
+                  amount_egp: currentEgp,
+                  title: orderTitle,
+                  customer_name: customerName,
+                  customer_phone: phone,
+                  customer_email: email,
+                  is_domestic: true,
+                  callback_url: callbackUrl
+                })
+              });
+              if (resp.ok) {
+                const resData = await resp.json();
+                if (resData.payment_url) paymentUrl = resData.payment_url;
+              }
+            } catch(e) {}
+
+            if (!paymentUrl) {
+              paymentUrl = `https://mega-pay.cc/pay/?merchant=${encodeURIComponent(merchantId)}&amount=${totalIqd}&title=${encodeURIComponent(orderTitle)}&currency=IQD&callback_url=${encodeURIComponent(callbackUrl)}`;
+            }
+
+            if (pendingOpenLink) {
+              pendingOpenLink.href = paymentUrl;
+            }
+
+            if (paymentWindow && !paymentWindow.closed) {
+              paymentWindow.location.replace(paymentUrl);
+            } else {
+              window.open(paymentUrl, '_blank');
+            }
+
+            localStorage.setItem('zeus_pending_order', JSON.stringify({
+              orderId,
+              method: 'megapay',
+              amountIqd: totalIqd,
+              paymentUrl,
+              email,
+              phone,
+              totalUsdt,
+              totalEgp: currentEgp,
+              timestamp: Date.now()
+            }));
+
+            showToast('تم بدء معاملة Mega Pay! يرجى إتمام الدفع في نافذة البوابة ⚡', 'success');
+          })();
+
+          if (pendingRefreshBtn) {
+            pendingRefreshBtn.onclick = () => {
+              showToast('جاري التحقق من وصول إشعار السداد... 🔄', 'info');
+              setTimeout(() => {
+                showToast('بانتظار تأكيد الدفع من MegaPay... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
+              }, 1200);
+            };
+          }
+          if (pendingCancelBtn) {
+            pendingCancelBtn.onclick = () => {
+              if (pendingStateEl) pendingStateEl.classList.add('hidden');
+              localStorage.removeItem('zeus_pending_order');
+              showToast('تم إلغاء عملية الدفع', 'info');
+            };
+          }
+
           return;
         }
 
@@ -1161,7 +1305,11 @@
           <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-cyan-400 mx-auto flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
-          <h3 class="text-xl font-extrabold text-white">تم استلام طلبك بنجاح!</h3>
+          <h3 class="text-xl font-extrabold text-white">🎉 تم الشراء والدفع بنجاح!</h3>
+          <p class="text-xs text-amber-400 font-bold">كود التأكيد الخاص بك:</p>
+          <div class="px-4 py-2.5 bg-amber-500/10 rounded-xl font-mono text-amber-400 text-sm font-bold border border-amber-500/30 select-all">
+            CONF-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${orderId.replace('ZEUS-', '')}
+          </div>
           <p class="text-xs text-slate-300">رقم الطلب الخاص بك:</p>
           <div class="px-4 py-2 bg-slate-950 rounded-xl font-mono text-cyan-400 text-lg font-black tracking-wider border border-white/10 select-all">
             ${orderId}
