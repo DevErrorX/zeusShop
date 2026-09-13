@@ -95,11 +95,10 @@
 
         /* AUTH SCREEN */
         #auth-overlay {
-            display: none !important;
             position: fixed;
             inset: 0;
             background: radial-gradient(circle at center, #172554 0%, #090d16 80%);
-            z-index: 99999;
+            z-index: 999999;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -779,16 +778,16 @@
             <div id="auth-error" style="display:none; color: var(--danger); font-size: 12px; margin-bottom: 12px; font-weight: bold;"></div>
 
             <form id="auth-form" onsubmit="handleLogin(event)">
-                <input type="text" id="auth-username" class="auth-input" placeholder="اسم المستخدم (admin)" value="admin" required autocomplete="username">
-                <input type="password" id="auth-password" class="auth-input" placeholder="كلمة المرور (zeus2026)" value="zeus2026" required autocomplete="current-password">
+                <input type="text" id="auth-username" class="auth-input" placeholder="اسم مستخدم الإدارة" required autocomplete="username">
+                <input type="password" id="auth-password" class="auth-input" placeholder="كلمة المرور السرية" required autocomplete="current-password">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; font-size: 12px; color: var(--text-muted);">
                     <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                        <input type="checkbox" id="auth-remember" checked> تذكر جلستي
+                        <input type="checkbox" id="auth-remember" checked> حفظ جلستي في هذا المتصفح
                     </label>
                     <span style="color: var(--primary);">حماية مشفرة 🔒</span>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px;">
-                    <i class="fa-solid fa-right-to-bracket"></i> دخول إلى لوحة التحكم
+                <button type="submit" class="btn btn-primary" id="login-submit-btn" style="width: 100%; padding: 13px;">
+                    <i class="fa-solid fa-lock-open"></i> فتح لوحة التحكم
                 </button>
             </form>
         </div>
@@ -863,7 +862,10 @@
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 <span>عرض المتجر المباشر ↗</span>
             </a>
-            <a href="products.html" target="_blank" class="nav-item" style="color: var(--primary);"><i class="fa-solid fa-cart-shopping"></i><span>تصفح المنتجات ↗</span></a>
+            <button class="nav-item" style="color: var(--danger); background:none; border:none; width:100%; text-align:inherit; cursor:pointer;" onclick="handleLogout()">
+                <i class="fa-solid fa-lock text-danger"></i>
+                <span>قفل اللوحة وتسجيل الخروج</span>
+            </button>
         </div>
     </aside>
 
@@ -1314,10 +1316,36 @@
             <div class="tab-panel" id="tab-settings">
                 <div class="panel-card">
                     <div class="panel-card-header">
-                        <h3><i class="fa-solid fa-gear text-primary"></i> إعدادات المتجر العامة والبكسلات التسويقية</h3>
+                        <h3><i class="fa-solid fa-gear text-primary"></i> إعدادات المتجر العامة والأمان والبكسلات</h3>
                         <button class="btn btn-primary" onclick="saveStoreSettings()">
-                            <i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ كافة الإعدادات
                         </button>
+                    </div>
+
+                    <!-- ADMIN SECURITY CARD -->
+                    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px;">
+                        <h4 style="font-size: 15px; margin-bottom: 8px; color: var(--danger); display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-shield-halved"></i> أمان لوحة التحكم (تغيير اسم المستخدم وكلمة المرور)
+                        </h4>
+                        <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px;">
+                            يمكنك من هنا تعيين كلمة مرور خاصة بك لمنع أي شخص غيرك من دخول لوحة الإدارة نهائياً.
+                        </p>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>اسم مستخدم الأدمن الحالي</label>
+                                <input type="text" id="set-admin-username" class="form-control font-en" value="admin" placeholder="اسم المستخدم">
+                            </div>
+                            <div class="form-group">
+                                <label>كلمة المرور الجديدة</label>
+                                <input type="password" id="set-admin-password" class="form-control font-en" placeholder="أدخل كلمة مرور قوية جديدة">
+                            </div>
+                            <div class="form-group" style="justify-content: flex-end;">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="changeAdminCredentials()" style="height: 42px;">
+                                    <i class="fa-solid fa-key"></i> حفظ وتثبيت كلمة المرور الجديدة
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-grid">
@@ -1590,7 +1618,7 @@
         ];
 
         let state = {
-            authenticated: true,
+            authenticated: !!sessionStorage.getItem('zeus_admin_token') || !!localStorage.getItem('zeus_admin_token'),
             activeTab: 'tab-dashboard',
             orders: [],
             products: [],
@@ -1662,8 +1690,12 @@
             const remember = document.getElementById('auth-remember').checked;
             const errEl = document.getElementById('auth-error');
 
-            if (u === 'admin' && p === 'zeus2026') {
-                const token = 'zeus_token_' + Date.now();
+            // Load saved admin credentials or fall back to defaults
+            const validUser = localStorage.getItem('zeus_admin_username') || 'admin';
+            const validPass = localStorage.getItem('zeus_admin_password') || 'zeus2026';
+
+            if (u === validUser && p === validPass) {
+                const token = 'zeus_secure_token_' + Date.now();
                 if (remember) {
                     localStorage.setItem('zeus_admin_token', token);
                 } else {
@@ -1671,20 +1703,38 @@
                 }
                 state.authenticated = true;
                 document.getElementById('auth-overlay').style.display = 'none';
-                showToast('مرحباً بك يا مدير المتجر! تم تسجيل الدخول بنجاح 👑');
+                showToast('مرحباً بك! تم فك قفل لوحة التحكم بنجاح 👑');
                 initDashboard();
             } else {
                 errEl.style.display = 'block';
-                errEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة! (الافتراضي: admin / zeus2026)';
+                errEl.textContent = '⛔ عذراً، اسم المستخدم أو كلمة المرور غير صحيحة! يرجى التأكد وإعادة المحاولة.';
             }
         };
 
         window.handleLogout = function() {
             sessionStorage.removeItem('zeus_admin_token');
             localStorage.removeItem('zeus_admin_token');
-            document.getElementById('auth-overlay').style.display = 'flex';
             state.authenticated = false;
-            showToast('تم تسجيل الخروج بأمان', 'info');
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('auth-password').value = '';
+            showToast('تم قفل لوحة التحكم وتسجيل الخروج بنجاح 🔒', 'info');
+        };
+
+        window.changeAdminCredentials = function() {
+            const newUser = document.getElementById('set-admin-username').value.trim();
+            const newPass = document.getElementById('set-admin-password').value.trim();
+            if (!newUser) {
+                showToast('يرجى كتابة اسم مستخدم صحيح', 'error');
+                return;
+            }
+            if (!newPass || newPass.length < 4) {
+                showToast('يرجى إدخال كلمة مرور جديدة مكونة من 4 أحرف/أرقام على الأقل', 'error');
+                return;
+            }
+            localStorage.setItem('zeus_admin_username', newUser);
+            localStorage.setItem('zeus_admin_password', newPass);
+            document.getElementById('set-admin-password').value = '';
+            showToast('تم تحديث اسم المستخدم وكلمة المرور بنجاح! احفظهما جيداً 🔐');
         };
 
         // ==========================================
@@ -2680,10 +2730,17 @@
             renderOrdersTable();
         }
 
-        // Direct Access: No login barrier
-        const overlay = document.getElementById('auth-overlay');
-        if (overlay) overlay.style.display = 'none';
-        initDashboard();
+        // Strict Authentication Barrier: Block unauthorized access
+        const savedUser = localStorage.getItem('zeus_admin_username') || 'admin';
+        const setAdminUserEl = document.getElementById('set-admin-username');
+        if (setAdminUserEl) setAdminUserEl.value = savedUser;
+
+        if (state.authenticated) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            initDashboard();
+        } else {
+            document.getElementById('auth-overlay').style.display = 'flex';
+        }
 
     })();
     </script>
