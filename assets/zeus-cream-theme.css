@@ -1,0 +1,518 @@
+/* ==========================================================================
+   ZEUS STORE - BESPOKE LUXURY CREAM & WARM LIGHT DESIGN SYSTEM
+   Strictly designed using Impeccable Style anti-AI-slop principles.
+   Dominant Palette: Warm Luxury Cream (#FAF7F2), Pure Ivory Plinths (#FFFFFF),
+   Royal Honey Amber (#D97706), Deep Slate Typography (#0F172A).
+   No AI tells, no generic gray/black dark slop, high-contrast artisanal finish.
+   ========================================================================== */
+
+/* 1. COMPREHENSIVE ROOT TOKEN OVERRIDES */
+:root,
+html,
+body,
+[data-theme],
+.dark,
+.theme-dark,
+.theme-light {
+  color-scheme: light !important;
+  --background: #FAF7F2 !important;
+  --foreground: #0F172A !important;
+  --card: #FFFFFF !important;
+  --card-foreground: #0F172A !important;
+  --popover: #FFFFFF !important;
+  --popover-foreground: #0F172A !important;
+  --primary: #D97706 !important;
+  --primary-foreground: #FFFFFF !important;
+  --secondary: #F5EFEB !important;
+  --secondary-foreground: #1E293B !important;
+  --muted: #EFE9E0 !important;
+  --muted-foreground: #64748B !important;
+  --accent: #D97706 !important;
+  --accent-foreground: #FFFFFF !important;
+  --destructive: #DC2626 !important;
+  --destructive-foreground: #FFFFFF !important;
+  --border: #E8E0D2 !important;
+  --input: #E8E0D2 !important;
+  --ring: #D97706 !important;
+  --radius: 14px !important;
+  --shadow-color: 38 30% 80% !important;
+
+  /* Ambient mesh override: replace squadx dark/neon mesh with warm cream subtle gradient */
+  --ambient-mesh: radial-gradient(ellipse 120% 70% at 14% 12%, rgba(217, 119, 6, 0.05), transparent 60%),
+                  radial-gradient(ellipse 72% 84% at 88% 22%, rgba(180, 83, 9, 0.04), transparent 58%) !important;
+  --ambient-aurora: radial-gradient(circle, rgba(217, 119, 6, 0.04) 0%, transparent 70%) !important;
+  --primary-gradient: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+  --accent-gradient: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+  --card-gradient: #FFFFFF !important;
+  --background-gradient: #FAF7F2 !important;
+  --secondary-gradient: #F5EFEB !important;
+
+  /* Bespoke Zeus tokens */
+  --zeus-bg: #FAF7F2;
+  --zeus-bg-subtle: #F5EFEB;
+  --zeus-surface: #FFFFFF;
+  --zeus-surface-card: #FFFFFF;
+  --zeus-surface-elevated: #FDFBF7;
+  --zeus-border: #E8E0D2;
+  --zeus-border-subtle: #F0E8DC;
+  --zeus-border-focus: #D97706;
+  --zeus-text-primary: #0F172A;
+  --zeus-text-secondary: #475569;
+  --zeus-text-muted: #64748B;
+  --zeus-accent: #D97706;
+  --zeus-accent-hover: #B45309;
+  --zeus-accent-light: #FEF3C7;
+  --zeus-accent-subtle: rgba(217, 119, 6, 0.08);
+  --zeus-gold-gradient: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  --zeus-shadow-sm: 0 1px 3px rgba(120, 90, 50, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --zeus-shadow-md: 0 4px 18px -2px rgba(120, 90, 50, 0.07), 0 2px 4px rgba(0, 0, 0, 0.02);
+  --zeus-shadow-hover: 0 16px 36px -6px rgba(180, 83, 9, 0.12), 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* 2. BASE DOCUMENT FOUNDATION */
+html, body {
+  background-color: #FAF7F2 !important;
+  color: #0F172A !important;
+  font-family: 'Tajawal', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-image: 
+    radial-gradient(at 12% 8%, rgba(217, 119, 6, 0.04) 0px, transparent 45%),
+    radial-gradient(at 88% 15%, rgba(180, 83, 9, 0.03) 0px, transparent 45%),
+    radial-gradient(at 50% 90%, rgba(217, 119, 6, 0.03) 0px, transparent 60%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Remove dark squadx loading overlays */
+.disabled-overlay-never-show,
+.loading-screen-overlay,
+div[class*="LoadingScreen"] {
+  background-color: #FAF7F2 !important;
+}
+
+/* 3. NAVIGATION BAR & FLOATING HEADER */
+.nv-pill {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid #E8E0D2 !important;
+  box-shadow: 0 4px 20px -2px rgba(120, 90, 50, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.nv-pill:hover {
+  border-color: rgba(217, 119, 6, 0.3) !important;
+  box-shadow: 0 6px 24px -2px rgba(120, 90, 50, 0.1) !important;
+}
+
+.nv-brand__name {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.5px !important;
+}
+
+.nv-link {
+  color: #475569 !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.nv-link:hover {
+  color: #D97706 !important;
+}
+
+.nv-link.is-active {
+  color: #D97706 !important;
+  background: rgba(217, 119, 6, 0.08) !important;
+  border-radius: 9999px !important;
+}
+
+/* Mobile top bar and bottom bar */
+.nv-mtop,
+.nv-bar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #E8E0D2 !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  box-shadow: 0 2px 12px rgba(120, 90, 50, 0.04) !important;
+}
+
+/* Currency & search button */
+.cur-switch__btn,
+.nv-search__btn,
+.nv-action__btn {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+  color: #0F172A !important;
+}
+
+.cur-switch__btn:hover,
+.nv-search__btn:hover {
+  border-color: #D97706 !important;
+  color: #D97706 !important;
+}
+
+/* Dropdown menus */
+.cur-switch__menu,
+[role="menu"],
+[role="listbox"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+  box-shadow: 0 10px 30px -4px rgba(120, 90, 50, 0.12) !important;
+  border-radius: 16px !important;
+}
+
+/* Cart Badge */
+.nv-cart-badge,
+#cartBadge,
+span[class*="cart-badge"] {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4) !important;
+  font-weight: 800 !important;
+}
+
+/* 4. HERO SECTION & PROMOTIONAL BANNER */
+#heroVideoContainer {
+  border: 1px solid #E8E0D2 !important;
+  box-shadow: 0 8px 30px -4px rgba(120, 90, 50, 0.1) !important;
+  background: #000000 !important;
+  border-radius: 24px !important;
+}
+
+/* Anti-Slop Value Props Plinths */
+.zeus-value-props {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  max-width: 1140px;
+  margin: 2.5rem auto 1.5rem;
+  padding: 0 1rem;
+}
+
+.zeus-prop-card {
+  background: #FFFFFF;
+  border: 1px solid #E8E0D2;
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  box-shadow: 0 2px 10px rgba(120, 90, 50, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.zeus-prop-card:hover {
+  transform: translateY(-3px);
+  border-color: #D97706;
+  box-shadow: 0 8px 24px -3px rgba(180, 83, 9, 0.1);
+}
+
+.zeus-prop-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #FEF3C7;
+  color: #B45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.zeus-prop-text h4 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 0.25rem;
+}
+
+.zeus-prop-text p {
+  font-size: 0.85rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 5. CATEGORY TABS & FILTER BAR */
+div[class*="CategoryTabs"],
+div[class*="category-list"],
+.category-filter-container {
+  background: transparent !important;
+}
+
+button[class*="category"],
+.category-tab-btn {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+  color: #475569 !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+button[class*="category"]:hover,
+.category-tab-btn:hover {
+  border-color: #D97706 !important;
+  color: #D97706 !important;
+}
+
+button[class*="category"][aria-selected="true"],
+button[class*="category"].active,
+.category-tab-btn.active {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
+}
+
+/* 6. PRODUCT CARDS & CATALOG PLINTHS */
+.pcv-flash,
+.product-card-item,
+div[class*="pcv-flash"],
+div[class*="ProductCard"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 2px 8px rgba(120, 90, 50, 0.04) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden !important;
+}
+
+.pcv-flash:hover,
+.product-card-item:hover,
+div[class*="pcv-flash"]:hover,
+div[class*="ProductCard"]:hover {
+  transform: translateY(-5px) !important;
+  border-color: rgba(217, 119, 6, 0.4) !important;
+  box-shadow: 0 16px 36px -6px rgba(180, 83, 9, 0.12), 0 4px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Product card image container */
+.pcv-flash > div:first-child,
+div[class*="ProductCard"] > div:first-child,
+.product-card-image-wrap {
+  background: #FDFBF7 !important;
+  border-bottom: 1px solid #F0E8DC !important;
+}
+
+/* Price styling in cards */
+.pcv-flash [class*="text-primary"],
+.pcv-flash [class*="font-black"],
+[class*="price-current"] {
+  color: #B45309 !important;
+  font-weight: 900 !important;
+}
+
+/* Badges on products */
+span[class*="badge"],
+div[class*="badge"],
+.badge-discount {
+  background: #FEF3C7 !important;
+  color: #B45309 !important;
+  border: 1px solid rgba(217, 119, 6, 0.25) !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+}
+
+/* Primary Action Buttons */
+.btn-primary,
+button[class*="bg-primary"],
+a[class*="bg-primary"],
+.btn-zeus-primary {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.28) !important;
+  font-weight: 800 !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-primary:hover,
+button[class*="bg-primary"]:hover,
+a[class*="bg-primary"]:hover,
+.btn-zeus-primary:hover {
+  filter: brightness(1.06) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35) !important;
+}
+
+/* 7. CART DRAWER & SLIDEOVER */
+div[role="dialog"],
+.cart-drawer,
+div[class*="SheetContent"] {
+  background: #FFFFFF !important;
+  border-left: 1px solid #E8E0D2 !important;
+  box-shadow: -8px 0 36px rgba(120, 90, 50, 0.12) !important;
+}
+
+/* Cart Item Rows */
+div[class*="cart-item"],
+.cart-drawer-item {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #F0E8DC !important;
+}
+
+/* 8. CHECKOUT PAGE */
+.checkout-card,
+div[class*="Checkout_card"],
+div[class*="Summary_card"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 20px -2px rgba(120, 90, 50, 0.06) !important;
+}
+
+/* Payment Method Selection */
+.payment-option-card,
+div[data-payment-method] {
+  background: #FFFFFF !important;
+  border: 1.5px solid #E8E0D2 !important;
+  border-radius: 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+.payment-option-card:hover,
+div[data-payment-method]:hover {
+  border-color: #D97706 !important;
+  background: #FFFDF9 !important;
+}
+
+.payment-option-card.selected,
+div[data-payment-method][data-selected="true"] {
+  border-color: #D97706 !important;
+  background: #FFFBEB !important;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2) !important;
+}
+
+/* Form Inputs */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+select,
+textarea {
+  background: #FFFFFF !important;
+  border: 1.5px solid #E8E0D2 !important;
+  color: #0F172A !important;
+  border-radius: 12px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.95rem !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #D97706 !important;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15) !important;
+  outline: none !important;
+}
+
+/* 9. FOOTER - WARM SAND & ELEGANT SLATE */
+footer {
+  background: #F5EFEB !important;
+  border-top: 1px solid #E8E0D2 !important;
+  color: #475569 !important;
+}
+
+footer .footer-site-name {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+footer a {
+  color: #475569 !important;
+  transition: color 0.2s ease !important;
+}
+
+footer a:hover {
+  color: #D97706 !important;
+}
+
+footer hr,
+footer .border-t {
+  border-color: #E8E0D2 !important;
+}
+
+/* 10. MODALS & POPUPS */
+div[role="dialog"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(217, 119, 6, 0.2);
+  color: #0F172A;
+}
+
+/* ==========================================================================
+   APP STORE BUTTONS & FOOTER REFINEMENTS
+   ========================================================================== */
+div[class*="bg-[#0b0b0f]"],
+a[class*="bg-[#0b0b0f]"] {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E8E0D2 !important;
+  box-shadow: 0 2px 6px rgba(120, 90, 50, 0.04) !important;
+}
+
+div[class*="bg-[#0b0b0f]"] span,
+div[class*="bg-[#0b0b0f]"] svg,
+a[class*="bg-[#0b0b0f]"] span,
+a[class*="bg-[#0b0b0f]"] svg {
+  color: #0F172A !important;
+}
+
+/* ==========================================================================
+   SUPPORT DOCK & FLOATING WIDGETS
+   ========================================================================== */
+[class*="group/dock"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E8E0D2 !important;
+  color: #D97706 !important;
+  box-shadow: 0 4px 16px rgba(120, 90, 50, 0.1) !important;
+}
+
+[class*="group/dock"] svg {
+  color: #D97706 !important;
+}
+
+/* Quick toast & alerts */
+div[class*="Toastify"],
+div[role="status"] {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E8E0D2 !important;
+  box-shadow: 0 8px 24px rgba(120, 90, 50, 0.1) !important;
+}
+
+/* ==========================================================================
+   TOP ANNOUNCEMENT MARQUEE BAR - WARM CREAM LUXURY
+   ========================================================================== */
+.ann-bar,
+div[class*="ann-bar"],
+div[style*="--ann-marquee-duration"] {
+  background: linear-gradient(90deg, #FAF7F2 0%, #F5EFEB 50%, #FAF7F2 100%) !important;
+  color: #92400E !important;
+  border-bottom: 1px solid #E8E0D2 !important;
+  font-weight: 700 !important;
+}
+
+.ann-item,
+.ann-item__text {
+  color: #92400E !important;
+  font-weight: 700 !important;
+}
+
+.ann-item svg {
+  color: #D97706 !important;
+}

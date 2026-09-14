@@ -288,7 +288,7 @@
           <!-- Header -->
           <div class="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-              <span class="p-2 rounded-xl bg-cyan-500/15 text-cyan-400">
+              <span class="p-2 rounded-xl bg-cyan-500/15 text-amber-600">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
               </span>
               <h3 class="text-base sm:text-lg font-bold">سلة المشتريات</h3>
@@ -307,9 +307,9 @@
           <div class="p-4 sm:p-5 border-t border-white/10 bg-slate-950/50 space-y-3">
             <div class="flex items-center justify-between text-sm sm:text-base">
               <span class="text-slate-400 font-medium">الإجمالي التقريبي:</span>
-              <span id="zeus-cart-total" class="font-extrabold text-cyan-400 text-lg tabular-nums">0 ج.م</span>
+              <span id="zeus-cart-total" class="font-extrabold text-amber-600 text-lg tabular-nums">0 ج.م</span>
             </div>
-            <a href="checkout.html" class="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/25 transition active:scale-98">
+            <a href="checkout.html" class="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-cyan-500/25 transition active:scale-98">
               <span>متابعة إتمام الطلب</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </a>
@@ -365,9 +365,9 @@
           <div class="p-4 rounded-full bg-white/5 ring-1 ring-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
           </div>
-          <p class="font-bold text-sm text-white">السلة فارغة حالياً</p>
+          <p class="font-bold text-sm text-[#0F172A]">السلة فارغة حالياً</p>
           <p class="text-xs text-slate-400 max-w-[200px]">تصفح المنتجات المتوفرة وأضف اشتراكاتك المفضلة الآن</p>
-          <a href="products.html" class="mt-2 text-xs font-bold text-cyan-400 hover:underline">تصفح المنتجات</a>
+          <a href="products.html" class="mt-2 text-xs font-bold text-amber-600 hover:underline">تصفح المنتجات</a>
         </div>
       `;
       if (totalEl) totalEl.textContent = `0 ${currInfo.symbol}`;
@@ -386,8 +386,8 @@
         <div class="pt-3.5 first:pt-0 flex items-center gap-3">
           <img src="${item.image || './assets/logo-ar.webp'}" alt="${item.title}" class="w-14 h-14 object-cover rounded-xl bg-slate-800 ring-1 ring-white/10 shrink-0">
           <div class="flex-1 min-w-0">
-            <h4 class="text-xs sm:text-sm font-bold text-white truncate">${item.title}</h4>
-            <div class="text-xs text-cyan-400 font-extrabold mt-0.5 tabular-nums">
+            <h4 class="text-xs sm:text-sm font-bold text-[#0F172A] truncate">${item.title}</h4>
+            <div class="text-xs text-amber-600 font-extrabold mt-0.5 tabular-nums">
               ${formatAmount(convertedUnit, curr)} ${currInfo.symbol}
             </div>
             <!-- Quantity controls -->
@@ -633,15 +633,15 @@
     let modal = document.getElementById('zeus-search-modal');
     if (!modal) {
       const modalHtml = `
-        <div id="zeus-search-modal" class="fixed inset-0 z-[99999] flex flex-col bg-slate-950/90 backdrop-blur-md p-4 sm:p-6 transition-opacity duration-200">
+        <div id="zeus-search-modal" class="fixed inset-0 z-[99999] flex flex-col bg-slate-900/40 backdrop-blur-sm p-4 sm:p-6 transition-opacity duration-200">
           <div class="w-full max-w-2xl mx-auto flex flex-col flex-1">
             <!-- Search Header -->
             <div class="flex items-center gap-3 pb-4 border-b border-white/10">
               <div class="flex-1 relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute start-4 top-1/2 -translate-y-1/2 text-cyan-400"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input id="zeus-search-input" type="text" placeholder="ابحث عن ألعاب، اشتراكات، بطاقات..." autofocus class="w-full bg-slate-900 border border-white/15 rounded-2xl ps-12 pe-4 py-3.5 text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 text-sm sm:text-base ring-1 focus:ring-cyan-500/50 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute start-4 top-1/2 -translate-y-1/2 text-amber-600"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input id="zeus-search-input" type="text" placeholder="ابحث عن ألعاب، اشتراكات، بطاقات..." autofocus class="w-full bg-white border border-[#E8E0D2] rounded-2xl ps-12 pe-4 py-3.5 text-[#0F172A] placeholder-slate-400 focus:outline-none focus:border-amber-600 text-sm sm:text-base ring-1 focus:ring-amber-500/20 transition">
               </div>
-              <button id="zeus-search-close" class="p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition text-xs font-bold" aria-label="إغلاق">إلغاء</button>
+              <button id="zeus-search-close" class="p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold" aria-label="إغلاق">إلغاء</button>
             </div>
 
             <!-- Results -->
@@ -706,11 +706,11 @@
           <div class="flex items-center gap-3 min-w-0">
             <img src="${item.image || './assets/logo-ar.webp'}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover bg-slate-950 shrink-0">
             <div class="min-w-0">
-              <h4 class="text-xs sm:text-sm font-bold text-white truncate">${item.title}</h4>
-              <p class="text-[11px] text-cyan-400 font-extrabold mt-0.5 tabular-nums">${formatAmount(converted, curr)} ${currInfo.symbol}</p>
+              <h4 class="text-xs sm:text-sm font-bold text-[#0F172A] truncate">${item.title}</h4>
+              <p class="text-[11px] text-amber-600 font-extrabold mt-0.5 tabular-nums">${formatAmount(converted, curr)} ${currInfo.symbol}</p>
             </div>
           </div>
-          <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition" data-title="${item.title}" data-price="${priceEgp}" data-img="${item.image}">
+          <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition" data-title="${item.title}" data-price="${priceEgp}" data-img="${item.image}">
             شراء
           </button>
         </div>
@@ -752,27 +752,27 @@
     if (!drawer) {
       const menuHtml = `
         <div id="zeus-mobile-menu" class="fixed inset-0 z-[99998] flex">
-          <div id="zeus-menu-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-xs"></div>
-          <div class="relative w-72 max-w-[80vw] bg-slate-900 border-e border-white/10 text-white p-5 flex flex-col justify-between shadow-2xl z-10">
+          <div id="zeus-menu-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+          <div class="relative w-72 max-w-[80vw] bg-white border-e border-[#E8E0D2] text-[#0F172A] p-5 flex flex-col justify-between shadow-2xl z-10">
             <div class="space-y-6">
-              <div class="flex items-center justify-between pb-4 border-b border-white/10">
+              <div class="flex items-center justify-between pb-4 border-b border-[#F0E8DC]">
                 <div class="flex items-center gap-2">
                   <img src="./assets/logo-ar.webp" alt="زيوس ستور" class="w-7 h-7 object-contain">
-                  <span class="font-extrabold text-sm tracking-tight text-white">زيوس ستور</span>
+                  <span class="font-extrabold text-sm tracking-tight text-[#0F172A]">زيوس ستور</span>
                 </div>
-                <button id="zeus-menu-close" class="p-1.5 rounded-lg text-slate-400 hover:text-white">✕</button>
+                <button id="zeus-menu-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700">✕</button>
               </div>
               <nav class="flex flex-col gap-2 font-medium text-sm">
-                <a href="index.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">الرئيسية</a>
-                <a href="products.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">المنتجات</a>
-                <a href="categories.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">الأقسام</a>
-                <a href="about.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">من نحن</a>
-                <a href="contact.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">اتصل بنا</a>
-                <a href="digital-return-policy.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">سياسة الاسترجاع</a>
-                <a href="privacy.html" class="px-3 py-2 rounded-xl hover:bg-white/10 text-white">سياسة الخصوصية</a>
+                <a href="index.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">الرئيسية</a>
+                <a href="products.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">المنتجات</a>
+                <a href="categories.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">الأقسام</a>
+                <a href="about.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">من نحن</a>
+                <a href="contact.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">اتصل بنا</a>
+                <a href="digital-return-policy.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">سياسة الاسترجاع</a>
+                <a href="privacy.html" class="px-3 py-2 rounded-xl hover:bg-amber-50 text-[#0F172A] hover:text-amber-700">سياسة الخصوصية</a>
               </nav>
             </div>
-            <div class="pt-4 border-t border-white/10 text-xs text-slate-400 text-center">
+            <div class="pt-4 border-t border-[#F0E8DC] text-xs text-slate-500 text-center">
               © 2026 ZEUS STORE
             </div>
           </div>
@@ -1302,7 +1302,7 @@
     const modalHtml = `
       <div id="zeus-order-modal" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
         <div class="w-full max-w-md bg-slate-900 border border-cyan-500/30 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
-          <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-cyan-400 mx-auto flex items-center justify-center">
+          <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-amber-600 mx-auto flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
           <h3 class="text-xl font-extrabold text-white">🎉 تم الشراء والدفع بنجاح!</h3>
@@ -1311,12 +1311,12 @@
             CONF-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${orderId.replace('ZEUS-', '')}
           </div>
           <p class="text-xs text-slate-300">رقم الطلب الخاص بك:</p>
-          <div class="px-4 py-2 bg-slate-950 rounded-xl font-mono text-cyan-400 text-lg font-black tracking-wider border border-white/10 select-all">
+          <div class="px-4 py-2 bg-slate-950 rounded-xl font-mono text-amber-600 text-lg font-black tracking-wider border border-white/10 select-all">
             ${orderId}
           </div>
           <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-start space-y-1 text-slate-300">
             <div><span class="text-slate-400">طريقة الدفع:</span> <strong class="text-white">${methodName}</strong></div>
-            <div><span class="text-slate-400">المبلغ المطلوب:</span> <strong class="text-cyan-400 font-mono">${totalUsdt} USDT${egpText}</strong></div>
+            <div><span class="text-slate-400">المبلغ المطلوب:</span> <strong class="text-amber-600 font-mono">${totalUsdt} USDT${egpText}</strong></div>
             <div><span class="text-slate-400">البريد:</span> <strong class="text-white">${email}</strong></div>
             <div><span class="text-slate-400">الهاتف:</span> <strong class="text-white">${phone}</strong></div>
             ${extraInfo ? `<div class="text-amber-400 pt-1 border-t border-white/10 font-mono text-[11px]">${extraInfo}</div>` : ''}
