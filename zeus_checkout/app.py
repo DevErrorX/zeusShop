@@ -3,6 +3,9 @@
 from __future__ import annotations
 import os
 import random
+import hmac
+import hashlib
+import urllib.parse
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -335,8 +338,39 @@ def create_app() -> FastAPI:
                 "amount": payment.amount,
                 "currency": payment.currency,
             }
-        except KashierError as exc:
-            raise HTTPException(status_code=502, detail=str(exc))
+        except KashierError:
+            path = f"/?payment={merchant_id}.{order_id}.{amount_val:.2f}.{currency}"
+            hash_val = hmac.new(api_key.encode("utf-8"), path.encode("utf-8"), hashlib.sha256).hexdigest()
+            hosted_url = (
+                f"https://checkout.kashier.io/?merchantId={merchant_id}&orderId={order_id}&order={order_id}"
+                f"&amount={amount_val:.2f}&currency={currency}&hash={hash_val}&mode={mode}"
+                f"&merchantRedirect={urllib.parse.quote(callback_url)}&allowedMethods=card&display=ar"
+                f"&failureRedirect=true&redirectMethod=get"
+            )
+            try:
+                StoreRepository.create_order(
+                    order_id=order_id,
+                    customer_name=req.customer_name,
+                    customer_phone=req.customer_phone or "01000000000",
+                    customer_email=req.customer_email or "",
+                    payment_method="kashier",
+                    total_amount=amount_val,
+                    currency=currency,
+                    items=[{"name": req.title, "price": amount_val, "qty": 1}],
+                    notes=f"Kashier hosted checkout fallback: {order_id}"
+                )
+            except Exception:
+                pass
+            return {
+                "status": "ok",
+                "success": True,
+                "order_id": order_id,
+                "session_id": order_id,
+                "session_url": hosted_url,
+                "payment_url": hosted_url,
+                "amount": f"{amount_val:.2f}",
+                "currency": currency,
+            }
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Kashier error: {str(exc)}")
 

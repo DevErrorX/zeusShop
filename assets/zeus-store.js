@@ -1061,6 +1061,144 @@
       }, 400);
     }
 
+    // ==============================================================
+    // Kashier HMAC-SHA256 & Hosted Checkout URL Generation Engine
+    // ==============================================================
+    function pureJsSha256(ascii) {
+      function rightRotate(value, amount) {
+        return (value >>> amount) | (value << (32 - amount));
+      }
+      const mathPow = Math.pow;
+      const maxWord = mathPow(2, 32);
+      let result = '';
+      const words = [];
+      const asciiBitLength = ascii.length * 8;
+      const initialHash = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+      ];
+      const k = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+      ];
+      ascii += '\x80';
+      while ((ascii.length % 64) - 56) ascii += '\x00';
+      for (let i = 0; i < ascii.length; i++) {
+        const j = ascii.charCodeAt(i);
+        words[i >> 2] |= j << ((3 - i) % 4) * 8;
+      }
+      words[words.length] = (asciiBitLength / maxWord) | 0;
+      words[words.length] = asciiBitLength;
+
+      let hash = [...initialHash];
+      for (let j = 0; j < words.length;) {
+        const w = words.slice(j, j += 16);
+        const oldHash = [...hash];
+        for (let i = 0; i < 64; i++) {
+          const w15 = w[i - 15], w2 = w[i - 2];
+          const a = hash[0], e = hash[4];
+          const temp1 = (hash[7]
+            + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+            + ((e & hash[5]) ^ ((~e) & hash[6]))
+            + k[i]
+            + (w[i] = (i < 16) ? w[i] : (
+                w[i - 16]
+                + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                + w[i - 7]
+                + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+              ) | 0
+            )) | 0;
+          const temp2 = ((rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+            + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]))) | 0;
+          hash = [(temp1 + temp2) | 0, hash[0], hash[1], hash[2], (hash[3] + temp1) | 0, hash[4], hash[5], hash[6]];
+        }
+        for (let i = 0; i < 8; i++) {
+          hash[i] = (hash[i] + oldHash[i]) | 0;
+        }
+      }
+      for (let i = 0; i < 8; i++) {
+        for (let j = 3; j >= 0; j--) {
+          const b = (hash[i] >> (j * 8)) & 255;
+          result += ((b < 16) ? '0' : '') + b.toString(16);
+        }
+      }
+      return result;
+    }
+
+    function pureJsHexToBin(hex) {
+      let bytes = '';
+      for (let i = 0; i < hex.length; i += 2) {
+        bytes += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+      }
+      return bytes;
+    }
+
+    function pureJsHmacSha256(key, message) {
+      const blockSize = 64;
+      if (key.length > blockSize) {
+        key = pureJsHexToBin(pureJsSha256(key));
+      }
+      while (key.length < blockSize) {
+        key += '\x00';
+      }
+      let oKeyPad = '';
+      let iKeyPad = '';
+      for (let i = 0; i < blockSize; i++) {
+        oKeyPad += String.fromCharCode(key.charCodeAt(i) ^ 0x5c);
+        iKeyPad += String.fromCharCode(key.charCodeAt(i) ^ 0x36);
+      }
+      const innerHash = pureJsHexToBin(pureJsSha256(iKeyPad + message));
+      return pureJsSha256(oKeyPad + innerHash);
+    }
+
+    async function computeKashierHmacSha256(keyStr, messageStr) {
+      try {
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+          const enc = new TextEncoder();
+          const keyData = enc.encode(keyStr);
+          const msgData = enc.encode(messageStr);
+          const cryptoKey = await window.crypto.subtle.importKey(
+            "raw",
+            keyData,
+            { name: "HMAC", hash: { name: "SHA-256" } },
+            false,
+            ["sign"]
+          );
+          const sig = await window.crypto.subtle.sign("HMAC", cryptoKey, msgData);
+          return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      } catch(e) {}
+      return pureJsHmacSha256(keyStr, messageStr);
+    }
+
+    async function generateKashierHostedCheckoutUrl({ merchantId, apiKey, orderId, amount, currency = 'EGP', mode = 'live', callbackUrl }) {
+      const amountStr = Number(amount).toFixed(2);
+      const path = `/?payment=${merchantId}.${orderId}.${amountStr}.${currency}`;
+      const hash = await computeKashierHmacSha256(apiKey, path);
+
+      const url = new URL('https://checkout.kashier.io/');
+      url.searchParams.set('merchantId', merchantId);
+      url.searchParams.set('orderId', orderId);
+      url.searchParams.set('order', orderId);
+      url.searchParams.set('amount', amountStr);
+      url.searchParams.set('currency', currency);
+      url.searchParams.set('hash', hash);
+      url.searchParams.set('mode', mode || 'live');
+      url.searchParams.set('merchantRedirect', callbackUrl);
+      url.searchParams.set('allowedMethods', 'card');
+      url.searchParams.set('display', 'ar');
+      url.searchParams.set('failureRedirect', 'true');
+      url.searchParams.set('redirectMethod', 'get');
+      return url.toString();
+    }
+    window.generateKashierHostedCheckoutUrl = generateKashierHostedCheckoutUrl;
+
     // Handle "اضغط هنا للدفع الآن" / Submit Checkout Button
     const payBtn = document.getElementById('zeus-checkout-submit-btn') || Array.from(document.querySelectorAll('button')).find(b => 
       b.textContent.includes('اضغط هنا للدفع') || b.textContent.includes('الدفع الآن') || b.closest('.co-sec-submit')
@@ -1154,6 +1292,9 @@
           }
 
           const callbackUrl = window.location.origin + window.location.pathname + `?order_id=${orderId}&payment=kashier&status=success`;
+          const kMerchantId = (localStorage.getItem('zeus_kashier_merchant_id') || 'MID-34056-532').trim();
+          const kApiKey = (localStorage.getItem('zeus_kashier_api_key') || '60963e5a-e0fd-4ddc-be8f-1346168d21a3').trim();
+          const kMode = (localStorage.getItem('zeus_kashier_mode') || 'live').trim();
 
           // Call API or direct gateway
           (async () => {
@@ -1181,8 +1322,17 @@
               }
             } catch(e) {}
 
+            // If backend is offline or static hosting (e.g. GitHub Pages), generate signed Kashier checkout URL
             if (!paymentUrl) {
-              paymentUrl = `https://payments.kashier.io/`;
+              paymentUrl = await generateKashierHostedCheckoutUrl({
+                merchantId: kMerchantId,
+                apiKey: kApiKey,
+                orderId: orderId,
+                amount: currentEgp,
+                currency: 'EGP',
+                mode: kMode,
+                callbackUrl: callbackUrl
+              });
             }
 
             if (pendingOpenLink) {
