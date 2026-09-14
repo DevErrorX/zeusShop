@@ -934,14 +934,14 @@
 
                     <div class="stat-card">
                         <div class="stat-card-header">
-                            <span>رصيد الكريبتو المجمع</span>
-                            <div class="stat-icon-wrap" style="background: rgba(139, 92, 246, 0.15); color: var(--purple);">
-                                <i class="fa-brands fa-bitcoin"></i>
+                            <span>مدفوعات البطاقات الإلكترونية</span>
+                            <div class="stat-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: var(--primary);">
+                                <i class="fa-solid fa-credit-card"></i>
                             </div>
                         </div>
-                        <div class="stat-amount font-en" id="stat-crypto-revenue">0.00 USDT</div>
+                        <div class="stat-amount font-en" id="stat-crypto-revenue">0 د.ع</div>
                         <div class="stat-footer">
-                            <span class="text-info">Binance Pay & Tron TRC20</span>
+                            <span class="text-info">MegaPay (Visa / Mastercard / Mada)</span>
                         </div>
                     </div>
 
@@ -1265,98 +1265,6 @@
                                     <span class="badge badge-success"><i class="fa-solid fa-lock"></i> اتصال مشفر</span>
                                     <span class="badge badge-info"><i class="fa-solid fa-bolt"></i> توجيه فوري تلقائي</span>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- BINANCE PAY UID -->
-                        <div class="stat-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
-                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
-                                    <i class="fa-brands fa-btc text-warning"></i>
-                                    Binance Pay (معرف UID) - تحقق حقيقي
-                                </h4>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="gate-binance-active" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 8px;">
-                                <label>Binance UID (معرف الحساب المستلم)</label>
-                                <input type="text" id="gate-binance-uid" class="form-control" value="849201948">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 8px;">
-                                <label>اسم الحساب المستلم</label>
-                                <input type="text" id="gate-binance-name" class="form-control" value="Zeus_Merchant">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 8px;">
-                                <label>Binance API Key (للتحقق المشفر عبر HMAC-SHA256)</label>
-                                <input type="text" id="gate-binance-api-key" class="form-control font-en" placeholder="الصق مفتاح API Key من باينانس...">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 12px;">
-                                <label>Binance API Secret (المفتاح السري)</label>
-                                <div style="position: relative;">
-                                    <input type="password" id="gate-binance-api-secret" class="form-control font-en" placeholder="الصق المفتاح السري API Secret...">
-                                    <button type="button" onclick="const f = document.getElementById('gate-binance-api-secret'); f.type = f.type==='password'?'text':'password';" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-eye"></i></button>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="testBinancePayConnection()" id="btn-test-binance-pay">
-                                    <i class="fa-solid fa-plug-circle-check text-warning"></i> فحص مفاتيح Binance Pay
-                                </button>
-                                <span id="binance-pay-test-badge" style="font-size: 12px; font-weight: 700;"></span>
-                            </div>
-                        </div>
-
-                        <!-- BINANCE GIFT CARD -->
-                        <div class="stat-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
-                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
-                                    <i class="fa-solid fa-gift text-purple"></i>
-                                    Binance Gift Card - تحقق حقيقي
-                                </h4>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="gate-giftcard-active" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 8px;">
-                                <label>تعليمات استلام الكرت</label>
-                                <input type="text" id="gate-giftcard-hint" class="form-control" value="أرسل كود البطاقة المكون من 16 حرفاً">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 8px;">
-                                <label>Gift Card API Key (اختياري، يترك فارغاً لاستخدام مفتاح Pay أعلاه)</label>
-                                <input type="text" id="gate-giftcard-api-key" class="form-control font-en" placeholder="اتركه فارغاً لاستخدام مفتاح Pay الرئيسي...">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 12px;">
-                                <label>Gift Card API Secret</label>
-                                <div style="position: relative;">
-                                    <input type="password" id="gate-giftcard-api-secret" class="form-control font-en" placeholder="اتركه فارغاً لاستخدام Secret الرئيسي...">
-                                    <button type="button" onclick="const f = document.getElementById('gate-giftcard-api-secret'); f.type = f.type==='password'?'text':'password';" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-eye"></i></button>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="testBinanceGiftCardConnection()" id="btn-test-binance-giftcard">
-                                    <i class="fa-solid fa-gift text-warning"></i> فحص صلاحية Gift Card API
-                                </button>
-                                <span id="binance-giftcard-test-badge" style="font-size: 12px; font-weight: 700;"></span>
-                            </div>
-                        </div>
-
-                        <!-- USDT TRC20 -->
-                        <div class="stat-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
-                                <h4 style="font-size: 15px; font-weight:700; color: #fff; display:flex; align-items:center; gap:8px;">
-                                    <span style="color:#26a17b; font-weight:bold;">₮</span>
-                                    محفظة USDT (TRC20)
-                                </h4>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="gate-usdt-active" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label>عنوان المحفظة (TRON)</label>
-                                <input type="text" id="gate-usdt-address" class="form-control font-en" value="TYDzsxdjh7812kjhAKJSH19827391">
                             </div>
                         </div>
                     </div>
@@ -1692,7 +1600,7 @@
                 customer_email: "khaled@example.com",
                 total_amount: 2054,
                 currency: "EGP",
-                payment_method: "binance_uid",
+                payment_method: "megapay",
                 status: "paid",
                 delivered_key: null,
                 created_at: new Date(Date.now() - 7200000).toISOString(),
@@ -1703,13 +1611,13 @@
                 customer_name: "سيف العراقي",
                 customer_phone: "+9647701122334",
                 customer_email: "saif@example.com",
-                total_amount: 40.01,
-                currency: "USDT",
-                payment_method: "usdt_crypto",
+                total_amount: 52000,
+                currency: "IQD",
+                payment_method: "megapay",
                 status: "pending",
                 delivered_key: null,
                 created_at: new Date(Date.now() - 14400000).toISOString(),
-                items: [{ title: "مفتاح ببجي موبايل 30 يوم VIP", price: 40.01, quantity: 1 }]
+                items: [{ title: "مفتاح ببجي موبايل 30 يوم VIP", price: 52000, quantity: 1 }]
             }
         ];
 
@@ -1774,23 +1682,6 @@
                     if (document.getElementById('gate-megapay-active') && mActive !== null) {
                         document.getElementById('gate-megapay-active').checked = mActive === 'true';
                     }
-
-                    // Load Binance UID & Gift Card
-                    const bUidVal = localStorage.getItem('zeus_binance_uid') || (g && g.binance_uid ? g.binance_uid.uid : '849201948');
-                    const bNameVal = localStorage.getItem('zeus_binance_name') || (g && g.binance_uid ? g.binance_uid.name : 'Zeus_Merchant');
-                    const bKeyVal = localStorage.getItem('zeus_binance_api_key') || (g && g.binance_uid ? g.binance_uid.api_key : '');
-                    const bSecretVal = localStorage.getItem('zeus_binance_api_secret') || (g && g.binance_uid ? g.binance_uid.api_secret : '');
-                    const gcKeyVal = localStorage.getItem('zeus_giftcard_api_key') || (g && g.binance_giftcard ? g.binance_giftcard.api_key : '');
-                    const gcSecretVal = localStorage.getItem('zeus_giftcard_api_secret') || (g && g.binance_giftcard ? g.binance_giftcard.api_secret : '');
-                    const gcHintVal = localStorage.getItem('zeus_giftcard_hint') || (g && g.binance_giftcard ? g.binance_giftcard.hint : 'أرسل كود البطاقة المكون من 16 حرفاً');
-
-                    if (document.getElementById('gate-binance-uid')) document.getElementById('gate-binance-uid').value = bUidVal;
-                    if (document.getElementById('gate-binance-name')) document.getElementById('gate-binance-name').value = bNameVal;
-                    if (document.getElementById('gate-binance-api-key')) document.getElementById('gate-binance-api-key').value = bKeyVal;
-                    if (document.getElementById('gate-binance-api-secret')) document.getElementById('gate-binance-api-secret').value = bSecretVal;
-                    if (document.getElementById('gate-giftcard-api-key')) document.getElementById('gate-giftcard-api-key').value = gcKeyVal;
-                    if (document.getElementById('gate-giftcard-api-secret')) document.getElementById('gate-giftcard-api-secret').value = gcSecretVal;
-                    if (document.getElementById('gate-giftcard-hint')) document.getElementById('gate-giftcard-hint').value = gcHintVal;
 
                 } catch(errGate) {
                     console.warn("Gateways load error:", errGate);
@@ -2008,10 +1899,10 @@
                 state.charts.pie = new Chart(ctxPie, {
                     type: 'doughnut',
                     data: {
-                        labels: ['MEGA PAY', 'Binance UID', 'USDT TRC20', 'بطاقات مدى / فيزا'],
+                        labels: ['فيزا وماستركارد (Visa / Mastercard)', 'مدى البنكية (Mada)', 'محافظ مباشرة (Zain / Qi)', 'دفع إلكتروني فوري'],
                         datasets: [{
-                            data: [45, 28, 18, 9],
-                            backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981', '#06b6d4'],
+                            data: [55, 25, 12, 8],
+                            backgroundColor: ['#f59e0b', '#10b981', '#06b6d4', '#8b5cf6'],
                             borderWidth: 0
                         }]
                     },
@@ -2689,103 +2580,7 @@
             }
         };
 
-        
-        window.testBinancePayConnection = async function() {
-            const apiKey = (document.getElementById('gate-binance-api-key')?.value || '').trim();
-            const apiSecret = (document.getElementById('gate-binance-api-secret')?.value || '').trim();
-            const btn = document.getElementById('btn-test-binance-pay');
-            const badge = document.getElementById('binance-pay-test-badge');
 
-            if (!apiKey || !apiSecret) {
-                if (badge) {
-                    badge.textContent = '❌ يرجى كتابة API Key و Secret أولاً';
-                    badge.style.color = 'var(--danger)';
-                }
-                showToast('يرجى كتابة Binance API Key و API Secret معاً', 'error');
-                return;
-            }
-
-            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الاتصال بخادم Binance...';
-            try {
-                const res = await fetch('/api/v1/payment/binance/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: apiKey, api_secret: apiSecret })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    if (badge) {
-                        badge.textContent = '✅ الاتصال نشط والمفاتيح صالحة 100%';
-                        badge.style.color = 'var(--success)';
-                    }
-                    showToast('تم التحقق بنجاح! تم قبول مفاتيح Binance من خوادم باينانس ⚡', 'success');
-                } else {
-                    if (badge) {
-                        badge.textContent = '❌ مفاتيح غير صالحة';
-                        badge.style.color = 'var(--danger)';
-                    }
-                    showToast(data.message || 'فشل التحقق من مفاتيح Binance، يرجى مراجعة الصلاحيات والـ Secret', 'error');
-                }
-            } catch(e) {
-                if (badge) {
-                    badge.textContent = '❌ تعذر الاتصال';
-                    badge.style.color = 'var(--danger)';
-                }
-                showToast('حدث خطأ بالاتصال بنقطة فحص باينانس', 'error');
-            } finally {
-                if (btn) btn.innerHTML = '<i class="fa-solid fa-plug-circle-check text-warning"></i> فحص مفاتيح Binance Pay';
-            }
-        };
-
-        window.testBinanceGiftCardConnection = async function() {
-            let apiKey = (document.getElementById('gate-giftcard-api-key')?.value || '').trim();
-            let apiSecret = (document.getElementById('gate-giftcard-api-secret')?.value || '').trim();
-            if (!apiKey) apiKey = (document.getElementById('gate-binance-api-key')?.value || '').trim();
-            if (!apiSecret) apiSecret = (document.getElementById('gate-binance-api-secret')?.value || '').trim();
-
-            const btn = document.getElementById('btn-test-binance-giftcard');
-            const badge = document.getElementById('binance-giftcard-test-badge');
-
-            if (!apiKey || !apiSecret) {
-                if (badge) {
-                    badge.textContent = '❌ يرجى كتابة API Key و Secret أولاً';
-                    badge.style.color = 'var(--danger)';
-                }
-                showToast('يرجى كتابة Binance API Key و API Secret', 'error');
-                return;
-            }
-
-            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري فحص واجهة Gift Card...';
-            try {
-                const res = await fetch('/api/v1/payment/binance/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: apiKey, api_secret: apiSecret })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    if (badge) {
-                        badge.textContent = '✅ مفاتيح قسائم باينانس معتمدة';
-                        badge.style.color = 'var(--success)';
-                    }
-                    showToast('تم التحقق من جاهزية واجهة قسائم باينانس بنجاح ⚡', 'success');
-                } else {
-                    if (badge) {
-                        badge.textContent = '❌ المفاتيح غير مقبولة';
-                        badge.style.color = 'var(--danger)';
-                    }
-                    showToast(data.message || 'فشل التحقق من المفاتيح', 'error');
-                }
-            } catch(e) {
-                if (badge) {
-                    badge.textContent = '❌ خطأ بالاتصال';
-                    badge.style.color = 'var(--danger)';
-                }
-                showToast('حدث خطأ بالاتصال بخوادم باينانس', 'error');
-            } finally {
-                if (btn) btn.innerHTML = '<i class="fa-solid fa-gift text-warning"></i> فحص صلاحية Gift Card API';
-            }
-        };
 
         window.saveGatewaysSettings = function() {
             const megapayMerchantId = (document.getElementById('gate-megapay-merchant-id')?.value || '').trim();
@@ -2803,23 +2598,6 @@
                     api_url: megapayApiUrl,
                     currency: megapayCurrency,
                     callback_url: megapayCallbackUrl
-                },
-                binance_uid: {
-                    active: document.getElementById('gate-binance-active')?.checked ?? true,
-                    uid: (document.getElementById('gate-binance-uid')?.value || '849201948').trim(),
-                    name: (document.getElementById('gate-binance-name')?.value || 'Zeus_Merchant').trim(),
-                    api_key: (document.getElementById('gate-binance-api-key')?.value || '').trim(),
-                    api_secret: (document.getElementById('gate-binance-api-secret')?.value || '').trim()
-                },
-                binance_giftcard: {
-                    active: document.getElementById('gate-giftcard-active')?.checked ?? true,
-                    hint: (document.getElementById('gate-giftcard-hint')?.value || 'أرسل كود البطاقة المكون من 16 حرفاً').trim(),
-                    api_key: (document.getElementById('gate-giftcard-api-key')?.value || '').trim(),
-                    api_secret: (document.getElementById('gate-giftcard-api-secret')?.value || '').trim()
-                },
-                usdt_crypto: {
-                    active: document.getElementById('gate-usdt-active')?.checked ?? true,
-                    address: (document.getElementById('gate-usdt-address')?.value || '').trim()
                 }
             };
 
@@ -2850,51 +2628,7 @@
                 })
             }).catch(() => {});
 
-            
-            // Binance localStorage persistence
-            const bUid = (document.getElementById('gate-binance-uid')?.value || '849201948').trim();
-            const bName = (document.getElementById('gate-binance-name')?.value || 'Zeus_Merchant').trim();
-            const bKey = (document.getElementById('gate-binance-api-key')?.value || '').trim();
-            const bSecret = (document.getElementById('gate-binance-api-secret')?.value || '').trim();
-            const bActive = document.getElementById('gate-binance-active')?.checked ?? true;
-
-            const gcHint = (document.getElementById('gate-giftcard-hint')?.value || '').trim();
-            const gcKey = (document.getElementById('gate-giftcard-api-key')?.value || '').trim();
-            const gcSecret = (document.getElementById('gate-giftcard-api-secret')?.value || '').trim();
-            const gcActive = document.getElementById('gate-giftcard-active')?.checked ?? true;
-
-            localStorage.setItem('zeus_binance_uid', bUid);
-            localStorage.setItem('zeus_binance_name', bName);
-            localStorage.setItem('zeus_binance_api_key', bKey);
-            localStorage.setItem('zeus_binance_api_secret', bSecret);
-            localStorage.setItem('zeus_giftcard_hint', gcHint);
-            localStorage.setItem('zeus_giftcard_api_key', gcKey);
-            localStorage.setItem('zeus_giftcard_api_secret', gcSecret);
-
-            // Sync Binance to backend SQLite
-            fetch('/api/v1/admin/payment-gateways', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: 'binance_uid',
-                    name: 'Binance Pay (UID)',
-                    is_active: bActive,
-                    config: { uid: bUid, name: bName, api_key: bKey, api_secret: bSecret }
-                })
-            }).catch(() => {});
-
-            fetch('/api/v1/admin/payment-gateways', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: 'binance_giftcard',
-                    name: 'Binance Gift Card',
-                    is_active: gcActive,
-                    config: { hint: gcHint, api_key: gcKey || bKey, api_secret: gcSecret || bSecret }
-                })
-            }).catch(() => {});
-
-            showToast('تم حفظ إعدادات MegaPay و Binance وبوابات الدفع بنجاح! 💳⚡');
+            showToast('تم حفظ إعدادات بوابة الدفع (MegaPay / Visa) بنجاح! 💳⚡');
         };
 
         // ==========================================
@@ -3017,12 +2751,9 @@
 
         function getPaymentBadgeText(method) {
             const map = {
-                megapay: 'MEGA PAY',
-                binance_uid: 'Binance UID',
-                binance_giftcard: 'Binance Card',
-                usdt_crypto: 'USDT (TRC20)',
+                megapay: 'بطاقة بنكية / فيزا (Visa)',
                 mada: 'مدى Mada',
-                card: 'بطاقة بنكية',
+                card: 'بطاقة بنكية (Card)',
                 apple_pay: 'Apple Pay'
             };
             return map[method] || method || 'دفع إلكتروني';

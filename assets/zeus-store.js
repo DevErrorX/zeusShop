@@ -881,56 +881,6 @@
     const egpPerUsdt = usdtInfo.egpPerUnit || (1.0 / usdtInfo.rate);
     const totalUsdt = (totalEgp * usdtInfo.rate).toFixed(2);
 
-    // Update USDT expected amounts in panels
-    const binanceAmountEl = document.getElementById('zeus-binance-amount');
-    const giftCardAmountEl = document.getElementById('zeus-giftcard-amount');
-    if (binanceAmountEl) binanceAmountEl.textContent = `${totalUsdt} USDT`;
-    if (giftCardAmountEl) giftCardAmountEl.textContent = `${totalUsdt} USDT`;
-
-    // Update / Inject rate transparency breakdown notes
-    let binanceRateNote = document.getElementById('zeus-binance-rate-note');
-    if (!binanceRateNote && binanceAmountEl) {
-      const container = binanceAmountEl.closest('.rounded-xl') || binanceAmountEl.parentElement;
-      binanceRateNote = document.createElement('div');
-      binanceRateNote.id = 'zeus-binance-rate-note';
-      binanceRateNote.className = 'text-[11px] text-amber-600/90 dark:text-amber-400/90 font-medium pt-1.5 mt-1 border-t border-amber-500/20 flex flex-col gap-0.5';
-      container.appendChild(binanceRateNote);
-    }
-    if (binanceRateNote) {
-      binanceRateNote.innerHTML = `
-        <div class="flex items-center justify-between gap-1">
-          <span>سعر الصرف المعتمد:</span>
-          <span class="font-bold font-mono">1 USDT ≈ ${egpPerUsdt.toFixed(2)} ج.م</span>
-        </div>
-        <div class="text-[10px] text-muted-foreground font-mono">
-          الحسبة: ${totalEgp.toLocaleString('en-US')} ج.م ÷ ${egpPerUsdt.toFixed(2)} = ${totalUsdt} USDT
-        </div>
-      `;
-    }
-
-    let giftCardRateNote = document.getElementById('zeus-giftcard-rate-note');
-    if (!giftCardRateNote && giftCardAmountEl) {
-      const container = giftCardAmountEl.closest('.rounded-xl') || giftCardAmountEl.parentElement;
-      giftCardRateNote = document.createElement('div');
-      giftCardRateNote.id = 'zeus-giftcard-rate-note';
-      giftCardRateNote.className = 'text-[11px] text-purple-600/90 dark:text-purple-400/90 font-medium pt-1.5 mt-1 border-t border-purple-500/20 flex flex-col gap-0.5';
-      container.appendChild(giftCardRateNote);
-    }
-    if (giftCardRateNote) {
-      giftCardRateNote.innerHTML = `
-        <div class="flex items-center justify-between gap-1">
-          <span>سعر الصرف المعتمد:</span>
-          <span class="font-bold font-mono">1 USDT ≈ ${egpPerUsdt.toFixed(2)} ج.م</span>
-        </div>
-        <div class="text-[10px] text-muted-foreground font-mono">
-          القيمة المطلوبة: ${totalUsdt} USDT (${totalEgp.toLocaleString('en-US')} ج.م)
-        </div>
-      `;
-    }
-    if (binanceAmountEl) {
-      binanceAmountEl.textContent = `${totalUsdt} USDT`;
-    }
-
     // Update amounts in MegaPay panel & buttons (100% SAME AS RAES)
     const totalIqd = Math.max(1000, Math.round(totalEgp * 25.51));
     const megaIqdEl = document.getElementById('zeus-megapay-iqd-amount');
@@ -939,7 +889,7 @@
     if (megaAmountHint) {
       megaAmountHint.innerHTML = `
         <div class="text-[10.5px] text-muted-foreground font-mono">
-          القيمة المحتسبة للبوابة: <span class="font-bold text-foreground">${totalIqd.toLocaleString('en-US')} د.ع</span> (ما يعادل ${totalUsdt} USDT / ${totalEgp.toLocaleString('en-US')} ج.م)
+          القيمة المحتسبة للبوابة: <span class="font-bold text-foreground">${totalIqd.toLocaleString('en-US')} د.ع</span> (ما يعادل ${totalEgp.toLocaleString('en-US')} ج.م)
         </div>
       `;
     }
@@ -1050,44 +1000,22 @@
     });
 
     function selectPaymentMethod(method) {
-      selectedPaymentMethod = method;
+      selectedPaymentMethod = 'megapay';
       payOptions.forEach(opt => {
-        const m = opt.dataset.method;
-        const panel = document.getElementById(`panel-${m}`);
+        const panel = document.getElementById('panel-megapay');
         const dot = opt.querySelector('.zeus-radio-dot');
         const innerDot = dot ? dot.querySelector('div') : null;
 
-        if (m === method) {
-          // Highlight active option
-          if (m === 'megapay') {
-            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-primary bg-primary/5 border-primary/40 shadow-sm';
-            if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-primary flex items-center justify-center bg-primary/20 shrink-0';
-            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-primary';
-          } else if (m === 'binance_uid') {
-            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-amber-500 bg-amber-500/5 border-amber-500/40 shadow-sm';
-            if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-amber-500 flex items-center justify-center bg-amber-500/20 shrink-0';
-            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
-          } else if (m === 'binance_giftcard') {
-            opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-purple-500 bg-purple-500/5 border-purple-500/40 shadow-sm';
-            if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-purple-500 flex items-center justify-center bg-purple-500/20 shrink-0';
-            if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-500';
-          }
-          if (panel) panel.classList.remove('hidden');
-        } else {
-          // Deactivate
-          opt.className = 'zeus-pay-option rounded-2xl border border-border/70 bg-card hover:bg-muted/30 transition-all duration-300 overflow-hidden shadow-xs';
-          if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-border/80 flex items-center justify-center shrink-0';
-          if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-transparent';
-          if (panel) panel.classList.add('hidden');
-        }
+        opt.className = 'zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-primary bg-primary/5 border-primary/40 shadow-sm';
+        if (dot) dot.className = 'zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-primary flex items-center justify-center bg-primary/20 shrink-0';
+        if (innerDot) innerDot.className = 'w-2.5 h-2.5 rounded-full bg-primary';
+        if (panel) panel.classList.remove('hidden');
       });
 
       // Update submit button text
       const payBtnText = document.querySelector('.co-sec-submit span');
       if (payBtnText) {
-        if (method === 'megapay') payBtnText.textContent = 'الانتقال إلى MEGA PAY للدفع الفوري ';
-        else if (method === 'binance_uid') payBtnText.textContent = 'تأكيد تحويل Binance UID واعتماد الطلب';
-        else if (method === 'binance_giftcard') payBtnText.textContent = 'استبدال قسيمة باينانس واعتماد الطلب';
+        payBtnText.textContent = 'الانتقال إلى الدفع بالبطاقة البنكية (Visa / Mastercard)';
       }
     }
 
@@ -1298,160 +1226,6 @@
           return;
         }
 
-        // ==========================================
-        // REAL BINANCE UID / PAY VERIFICATION
-        // ==========================================
-        if (selectedPaymentMethod === 'binance_uid') {
-          const txInput = document.getElementById('zeus-binance-txid');
-          const txid = txInput ? txInput.value.trim() : '';
-          if (txInput) txInput.classList.remove('input-error');
-
-          if (!txid) {
-            showToast('يجب إدخال رقم عملية التحويل (Transaction ID) من تطبيق باينانس', 'error');
-            if (txInput) {
-              txInput.classList.add('input-error');
-              txInput.focus();
-              txInput.addEventListener('input', () => txInput.classList.remove('input-error'), { once: true });
-            }
-            return;
-          }
-
-          const amounts = updateCheckoutAmounts();
-          const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
-          const currentEgp = amounts ? amounts.totalEgp : totalEgp;
-          const apiKey = localStorage.getItem('zeus_binance_api_key') || '';
-          const apiSecret = localStorage.getItem('zeus_binance_api_secret') || '';
-          const recipientUid = localStorage.getItem('zeus_binance_uid') || '';
-
-          const originalBtnHtml = payBtn.innerHTML;
-          payBtn.disabled = true;
-          payBtn.innerHTML = `
-            <span class="inline-flex items-center gap-2">
-              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>جاري التحقق الحقيقي من المعاملة عبر باينانس...</span>
-            </span>
-          `;
-
-          try {
-            const resp = await fetch('/api/v1/payment/binance/verify-uid', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                transaction_id: txid,
-                expected_usdt: parseFloat(currentUsdt) || 0,
-                customer_email: email,
-                customer_phone: phone,
-                api_key: apiKey || undefined,
-                api_secret: apiSecret || undefined,
-                recipient_uid: recipientUid || undefined
-              })
-            });
-
-            const data = await resp.json();
-
-            if (resp.ok && data.verified) {
-              showToast(data.message || 'تم التحقق من المعاملة بنجاح عبر شبكة باينانس! ⚡', 'success');
-              const finalOrderId = data.order_id || ('ZEUS-' + Math.floor(100000 + Math.random() * 900000));
-              showOrderSuccessModal(finalOrderId, email, phone, 'binance_uid', `رقم العملية: ${txid}`, currentUsdt, currentEgp);
-            } else {
-              if (txInput) {
-                txInput.classList.add('input-error');
-                txInput.focus();
-                txInput.addEventListener('input', () => txInput.classList.remove('input-error'), { once: true });
-              }
-              const errMsg = data.detail || data.message || 'لم يتم العثور على المعاملة أو أن المبلغ غير مطابق في حساب باينانس';
-              showToast(errMsg, 'error');
-            }
-          } catch(err) {
-            console.error('Binance UID verification error:', err);
-            if (txInput) txInput.classList.add('input-error');
-            showToast('حدث خطأ أثناء فحص المعاملة من باينانس، يرجى إعادة المحاولة', 'error');
-          } finally {
-            payBtn.innerHTML = originalBtnHtml;
-            payBtn.disabled = false;
-          }
-          return;
-        }
-
-        // ==========================================
-        // REAL BINANCE GIFT CARD VERIFICATION
-        // ==========================================
-        if (selectedPaymentMethod === 'binance_giftcard') {
-          const cardInput = document.getElementById('zeus-giftcard-code');
-          const code = cardInput ? cardInput.value.trim() : '';
-          if (cardInput) cardInput.classList.remove('input-error');
-
-          if (!code) {
-            showToast('يجب إدخال كود بطاقة هدية باينانس (Redemption Code)', 'error');
-            if (cardInput) {
-              cardInput.classList.add('input-error');
-              cardInput.focus();
-              cardInput.addEventListener('input', () => cardInput.classList.remove('input-error'), { once: true });
-            }
-            return;
-          }
-
-          const amounts = updateCheckoutAmounts();
-          const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
-          const currentEgp = amounts ? amounts.totalEgp : totalEgp;
-          const apiKey = localStorage.getItem('zeus_binance_giftcard_api_key') || localStorage.getItem('zeus_binance_api_key') || '';
-          const apiSecret = localStorage.getItem('zeus_binance_giftcard_api_secret') || localStorage.getItem('zeus_binance_api_secret') || '';
-
-          const originalBtnHtml = payBtn.innerHTML;
-          payBtn.disabled = true;
-          payBtn.innerHTML = `
-            <span class="inline-flex items-center gap-2">
-              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>جاري استبدال قسيمة باينانس وفحص الرصيد...</span>
-            </span>
-          `;
-
-          try {
-            const resp = await fetch('/api/v1/payment/binance/verify-giftcard', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                code: code,
-                expected_usdt: parseFloat(currentUsdt) || 0,
-                customer_email: email,
-                customer_phone: phone,
-                api_key: apiKey || undefined,
-                api_secret: apiSecret || undefined
-              })
-            });
-
-            const data = await resp.json();
-
-            if (resp.ok && data.verified) {
-              showToast(data.message || 'تم استبدال قسيمة باينانس بنجاح واعتماد الطلب! ⚡', 'success');
-              const finalOrderId = data.order_id || ('ZEUS-' + Math.floor(100000 + Math.random() * 900000));
-              showOrderSuccessModal(finalOrderId, email, phone, 'binance_giftcard', `كود القسيمة: ${code.substring(0, 4)}**** (${data.face_value || currentUsdt} USDT)`, currentUsdt, currentEgp);
-            } else {
-              if (cardInput) {
-                cardInput.classList.add('input-error');
-                cardInput.focus();
-                cardInput.addEventListener('input', () => cardInput.classList.remove('input-error'), { once: true });
-              }
-              const errMsg = data.detail || data.message || 'رمز قسيمة باينانس غير صالح أو تم استخدامه مسبقاً أو رصيده غير كافٍ';
-              showToast(errMsg, 'error');
-            }
-          } catch(err) {
-            console.error('Binance Giftcard verification error:', err);
-            if (cardInput) cardInput.classList.add('input-error');
-            showToast('حدث خطأ أثناء الاتصال بنظام فحص قسائم باينانس', 'error');
-          } finally {
-            payBtn.innerHTML = originalBtnHtml;
-            payBtn.disabled = false;
-          }
-          return;
-        }
-
         // Fallback or other methods
         const amounts = updateCheckoutAmounts();
         const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
@@ -1473,12 +1247,7 @@
   }
 
   function showOrderSuccessModal(orderId, email, phone, method, extraInfo, totalUsdt, totalEgp) {
-    const methodNames = {
-      megapay: 'MEGA PAY (بطاقة ائتمان)',
-      binance_uid: 'باينانس UID (Binance Pay)',
-      binance_giftcard: 'باينانس GIFT CARD'
-    };
-    const methodName = methodNames[method] || method;
+    const methodName = 'بطاقة دفع بنكية (Visa / Mastercard)';
     const egpText = typeof totalEgp === 'number' ? ` (${totalEgp.toLocaleString('en-US')} ج.م)` : '';
 
     const waLines = [
