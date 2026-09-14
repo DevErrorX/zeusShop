@@ -1014,7 +1014,7 @@
       // Update submit button text
       const payBtnText = document.querySelector('.co-sec-submit span');
       if (payBtnText) {
-        payBtnText.textContent = 'الانتقال إلى الدفع عبر كاشير (Kashier - Visa / Mastercard)';
+        payBtnText.textContent = 'الانتقال إلى الدفع عبر كاشير (Kashier - Visa / Mastercard / Apple Pay)';
       }
     }
 
