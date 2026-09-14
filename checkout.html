@@ -398,8 +398,8 @@
     
     <div class="space-y-3.5 sm:space-y-4" id="zeus-payment-methods-container">
   
-  <!-- 1. DIRECT VISA / MASTERCARD / BANK CARDS PAYMENT (MEGA PAY) -->
-  <div class="zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-primary bg-primary/5 border-primary/40 shadow-sm" data-method="megapay">
+  <!-- 1. DIRECT VISA / MASTERCARD / BANK CARDS PAYMENT (KASHIER) -->
+  <div class="zeus-pay-option rounded-2xl border transition-all duration-300 overflow-hidden ring-2 ring-primary bg-primary/5 border-primary/40 shadow-sm" data-method="kashier">
     <div class="p-3.5 xs:p-4 sm:p-5 flex items-center justify-between gap-3 zeus-pay-header select-none">
       <div class="flex items-center gap-3 sm:gap-4 min-w-0">
         <div class="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 flex items-center justify-center shrink-0 shadow-sm text-primary">
@@ -407,10 +407,10 @@
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="text-foreground font-black text-sm xs:text-base sm:text-lg">بطاقة دفع بنكية / فيزا وماستركارد (Visa / Mastercard)</h3>
+            <h3 class="text-foreground font-black text-sm xs:text-base sm:text-lg">بطاقة دفع بنكية / فيزا وماستركارد (كاشير - Kashier)</h3>
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/15 text-primary border border-primary/30 shrink-0">دفع فوري وآمن ⚡️</span>
           </div>
-          <p class="text-[11.5px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">دفع إلكتروني آمن ومباشر بواسطة كافة البطاقات البنكية مع تفعيل وتسليم فوري للطلب</p>
+          <p class="text-[11.5px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">دفع إلكتروني آمن ومباشر بواسطة كافة البطاقات البنكية (Visa, Mastercard, Meeza) مع تسليم وتفعيل فوري للطلب</p>
         </div>
       </div>
       <div class="zeus-radio-dot w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-primary flex items-center justify-center bg-primary/20 shrink-0">
@@ -419,26 +419,26 @@
     </div>
 
     <!-- Payment Details Panel -->
-    <div class="zeus-pay-panel px-3.5 xs:px-4 sm:px-5 pb-4 sm:pb-5 pt-3.5 border-t border-border/40 space-y-3 bg-muted/20" id="panel-megapay">
+    <div class="zeus-pay-panel px-3.5 xs:px-4 sm:px-5 pb-4 sm:pb-5 pt-3.5 border-t border-border/40 space-y-3 bg-muted/20" id="panel-kashier">
       <div class="p-3 sm:p-3.5 rounded-xl bg-card border border-border/70 space-y-1.5 shadow-2xs">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[11px] text-muted-foreground font-medium">قيمة الطلب بالدينار العراقي (IQD):</span>
-          <span id="zeus-megapay-iqd-amount" class="text-sm sm:text-base font-black text-primary font-mono tabular-nums">0 د.ع</span>
+          <span class="text-[11px] text-muted-foreground font-medium">المبلغ المطلوب بالجنيه المصري (EGP):</span>
+          <span id="zeus-kashier-egp-amount" class="text-sm sm:text-base font-black text-primary font-mono tabular-nums">0 ج.م</span>
         </div>
-        <div id="zeus-megapay-amount-hint" class="text-[10px] text-muted-foreground">
-          يتم احتساب السعر تلقائياً وفق أدق تسعير مصرفي معتمد
+        <div id="zeus-kashier-amount-hint" class="text-[10px] text-muted-foreground">
+          معاملة معتمدة ومحمية مباشرة عبر بوابة كاشير (Kashier Payment Gateway)
         </div>
       </div>
 
       <p class="text-xs text-foreground/90 leading-relaxed font-medium">
-        سيتم توجيهك بأمان تام عبر بوابة الدفع الإلكتروني المعتمدة لإتمام الدفع بواسطة:
+        سيتم توجيهك بأمان تام عبر بوابة كاشير الرسمية المعتمدة لإتمام الدفع بواسطة:
       </p>
       <div class="flex items-center gap-1.5 xs:gap-2 flex-wrap text-xs">
         <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-semibold shadow-2xs flex items-center gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> <span>فيزا / ماستركارد / مدى (Visa / Mastercard)</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> <span>فيزا / ماستركارد / ميزة (Visa / Mastercard / Meeza)</span>
         </span>
         <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-semibold shadow-2xs flex items-center gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg> <span>زين كاش / كي كارد / آسيا حوالة</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>3D-Secure حماية بنكية</span>
         </span>
         <span class="px-2.5 py-1 rounded-lg bg-card border border-border text-foreground font-semibold shadow-2xs flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-warning"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span>تسليم وتفعيل تلقائي فوري</span>
@@ -454,7 +454,7 @@
 
 </div>
 
-    <!-- RAES-STYLE MEGAPAY PENDING PAYMENT STATE -->
+    <!-- RAES-STYLE KASHIER PENDING PAYMENT STATE -->
     <div id="zeus-payment-pending-state" class="hidden my-5 p-5 sm:p-7 rounded-3xl border border-primary/30 bg-card/95 shadow-2xl backdrop-blur-md text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
       <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
         <div class="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
@@ -464,19 +464,19 @@
         <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-primary/15 text-primary border border-primary/30 mb-2">جاري التحقق تلقائياً ⚡</span>
         <h3 class="text-lg sm:text-xl font-black text-foreground">بانتظار تأكيد عملية الدفع</h3>
         <p class="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto mt-1 leading-relaxed">
-          أكمل العملية في صفحة <strong>Mega Pay</strong>. ستظهر نتيجة الطلب هنا بعد وصول إشعار الدفع الموقّع وتسليم كود التفعيل فوراً.
+          أكمل العملية في صفحة <strong>كاشير (Kashier)</strong> الآمنة. ستظهر نتيجة الطلب هنا بعد استلام إشعار الدفع المعتمد وتسليم كود التفعيل فوراً.
         </p>
       </div>
       
       <div class="p-3.5 sm:p-4 rounded-2xl bg-muted/40 border border-border/60 max-w-sm mx-auto">
         <div class="text-xs text-muted-foreground font-medium">المبلغ المطلوب للدفع</div>
-        <div class="text-xl sm:text-2xl font-black text-primary mt-0.5" id="zeus-pending-amount-val">0 د.ع</div>
+        <div class="text-xl sm:text-2xl font-black text-primary mt-0.5" id="zeus-pending-amount-val">0 ج.م</div>
         <div class="text-[11px] text-muted-foreground/80 mt-1 font-mono" id="zeus-pending-order-ref">رقم العملية: #ZEUS-WAITING</div>
       </div>
 
       <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
         <a id="zeus-pending-open-link" href="#" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs sm:text-sm shadow-md hover:brightness-110 flex items-center gap-2 transition-all">
-          <span>فتح صفحة الدفع</span>
+          <span>فتح صفحة الدفع (Kashier)</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
         </a>
         <button type="button" id="zeus-pending-refresh-btn" class="px-4 py-2.5 rounded-xl bg-card border border-border hover:bg-muted/50 text-foreground font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer">

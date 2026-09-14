@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 import os
-from fastapi import FastAPI, HTTPException
+import random
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -17,6 +18,7 @@ from .store_repository import StoreRepository
 from .crypto import get_crypto_instructions
 from .admin_routes import admin_router
 from .megapay import MegaPayClient, MegaPayError
+from .kashier import KashierClient, KashierError, KashierPayment
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -44,6 +46,25 @@ class MegaPayTestPayload(BaseModel):
     merchant_id: str
     api_key: str | None = None
     api_url: str | None = "https://api.mega-pay.cc/v1/payments"
+
+class KashierCreatePayload(BaseModel):
+    amount_egp: float | None = None
+    amount_usd: float | None = None
+    amount_sar: float | None = None
+    amount: float | None = None
+    currency: str = "EGP"
+    order_id: str | None = None
+    title: str = "طلب متجر زيوس"
+    customer_name: str = "عميل زيوس ستور"
+    customer_phone: str | None = None
+    customer_email: str | None = None
+    callback_url: str | None = None
+
+class KashierTestPayload(BaseModel):
+    merchant_id: str
+    api_key: str
+    secret_key: str
+    mode: str = "live"
 
 class BinanceTestPayload(BaseModel):
     api_key: str
@@ -200,6 +221,148 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=502, detail=str(exc))
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"MegaPay error: {str(exc)}")
+
+    # ==========================================
+    # Kashier (كاشير v3) Payment Endpoints (Same as RAES)
+    # ==========================================
+    @app.post("/api/v1/payment/kashier/test")
+    async def api_kashier_test(req: KashierTestPayload):
+        merchant_id = (req.merchant_id or "").strip()
+        api_key = (req.api_key or "").strip()
+        secret_key = (req.secret_key or "").strip()
+        mode = (req.mode or "live").strip().lower()
+
+        if not merchant_id or not api_key or not secret_key:
+            raise HTTPException(status_code=400, detail="يرجى كتابة Merchant ID و API Key و Secret Key")
+
+        client = KashierClient(
+            merchant_id=merchant_id,
+            api_key=api_key,
+            secret_key=secret_key,
+            mode=mode,
+        )
+        try:
+            payment = await client.create_payment_session(
+                order_id=f"TEST_{int(datetime.now().timestamp())}",
+                amount="10.00",
+                currency="EGP",
+                customer_email="test@zeus.store",
+                merchant_redirect="https://deverrorx.github.io/zeusShop/checkout.html",
+                description="Test Credentials Validation",
+            )
+            return {
+                "status": "ok",
+                "success": True,
+                "message": "تم الاتصال ببوابة كاشير وتوليد جلسة فحص بنجاح ⚡",
+                "merchant_id": merchant_id,
+                "session_id": payment.session_id,
+                "session_url": payment.session_url,
+            }
+        except KashierError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Kashier error: {str(exc)}")
+
+    @app.post("/api/v1/payment/kashier/create")
+    async def api_create_kashier_payment(req: KashierCreatePayload):
+        gateways = StoreRepository.get_payment_gateways()
+        kashier_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "kashier"), {})
+
+        merchant_id = kashier_cfg.get("merchant_id") or settings.kashier_merchant_id
+        api_key = kashier_cfg.get("api_key") or settings.kashier_api_key
+        secret_key = kashier_cfg.get("secret_key") or settings.kashier_secret_key
+        mode = kashier_cfg.get("mode") or settings.kashier_mode
+        base_url = kashier_cfg.get("api_url") or settings.kashier_api_url
+
+        order_id = req.order_id or f"ZEUS_{int(datetime.now().timestamp())}_{random.randint(100, 999)}"
+        currency = (req.currency or "EGP").upper()
+
+        if req.amount and req.amount > 0:
+            amount_val = float(req.amount)
+        elif req.amount_egp and req.amount_egp > 0:
+            amount_val = float(req.amount_egp)
+            currency = "EGP"
+        elif req.amount_usd and req.amount_usd > 0:
+            amount_val = float(req.amount_usd)
+            currency = "USD"
+        elif req.amount_sar and req.amount_sar > 0:
+            amount_val = float(req.amount_sar)
+        else:
+            amount_val = 100.00
+
+        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/checkout.html?order_id={order_id}&payment=kashier&status=success"
+
+        client = KashierClient(
+            merchant_id=merchant_id,
+            api_key=api_key,
+            secret_key=secret_key,
+            mode=mode,
+            base_url=base_url,
+        )
+        try:
+            payment = await client.create_payment_session(
+                order_id=order_id,
+                amount=f"{amount_val:.2f}",
+                currency=currency,
+                customer_email=req.customer_email or f"customer_{order_id[:8]}@zeus.store",
+                customer_reference=req.customer_phone or f"cust_{order_id[:8]}",
+                merchant_redirect=callback_url,
+                description=req.title or f"طلب متجر زيوس #{order_id[:8].upper()}",
+            )
+
+            try:
+                StoreRepository.create_order(
+                    order_id=order_id,
+                    customer_name=req.customer_name,
+                    customer_phone=req.customer_phone or "01000000000",
+                    customer_email=req.customer_email or "",
+                    payment_method="kashier",
+                    total_amount=amount_val,
+                    currency=currency,
+                    items=[{"name": req.title, "price": amount_val, "qty": 1}],
+                    notes=f"Kashier session: {payment.session_id}"
+                )
+            except Exception:
+                pass
+
+            return {
+                "status": "ok",
+                "success": True,
+                "order_id": order_id,
+                "session_id": payment.session_id,
+                "session_url": payment.session_url,
+                "payment_url": payment.session_url,
+                "amount": payment.amount,
+                "currency": payment.currency,
+            }
+        except KashierError as exc:
+            raise HTTPException(status_code=502, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Kashier error: {str(exc)}")
+
+    @app.post("/webhooks/kashier")
+    async def kashier_webhook(request: Request):
+        try:
+            payload = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON")
+
+        sig = request.headers.get("x-kashier-signature") or request.headers.get("X-Kashier-Signature")
+        client = KashierClient(
+            merchant_id=settings.kashier_merchant_id,
+            api_key=settings.kashier_api_key,
+            secret_key=settings.kashier_secret_key,
+        )
+        if sig and not client.verify_webhook_signature(payload, sig):
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
+        data = payload.get("data", {})
+        order_id = data.get("order") or data.get("merchantOrderId")
+        status = str(data.get("status") or "").upper()
+        if order_id and status in ("SUCCESS", "PAID", "CAPTURED"):
+            StoreRepository.update_order_status(order_id, "paid")
+
+        return {"status": "ok", "received": True}
 
     # Include Admin API
     # ==========================================
@@ -495,3 +658,5 @@ def create_app() -> FastAPI:
         return page_file("maintenance.html")
 
     return app
+
+app = create_app()

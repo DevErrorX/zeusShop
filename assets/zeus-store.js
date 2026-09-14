@@ -865,7 +865,7 @@
   // ==========================================
   // 11. CHECKOUT PAGE ENHANCEMENTS (checkout.html)
   // ==========================================
-  let selectedPaymentMethod = 'megapay';
+  let selectedPaymentMethod = 'kashier';
 
   function updateCheckoutAmounts() {
     const cart = getCart();
@@ -881,15 +881,14 @@
     const egpPerUsdt = usdtInfo.egpPerUnit || (1.0 / usdtInfo.rate);
     const totalUsdt = (totalEgp * usdtInfo.rate).toFixed(2);
 
-    // Update amounts in MegaPay panel & buttons (100% SAME AS RAES)
-    const totalIqd = Math.max(1000, Math.round(totalEgp * 25.51));
-    const megaIqdEl = document.getElementById('zeus-megapay-iqd-amount');
-    if (megaIqdEl) megaIqdEl.textContent = `${totalIqd.toLocaleString('en-US')} د.ع`;
-    const megaAmountHint = document.getElementById('zeus-megapay-amount-hint');
-    if (megaAmountHint) {
-      megaAmountHint.innerHTML = `
+    // Update amounts in Kashier panel & buttons (100% SAME AS RAES)
+    const kashierEgpEl = document.getElementById('zeus-kashier-egp-amount');
+    if (kashierEgpEl) kashierEgpEl.textContent = `${totalEgp.toLocaleString('en-US')} ج.م`;
+    const kashierAmountHint = document.getElementById('zeus-kashier-amount-hint');
+    if (kashierAmountHint) {
+      kashierAmountHint.innerHTML = `
         <div class="text-[10.5px] text-muted-foreground font-mono">
-          القيمة المحتسبة للبوابة: <span class="font-bold text-foreground">${totalIqd.toLocaleString('en-US')} د.ع</span> (ما يعادل ${totalEgp.toLocaleString('en-US')} ج.م)
+          معاملة معتمدة ومحمية مباشرة عبر بوابة كاشير (Kashier Payment Gateway)
         </div>
       `;
     }
@@ -1000,9 +999,9 @@
     });
 
     function selectPaymentMethod(method) {
-      selectedPaymentMethod = 'megapay';
+      selectedPaymentMethod = 'kashier';
       payOptions.forEach(opt => {
-        const panel = document.getElementById('panel-megapay');
+        const panel = document.getElementById('panel-kashier');
         const dot = opt.querySelector('.zeus-radio-dot');
         const innerDot = dot ? dot.querySelector('div') : null;
 
@@ -1015,7 +1014,7 @@
       // Update submit button text
       const payBtnText = document.querySelector('.co-sec-submit span');
       if (payBtnText) {
-        payBtnText.textContent = 'الانتقال إلى الدفع بالبطاقة البنكية (Visa / Mastercard)';
+        payBtnText.textContent = 'الانتقال إلى الدفع عبر كاشير (Kashier - Visa / Mastercard)';
       }
     }
 
@@ -1036,10 +1035,14 @@
       };
     });
 
-    // Check if returning from MegaPay or confirmed payment (RAES style)
+    // Check if returning from Kashier or confirmed payment (RAES style)
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('status') === 'success' || urlParams.get('payment') === 'megapay') {
-      const orderId = urlParams.get('orderId') || 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
+    const isSuccess = urlParams.get('status') === 'success' || 
+                      urlParams.get('payment') === 'kashier' || 
+                      urlParams.get('payment') === 'megapay' || 
+                      urlParams.get('paymentStatus') === 'SUCCESS';
+    if (isSuccess) {
+      const orderId = urlParams.get('order_id') || urlParams.get('orderId') || 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
       let pendingData = {};
       try {
         pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
@@ -1054,7 +1057,7 @@
       if (typeof updateCartBadges === 'function') updateCartBadges();
 
       setTimeout(() => {
-        showOrderSuccessModal(orderId, email, phone, 'megapay', 'تم الدفع بنجاح عبر MEGA PAY ⚡', totalUsdt, totalEgp);
+        showOrderSuccessModal(orderId, email, phone, 'kashier', 'تم الدفع بنجاح عبر كاشير (Kashier) ⚡', totalUsdt, totalEgp);
       }, 400);
     }
 
@@ -1107,11 +1110,10 @@
           return;
         }
 
-        // MegaPay Flow (100% SAME AS RAES)
-        if (selectedPaymentMethod === 'megapay') {
+        // Kashier Flow (100% SAME AS RAES)
+        if (selectedPaymentMethod === 'kashier' || selectedPaymentMethod === 'megapay') {
           const amounts = updateCheckoutAmounts();
           const currentEgp = amounts ? amounts.totalEgp : totalEgp;
-          const totalIqd = amounts?.totalIqd || Math.max(1000, Math.round(currentEgp * 25.51));
           const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
           const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
           const orderTitle = `طلب متجر زيوس #${orderId}`;
@@ -1120,15 +1122,15 @@
           // Open blank payment tab early to prevent browser popup block
           let paymentWindow = null;
           try {
-            paymentWindow = window.open('about:blank', 'zeusMegaPay');
+            paymentWindow = window.open('about:blank', 'zeusKashier');
             if (paymentWindow) {
               paymentWindow.opener = null;
-              paymentWindow.document.title = 'Mega Pay — زيوس ستور';
+              paymentWindow.document.title = 'Kashier — زيوس ستور';
               paymentWindow.document.body.innerHTML = `
                 <div style="font-family:system-ui,sans-serif; text-align:center; padding:60px 20px; direction:rtl; background:#090d16; color:#f8fafc; min-height:100vh;">
-                  <div style="width:50px; height:50px; border:4px solid rgba(245,158,11,0.2); border-top-color:#f59e0b; border-radius:50%; margin:0 auto 20px; animation:spin 1s linear infinite;"></div>
+                  <div style="width:50px; height:50px; border:4px solid rgba(207,65,59,0.2); border-top-color:#cf413b; border-radius:50%; margin:0 auto 20px; animation:spin 1s linear infinite;"></div>
                   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-                  <h2 style="color:#f59e0b; margin-bottom:10px;">جاري الانتقال لبوابة Mega Pay الآمنة... ⚡</h2>
+                  <h2 style="color:#f1786e; margin-bottom:10px;">جاري الانتقال لبوابة كاشير (Kashier) الآمنة... ⚡</h2>
                   <p style="color:#94a3b8; font-size:14px;">يرجى الانتظار، يتم توجيهك لصفحة الدفع المباشر الآن.</p>
                 </div>
               `;
@@ -1144,42 +1146,43 @@
           const pendingRefreshBtn = document.getElementById('zeus-pending-refresh-btn');
           const pendingCancelBtn = document.getElementById('zeus-pending-cancel-btn');
 
-          if (pendingAmountEl) pendingAmountEl.textContent = `${totalIqd.toLocaleString('en-US')} د.ع (${totalUsdt} USDT)`;
+          if (pendingAmountEl) pendingAmountEl.textContent = `${currentEgp.toLocaleString('en-US')} ج.م (${currentUsdt} USDT)`;
           if (pendingOrderRef) pendingOrderRef.textContent = `رقم الطلب: #${orderId}`;
           if (pendingStateEl) {
             pendingStateEl.classList.remove('hidden');
             pendingStateEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
 
-          const merchantId = localStorage.getItem('zeus_megapay_merchant_id') || '2024001';
-          const callbackUrl = localStorage.getItem('zeus_megapay_callback_url') || (window.location.origin + window.location.pathname + `?payment=megapay&orderId=${orderId}&status=success`);
+          const callbackUrl = window.location.origin + window.location.pathname + `?order_id=${orderId}&payment=kashier&status=success`;
 
           // Call API or direct gateway
           (async () => {
             let paymentUrl = '';
             try {
-              const resp = await fetch('/api/v1/payment/megapay/create', {
+              const resp = await fetch('/api/v1/payment/kashier/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  amount_iqd: totalIqd,
                   amount_egp: currentEgp,
+                  currency: 'EGP',
                   title: orderTitle,
                   customer_name: customerName,
                   customer_phone: phone,
                   customer_email: email,
-                  is_domestic: true,
+                  order_id: orderId,
                   callback_url: callbackUrl
                 })
               });
               if (resp.ok) {
                 const resData = await resp.json();
-                if (resData.payment_url) paymentUrl = resData.payment_url;
+                if (resData.session_url || resData.payment_url) {
+                  paymentUrl = resData.session_url || resData.payment_url;
+                }
               }
             } catch(e) {}
 
             if (!paymentUrl) {
-              paymentUrl = `https://mega-pay.cc/pay/?merchant=${encodeURIComponent(merchantId)}&amount=${totalIqd}&title=${encodeURIComponent(orderTitle)}&currency=IQD&callback_url=${encodeURIComponent(callbackUrl)}`;
+              paymentUrl = `https://payments.kashier.io/`;
             }
 
             if (pendingOpenLink) {
@@ -1194,24 +1197,24 @@
 
             localStorage.setItem('zeus_pending_order', JSON.stringify({
               orderId,
-              method: 'megapay',
-              amountIqd: totalIqd,
+              method: 'kashier',
+              amountEgp: currentEgp,
               paymentUrl,
               email,
               phone,
-              totalUsdt,
+              totalUsdt: currentUsdt,
               totalEgp: currentEgp,
               timestamp: Date.now()
             }));
 
-            showToast('تم بدء معاملة Mega Pay! يرجى إتمام الدفع في نافذة البوابة ⚡', 'success');
+            showToast('تم بدء معاملة كاشير (Kashier)! يرجى إتمام الدفع في نافذة البوابة ⚡', 'success');
           })();
 
           if (pendingRefreshBtn) {
             pendingRefreshBtn.onclick = () => {
               showToast('جاري التحقق من وصول إشعار السداد... ', 'info');
               setTimeout(() => {
-                showToast('بانتظار تأكيد الدفع من MegaPay... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
+                showToast('بانتظار تأكيد الدفع من كاشير... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
               }, 1200);
             };
           }

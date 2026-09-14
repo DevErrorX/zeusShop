@@ -42,5 +42,13 @@ class Settings(BaseModel):
     megapay_merchant_id: str = Field(default_factory=lambda: os.getenv("MEGAPAY_MERCHANT_ID", ""))
     megapay_secret: str = Field(default_factory=lambda: os.getenv("MEGAPAY_SECRET", ""))
 
+    # Kashier (Payment Sessions v3)
+    kashier_merchant_id: str = Field(default_factory=lambda: os.getenv("KASHIER_MERCHANT_ID", "MID-34056-532"))
+    kashier_api_key: str = Field(default_factory=lambda: os.getenv("KASHIER_API_KEY", "60963e5a-e0fd-4ddc-be8f-1346168d21a3"))
+    kashier_secret_key: str = Field(default_factory=lambda: os.getenv("KASHIER_SECRET_KEY", "bd2090fa8e6bdba2579a90ea440929e7$6a129b5ad4aa6a0bd0ad66ca5ab55df242664c957b44befdcc27e10468f31bb4a1231611bedfd39a8354fc72844d89f7"))
+    kashier_mode: str = Field(default_factory=lambda: os.getenv("KASHIER_MODE", "live"))
+    kashier_api_url: str = Field(default_factory=lambda: os.getenv("KASHIER_API_URL", "https://api.kashier.io"))
+
 settings = Settings()
+
 

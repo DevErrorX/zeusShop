@@ -2,6 +2,7 @@
 
 import sqlite3
 import os
+import json
 from .config import settings
 
 def init_db():
@@ -106,13 +107,33 @@ def init_db():
         """)
         conn.commit()
 
+        # Populate default Kashier payment gateway
+        cursor.execute("SELECT COUNT(*) FROM payment_gateways WHERE id = 'kashier'")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT OR REPLACE INTO payment_gateways (id, name, is_active, config_json)
+                VALUES (?, ?, 1, ?)
+            """, (
+                "kashier",
+                "Kashier (Visa / Mastercard / Meeza)",
+                json.dumps({
+                    "merchant_id": settings.kashier_merchant_id,
+                    "api_key": settings.kashier_api_key,
+                    "secret_key": settings.kashier_secret_key,
+                    "mode": settings.kashier_mode,
+                    "currency": "EGP",
+                    "api_url": settings.kashier_api_url,
+                    "callback_url": "https://deverrorx.github.io/zeusShop/checkout.html?payment=kashier&status=success"
+                }, ensure_ascii=False)
+            ))
+            conn.commit()
+
         # Populate products from catalog.json if table is empty
         cursor.execute("SELECT COUNT(*) FROM products")
         if cursor.fetchone()[0] == 0:
             catalog_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "catalog.json")
             if os.path.exists(catalog_file):
                 try:
-                    import json
                     with open(catalog_file, "r", encoding="utf-8") as f:
                         items = json.load(f)
                     for item in items:
@@ -151,7 +172,6 @@ def init_db():
             cat_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "categories.json")
             if os.path.exists(cat_file):
                 try:
-                    import json
                     with open(cat_file, "r", encoding="utf-8") as f:
                         cats = json.load(f)
                     for c in cats:
