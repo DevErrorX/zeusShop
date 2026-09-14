@@ -293,7 +293,7 @@ def create_app() -> FastAPI:
         else:
             amount_val = 100.00
 
-        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/checkout.html?order_id={order_id}&payment=kashier&status=success"
+        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/checkout.html?order_id={order_id}&kashier_return=1"
 
         client = KashierClient(
             merchant_id=merchant_id,

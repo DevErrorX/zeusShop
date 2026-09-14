@@ -1035,30 +1035,51 @@
       };
     });
 
-    // Check if returning from Kashier or confirmed payment (RAES style)
+    // Check if returning from Kashier Gateway callback
     const urlParams = new URLSearchParams(window.location.search);
-    const isSuccess = urlParams.get('status') === 'success' || 
-                      urlParams.get('payment') === 'kashier' || 
-                      urlParams.get('payment') === 'megapay' || 
-                      urlParams.get('paymentStatus') === 'SUCCESS';
-    if (isSuccess) {
-      const orderId = urlParams.get('order_id') || urlParams.get('orderId') || 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-      let pendingData = {};
+    const kashierStatus = (urlParams.get('paymentStatus') || '').toUpperCase();
+    const isKashierReturn = urlParams.has('kashier_return') || urlParams.has('paymentStatus');
+
+    if (isKashierReturn) {
+      const orderId = urlParams.get('order_id') || urlParams.get('orderId') || urlParams.get('merchantOrderId') || '';
+      
+      // Clean query parameters from URL so refreshes don't re-trigger
       try {
-        pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
+        window.history.replaceState({}, '', window.location.pathname);
       } catch(e) {}
-      const email = pendingData.email || 'العميل';
-      const phone = pendingData.phone || '';
-      const totalUsdt = pendingData.totalUsdt || '0.00';
-      const totalEgp = pendingData.totalEgp || 0;
 
-      localStorage.removeItem('zeus_pending_order');
-      saveCart([]);
-      if (typeof updateCartBadges === 'function') updateCartBadges();
+      // Case 1: STRICT SUCCESS ONLY
+      if (kashierStatus === 'SUCCESS') {
+        let pendingData = {};
+        try {
+          pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
+        } catch(e) {}
 
-      setTimeout(() => {
-        showOrderSuccessModal(orderId, email, phone, 'kashier', 'تم الدفع بنجاح عبر كاشير (Kashier) ⚡', totalUsdt, totalEgp);
-      }, 400);
+        const email = pendingData.email || urlParams.get('customerEmail') || 'العميل';
+        const phone = pendingData.phone || '';
+        const totalUsdt = pendingData.totalUsdt || '0.00';
+        const totalEgp = pendingData.totalEgp || urlParams.get('amount') || 0;
+        const txId = urlParams.get('transactionId') ? `رقم العملية لدى كاشير: #${urlParams.get('transactionId')}` : '';
+
+        localStorage.removeItem('zeus_pending_order');
+        saveCart([]);
+        if (typeof updateCartBadges === 'function') updateCartBadges();
+
+        setTimeout(() => {
+          showOrderSuccessModal(orderId || 'ZEUS-ORDER', email, phone, 'kashier', `تم تأكيد الدفع بنجاح عبر كاشير (Kashier) ⚡\n${txId}`, totalUsdt, totalEgp);
+        }, 400);
+      } 
+      // Case 2: PAYMENT FAILED OR CANCELLED
+      else if (kashierStatus === 'FAILED' || kashierStatus === 'FAILURE' || kashierStatus === 'CANCELLED') {
+        showToast('⚠️ فشلت عملية الدفع أو تم إلغاؤها من البنك (لم يتم خصم أي مبالغ). يمكنك إعادة المحاولة ⚡', 'error');
+        const pendingStateEl = document.getElementById('zeus-payment-pending-state');
+        if (pendingStateEl) pendingStateEl.classList.add('hidden');
+        localStorage.removeItem('zeus_pending_order');
+      }
+      // Case 3: INCOMPLETE / PENDING / NO FINAL STATUS
+      else {
+        showToast('لم يتم إتمام عملية السداد في بوابة كاشير. لم يتم خصم أي مبلغ ℹ️', 'info');
+      }
     }
 
     // ==============================================================
@@ -1291,7 +1312,7 @@
             pendingStateEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
 
-          const callbackUrl = window.location.origin + window.location.pathname + `?order_id=${orderId}&payment=kashier&status=success`;
+          const callbackUrl = window.location.origin + window.location.pathname + `?order_id=${orderId}&kashier_return=1`;
           const kMerchantId = (localStorage.getItem('zeus_kashier_merchant_id') || 'MID-34056-532').trim();
           const kApiKey = (localStorage.getItem('zeus_kashier_api_key') || '60963e5a-e0fd-4ddc-be8f-1346168d21a3').trim();
           const kMode = (localStorage.getItem('zeus_kashier_mode') || 'live').trim();
