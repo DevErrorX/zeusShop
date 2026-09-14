@@ -193,7 +193,7 @@
     try {
       _storage.setItem('zeus_wishlist', JSON.stringify(list));
     } catch(e) {}
-    showToast(added ? 'تمت إضافة المنتج للمفضلة ❤️' : 'تمت إزالة المنتج من المفضلة', 'info');
+    showToast(added ? 'تمت إضافة المنتج للمفضلة ' : 'تمت إزالة المنتج من المفضلة', 'info');
     updateWishlistIcons();
   }
 
@@ -488,7 +488,7 @@
       cart.push(product);
     }
     saveCart(cart);
-    showToast(`تمت إضافة "${product.title}" إلى السلة بنجاح! 🛒`);
+    showToast(`تمت إضافة "${product.title}" إلى السلة بنجاح! `);
   }
 
   function handleBuyNow(e, btn) {
@@ -1054,7 +1054,7 @@
       // Update submit button text
       const payBtnText = document.querySelector('.co-sec-submit span');
       if (payBtnText) {
-        if (method === 'megapay') payBtnText.textContent = 'الانتقال إلى MEGA PAY للدفع الفوري ⚡️';
+        if (method === 'megapay') payBtnText.textContent = 'الانتقال إلى MEGA PAY للدفع الفوري ';
         else if (method === 'binance_uid') payBtnText.textContent = 'تأكيد تحويل Binance UID واعتماد الطلب';
         else if (method === 'binance_giftcard') payBtnText.textContent = 'استبدال قسيمة باينانس واعتماد الطلب';
       }
@@ -1069,7 +1069,7 @@
         if (targetEl) {
           const textToCopy = targetEl.textContent.trim().replace(' USDT', '');
           navigator.clipboard.writeText(textToCopy).then(() => {
-            showToast(`تم النسخ إلى الحافظة بنجاح: ${textToCopy} 📋`, 'success');
+            showToast(`تم النسخ إلى الحافظة بنجاح: ${textToCopy} `, 'success');
           }).catch(() => {
             showToast(`تم النسخ: ${textToCopy}`, 'info');
           });
@@ -1221,7 +1221,7 @@
 
           if (pendingRefreshBtn) {
             pendingRefreshBtn.onclick = () => {
-              showToast('جاري التحقق من وصول إشعار السداد... 🔄', 'info');
+              showToast('جاري التحقق من وصول إشعار السداد... ', 'info');
               setTimeout(() => {
                 showToast('بانتظار تأكيد الدفع من MegaPay... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
               }, 1200);
@@ -1305,7 +1305,7 @@
           <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-amber-600 mx-auto flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
-          <h3 class="text-xl font-extrabold text-white">🎉 تم الشراء والدفع بنجاح!</h3>
+          <h3 class="text-xl font-extrabold text-white">تم الشراء والدفع بنجاح!</h3>
           <p class="text-xs text-amber-400 font-bold">كود التأكيد الخاص بك:</p>
           <div class="px-4 py-2.5 bg-amber-500/10 rounded-xl font-mono text-amber-400 text-sm font-bold border border-amber-500/30 select-all">
             CONF-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${orderId.replace('ZEUS-', '')}
@@ -1400,7 +1400,7 @@
       _storage
     };
 
-    console.log('⚡️ ZEUS STORE Engine loaded and fully active.');
+    console.log(' ZEUS STORE Engine loaded and fully active.');
   }
 
   if (document.readyState === 'loading') {
