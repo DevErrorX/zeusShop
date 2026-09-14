@@ -45,6 +45,27 @@ class MegaPayTestPayload(BaseModel):
     api_key: str | None = None
     api_url: str | None = "https://api.mega-pay.cc/v1/payments"
 
+class BinanceTestPayload(BaseModel):
+    api_key: str
+    api_secret: str
+
+class BinanceVerifyUidPayload(BaseModel):
+    transaction_id: str
+    expected_usdt: float
+    customer_email: str | None = None
+    customer_phone: str | None = None
+    api_key: str | None = None
+    api_secret: str | None = None
+    recipient_uid: str | None = None
+
+class BinanceVerifyGiftCardPayload(BaseModel):
+    code: str
+    expected_usdt: float
+    customer_email: str | None = None
+    customer_phone: str | None = None
+    api_key: str | None = None
+    api_secret: str | None = None
+
 def create_app() -> FastAPI:
     init_db()
     
@@ -181,6 +202,232 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=f"MegaPay error: {str(exc)}")
 
     # Include Admin API
+    # ==========================================
+    # Binance Pay (UID) & Gift Card Real Verification
+    # ==========================================
+    @app.post("/api/v1/payment/binance/test")
+    async def api_binance_test(req: BinanceTestPayload):
+        if not req.api_key.strip() or not req.api_secret.strip():
+            raise HTTPException(status_code=400, detail="يرجى كتابة كل من API Key و API Secret معاً")
+        
+        import hmac, hashlib, time, httpx
+        from urllib.parse import urlencode
+
+        now = int(time.time() * 1000)
+        params = {"timestamp": now, "recvWindow": 5000}
+        query = urlencode(params)
+        signature = hmac.new(req.api_secret.strip().encode(), query.encode(), hashlib.sha256).hexdigest()
+        url = f"https://api.binance.com/sapi/v1/account/status?{query}&signature={signature}"
+        headers = {"X-MBX-APIKEY": req.api_key.strip()}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(url, headers=headers)
+            try:
+                data = resp.json()
+            except Exception:
+                data = {}
+            if resp.status_code == 200:
+                return {
+                    "status": "ok",
+                    "success": True,
+                    "message": "تم الاتصال بخادم Binance بنجاح والمفاتيح معتمدة وصالحة ⚡",
+                    "account_status": data.get("data", "Normal")
+                }
+            else:
+                err_msg = data.get("msg") or f"رمز الاستجابة {resp.status_code}"
+                return {
+                    "status": "error",
+                    "success": False,
+                    "message": f"فشل التحقق من باينانس: {err_msg}"
+                }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "success": False,
+                "message": f"تعذر الاتصال بـ Binance: {str(exc)}"
+            }
+
+    @app.post("/api/v1/payment/binance/verify-uid")
+    async def api_binance_verify_uid(req: BinanceVerifyUidPayload):
+        import time
+        from decimal import Decimal
+        from .crypto import BinancePayClient, CryptoTransferNotFound, CryptoTransferRejected, CryptoProviderUnavailable
+
+        gateways = StoreRepository.get_payment_gateways()
+        binance_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "binance_uid"), {})
+
+        api_key = (req.api_key or binance_cfg.get("api_key") or os.getenv("BINANCE_API_KEY", "")).strip()
+        api_secret = (req.api_secret or binance_cfg.get("api_secret") or os.getenv("BINANCE_API_SECRET", "")).strip()
+        recipient_uid = (req.recipient_uid or binance_cfg.get("uid") or os.getenv("BINANCE_PAY_ID", "849201948")).strip()
+
+        if not api_key or not api_secret:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": "مفاتيح Binance API Key و API Secret غير محددة في لوحة تحكم الأدمن حتى الآن"
+            }
+
+        client = BinancePayClient(
+            api_key=api_key,
+            api_secret=api_secret,
+            recipient_id=recipient_uid,
+            base_url="https://api.binance.com"
+        )
+
+        try:
+            created_after_ms = int((time.time() - 86400 * 2) * 1000) # last 48 hours
+            record = await client.lookup(req.transaction_id.strip(), created_after_ms=created_after_ms)
+
+            expected = Decimal(str(round(req.expected_usdt, 2)))
+            if record.amount < expected:
+                return {
+                    "status": "error",
+                    "verified": False,
+                    "detail": f"المبلغ المستلم ({record.amount} USDT) أقل من قيمة الطلب المطلوبة ({expected} USDT)"
+                }
+
+            order_id = "ZEUS-" + str(int(time.time()))[-6:]
+            StoreRepository.create_order(
+                customer_name=req.customer_email.split('@')[0] if req.customer_email else "عميل باينانس",
+                customer_phone=req.customer_phone or "",
+                customer_email=req.customer_email,
+                payment_method="binance_uid",
+                total_amount=float(record.amount),
+                currency="USDT",
+                items=[{"title": f"دفع باينانس عملية #{record.transaction_id}", "quantity": 1, "price_sar": float(record.amount) * 3.75}]
+            )
+            StoreRepository.update_order_status(order_id, "paid")
+
+            return {
+                "status": "ok",
+                "verified": True,
+                "order_id": order_id,
+                "transaction_id": record.transaction_id,
+                "amount": float(record.amount),
+                "sender_id": record.sender_id,
+                "message": "تم التحقق من المعاملة بنجاح عبر شبكة باينانس!"
+            }
+        except CryptoTransferNotFound:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": "لم يتم العثور على العملية في سجل تحويلات باينانس. يرجى التأكد من إتمام التحويل الداخلي ولصق رقم المعاملة الصحيح."
+            }
+        except CryptoTransferRejected as exc:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": f"تم رفض المعاملة من باينانس: {exc.reason}"
+            }
+        except CryptoProviderUnavailable as exc:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": f"خطأ أثناء الاستعلام من باينانس: {str(exc)}"
+            }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": f"حدث خطأ أثناء فحص التحويل: {str(exc)}"
+            }
+
+    @app.post("/api/v1/payment/binance/verify-giftcard")
+    async def api_binance_verify_giftcard(req: BinanceVerifyGiftCardPayload):
+        import time
+        from decimal import Decimal
+        from .crypto import BinanceGiftCardClient, CryptoTransferNotFound, CryptoTransferRejected, CryptoProviderUnavailable
+
+        gateways = StoreRepository.get_payment_gateways()
+        gc_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "binance_giftcard"), {})
+        uid_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "binance_uid"), {})
+
+        api_key = (req.api_key or gc_cfg.get("api_key") or uid_cfg.get("api_key") or os.getenv("BINANCE_API_KEY", "")).strip()
+        api_secret = (req.api_secret or gc_cfg.get("api_secret") or uid_cfg.get("api_secret") or os.getenv("BINANCE_API_SECRET", "")).strip()
+
+        if not api_key or not api_secret:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": "مفاتيح Binance API Key و API Secret غير محددة للبطاقات في لوحة التحكم"
+            }
+
+        client = BinanceGiftCardClient(
+            api_key=api_key,
+            api_secret=api_secret,
+            recipient_id="",
+            base_url="https://api.binance.com"
+        )
+
+        clean_code = req.code.strip()
+        try:
+            card_info = None
+            try:
+                card_info = await client.verify(clean_code)
+            except Exception:
+                try:
+                    ref = await client.redeem(clean_code)
+                    card_info = await client.verify(ref)
+                except Exception:
+                    raise CryptoTransferNotFound("بطاقة باينانس غير صالحة أو تم استخدامها مسبقاً")
+
+            if not card_info:
+                raise CryptoTransferNotFound("لم يتم العثور على بيانات البطاقة")
+
+            expected = Decimal(str(round(req.expected_usdt, 2)))
+            if card_info.face_value < expected:
+                return {
+                    "status": "error",
+                    "verified": False,
+                    "detail": f"قيمة البطاقة ({card_info.face_value} USDT) أقل من قيمة الطلب المطلوبة ({expected} USDT)"
+                }
+
+            order_id = "ZEUS-" + str(int(time.time()))[-6:]
+            StoreRepository.create_order(
+                customer_name=req.customer_email.split('@')[0] if req.customer_email else "عميل قسيمة باينانس",
+                customer_phone=req.customer_phone or "",
+                customer_email=req.customer_email,
+                payment_method="binance_giftcard",
+                total_amount=float(card_info.face_value),
+                currency="USDT",
+                items=[{"title": f"قسيمة باينانس كود #{clean_code[:6]}****", "quantity": 1, "price_sar": float(card_info.face_value) * 3.75}]
+            )
+            StoreRepository.update_order_status(order_id, "paid")
+
+            return {
+                "status": "ok",
+                "verified": True,
+                "order_id": order_id,
+                "face_value": float(card_info.face_value),
+                "currency": card_info.currency,
+                "message": "تم استبدال قسيمة باينانس بنجاح واعتماد الطلب!"
+            }
+        except CryptoTransferNotFound:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": "رمز كرت باينانس غير صالح أو منتهي الصلاحية أو مستخدم مسبقاً."
+            }
+        except CryptoTransferRejected as exc:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": f"تم رفض قسيمة باينانس: {exc.reason}"
+            }
+        except CryptoProviderUnavailable as exc:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": f"تعذر التحقق من باينانس: {str(exc)}"
+            }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "verified": False,
+                "detail": f"حدث خطأ أثناء فحص البطاقة: {str(exc)}"
+            }
+
     app.include_router(admin_router)
 
     # Mount Static Assets & Pages

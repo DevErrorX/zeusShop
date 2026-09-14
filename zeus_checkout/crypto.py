@@ -597,3 +597,21 @@ class BinanceGiftCardClient(_SignedClient):
             raise CryptoProviderUnavailable(
                 "RSA encryption failed"
             ) from exc
+
+
+def get_crypto_instructions(amount_usdt: float = 10.0) -> dict:
+    """Return customer payment instructions for USDT / Binance."""
+    return {
+        "status": "ok",
+        "currency": "USDT",
+        "amount": amount_usdt,
+        "binance_pay": {
+            "name": "Binance Pay / UID",
+            "recommended": True,
+            "instructions": "قم بالتحويل الداخلي عبر معرف Binance UID لتفادي رسوم الشبكة والاستفادة من التأكيد الفوري"
+        },
+        "gift_card": {
+            "name": "Binance Gift Card",
+            "instructions": "أدخل رمز قسيمة باينانس المكون من 16 رقماً للاستبدال الفوري"
+        }
+    }

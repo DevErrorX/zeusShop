@@ -205,20 +205,50 @@
     if (!container) {
       container = document.createElement('div');
       container.id = 'zeus-toast-container';
-      container.className = 'fixed bottom-20 sm:bottom-6 start-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2 pointer-events-none items-center w-full max-w-sm px-4';
+      container.className = 'fixed bottom-20 sm:bottom-6 start-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2.5 pointer-events-none items-center w-full max-w-md px-4';
       document.body.appendChild(container);
     }
 
     const toast = document.createElement('div');
+    const isError = type === 'error' || type === 'danger';
     const isSuccess = type === 'success';
-    toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-xl ring-1 transition-all duration-300 transform translate-y-4 opacity-0 ${
-      isSuccess 
-        ? 'bg-slate-900/95 text-white ring-cyan-500/40 border border-cyan-500/30' 
-        : 'bg-slate-900/95 text-white ring-white/10'
-    }`;
+
+    // Rich luxury burgundy red for errors as requested by user
+    let styleClass = '';
+    let iconSvg = '';
+    if (isError) {
+      styleClass = 'zeus-toast-error';
+      iconSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-rose-200">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      `;
+    } else if (isSuccess) {
+      styleClass = 'bg-slate-900/95 text-white ring-emerald-500/40 border border-emerald-500/30 shadow-2xl';
+      iconSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-emerald-400">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      `;
+    } else {
+      styleClass = 'bg-slate-900/95 text-white ring-amber-500/40 border border-amber-500/30 shadow-2xl';
+      iconSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-amber-400">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      `;
+    }
+
+    toast.className = `pointer-events-auto flex items-center gap-3 px-4.5 py-3.5 rounded-2xl backdrop-blur-xl transition-all duration-300 transform translate-y-4 opacity-0 w-full sm:w-auto min-w-[280px] sm:min-w-[320px] text-start ${styleClass}`;
     toast.innerHTML = `
-      <div class="flex items-center gap-2.5 font-medium text-xs sm:text-sm">
-        <span>${message}</span>
+      <div class="flex items-center gap-3 font-medium text-xs sm:text-sm leading-snug w-full">
+        ${iconSvg}
+        <span class="flex-1">${message}</span>
       </div>
     `;
     container.appendChild(toast);
@@ -231,8 +261,9 @@
     setTimeout(() => {
       toast.classList.add('opacity-0', '-translate-y-2');
       setTimeout(() => toast.remove(), 300);
-    }, 2800);
+    }, 3800);
   }
+  window.showToast = showToast;
 
   // ==========================================
   // 4. CART DRAWER & BADGES
@@ -1104,7 +1135,7 @@
       b.textContent.includes('اضغط هنا للدفع') || b.textContent.includes('الدفع الآن') || b.closest('.co-sec-submit')
     );
     if (payBtn) {
-      payBtn.onclick = function(e) {
+      payBtn.onclick = async function(e) {
         e.preventDefault();
         const emailInp = document.querySelector('input[type="email"]');
         const phoneInp = document.querySelector('input[type="tel"]');
@@ -1112,10 +1143,39 @@
         const email = emailInp ? emailInp.value.trim() : '';
         const phone = phoneInp ? phoneInp.value.trim() : '';
 
-        if (!email || !phone) {
-          showToast('يرجى إدخال البريد الإلكتروني ورقم الهاتف أولاً', 'info');
-          if (emailInp && !email) emailInp.focus();
-          else if (phoneInp && !phone) phoneInp.focus();
+        // Clear previous input error indicators
+        if (emailInp) emailInp.classList.remove('input-error');
+        if (phoneInp) phoneInp.classList.remove('input-error');
+
+        // Burgundy error notifications for input validation
+        if (!email) {
+          showToast('يجب إدخال البريد الإلكتروني لمتابعة الطلب واستلام الأكواد', 'error');
+          if (emailInp) {
+            emailInp.classList.add('input-error');
+            emailInp.focus();
+            emailInp.addEventListener('input', () => emailInp.classList.remove('input-error'), { once: true });
+          }
+          return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          showToast('يرجى كتابة عنوان بريد إلكتروني صحيح (مثال: name@example.com)', 'error');
+          if (emailInp) {
+            emailInp.classList.add('input-error');
+            emailInp.focus();
+            emailInp.addEventListener('input', () => emailInp.classList.remove('input-error'), { once: true });
+          }
+          return;
+        }
+
+        if (!phone) {
+          showToast('يجب إدخال رقم الهاتف للتواصل وتأكيد الطلب', 'error');
+          if (phoneInp) {
+            phoneInp.classList.add('input-error');
+            phoneInp.focus();
+            phoneInp.addEventListener('input', () => phoneInp.classList.remove('input-error'), { once: true });
+          }
           return;
         }
 
@@ -1238,35 +1298,166 @@
           return;
         }
 
-        // Method-specific validations
-        let extraInfo = '';
+        // ==========================================
+        // REAL BINANCE UID / PAY VERIFICATION
+        // ==========================================
         if (selectedPaymentMethod === 'binance_uid') {
           const txInput = document.getElementById('zeus-binance-txid');
           const txid = txInput ? txInput.value.trim() : '';
+          if (txInput) txInput.classList.remove('input-error');
+
           if (!txid) {
-            showToast('يرجى لصق رقم عملية التحويل (Transaction ID) من تطبيق باينانس', 'info');
-            if (txInput) txInput.focus();
+            showToast('يجب إدخال رقم عملية التحويل (Transaction ID) من تطبيق باينانس', 'error');
+            if (txInput) {
+              txInput.classList.add('input-error');
+              txInput.focus();
+              txInput.addEventListener('input', () => txInput.classList.remove('input-error'), { once: true });
+            }
             return;
           }
-          extraInfo = `رقم العملية: ${txid}`;
-        } else if (selectedPaymentMethod === 'binance_giftcard') {
-          const cardInput = document.getElementById('zeus-giftcard-code');
-          const code = cardInput ? cardInput.value.trim() : '';
-          if (!code) {
-            showToast('يرجى إدخال رمز كرت أو قسيمة باينانس (Redemption Code)', 'info');
-            if (cardInput) cardInput.focus();
-            return;
+
+          const amounts = updateCheckoutAmounts();
+          const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
+          const currentEgp = amounts ? amounts.totalEgp : totalEgp;
+          const apiKey = localStorage.getItem('zeus_binance_api_key') || '';
+          const apiSecret = localStorage.getItem('zeus_binance_api_secret') || '';
+          const recipientUid = localStorage.getItem('zeus_binance_uid') || '';
+
+          const originalBtnHtml = payBtn.innerHTML;
+          payBtn.disabled = true;
+          payBtn.innerHTML = `
+            <span class="inline-flex items-center gap-2">
+              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>جاري التحقق الحقيقي من المعاملة عبر باينانس...</span>
+            </span>
+          `;
+
+          try {
+            const resp = await fetch('/api/v1/payment/binance/verify-uid', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                transaction_id: txid,
+                expected_usdt: parseFloat(currentUsdt) || 0,
+                customer_email: email,
+                customer_phone: phone,
+                api_key: apiKey || undefined,
+                api_secret: apiSecret || undefined,
+                recipient_uid: recipientUid || undefined
+              })
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok && data.verified) {
+              showToast(data.message || 'تم التحقق من المعاملة بنجاح عبر شبكة باينانس! ⚡', 'success');
+              const finalOrderId = data.order_id || ('ZEUS-' + Math.floor(100000 + Math.random() * 900000));
+              showOrderSuccessModal(finalOrderId, email, phone, 'binance_uid', `رقم العملية: ${txid}`, currentUsdt, currentEgp);
+            } else {
+              if (txInput) {
+                txInput.classList.add('input-error');
+                txInput.focus();
+                txInput.addEventListener('input', () => txInput.classList.remove('input-error'), { once: true });
+              }
+              const errMsg = data.detail || data.message || 'لم يتم العثور على المعاملة أو أن المبلغ غير مطابق في حساب باينانس';
+              showToast(errMsg, 'error');
+            }
+          } catch(err) {
+            console.error('Binance UID verification error:', err);
+            if (txInput) txInput.classList.add('input-error');
+            showToast('حدث خطأ أثناء فحص المعاملة من باينانس، يرجى إعادة المحاولة', 'error');
+          } finally {
+            payBtn.innerHTML = originalBtnHtml;
+            payBtn.disabled = false;
           }
-          extraInfo = `كود القسيمة: ${code}`;
+          return;
         }
 
+        // ==========================================
+        // REAL BINANCE GIFT CARD VERIFICATION
+        // ==========================================
+        if (selectedPaymentMethod === 'binance_giftcard') {
+          const cardInput = document.getElementById('zeus-giftcard-code');
+          const code = cardInput ? cardInput.value.trim() : '';
+          if (cardInput) cardInput.classList.remove('input-error');
+
+          if (!code) {
+            showToast('يجب إدخال كود بطاقة هدية باينانس (Redemption Code)', 'error');
+            if (cardInput) {
+              cardInput.classList.add('input-error');
+              cardInput.focus();
+              cardInput.addEventListener('input', () => cardInput.classList.remove('input-error'), { once: true });
+            }
+            return;
+          }
+
+          const amounts = updateCheckoutAmounts();
+          const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
+          const currentEgp = amounts ? amounts.totalEgp : totalEgp;
+          const apiKey = localStorage.getItem('zeus_binance_giftcard_api_key') || localStorage.getItem('zeus_binance_api_key') || '';
+          const apiSecret = localStorage.getItem('zeus_binance_giftcard_api_secret') || localStorage.getItem('zeus_binance_api_secret') || '';
+
+          const originalBtnHtml = payBtn.innerHTML;
+          payBtn.disabled = true;
+          payBtn.innerHTML = `
+            <span class="inline-flex items-center gap-2">
+              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>جاري استبدال قسيمة باينانس وفحص الرصيد...</span>
+            </span>
+          `;
+
+          try {
+            const resp = await fetch('/api/v1/payment/binance/verify-giftcard', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                code: code,
+                expected_usdt: parseFloat(currentUsdt) || 0,
+                customer_email: email,
+                customer_phone: phone,
+                api_key: apiKey || undefined,
+                api_secret: apiSecret || undefined
+              })
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok && data.verified) {
+              showToast(data.message || 'تم استبدال قسيمة باينانس بنجاح واعتماد الطلب! ⚡', 'success');
+              const finalOrderId = data.order_id || ('ZEUS-' + Math.floor(100000 + Math.random() * 900000));
+              showOrderSuccessModal(finalOrderId, email, phone, 'binance_giftcard', `كود القسيمة: ${code.substring(0, 4)}**** (${data.face_value || currentUsdt} USDT)`, currentUsdt, currentEgp);
+            } else {
+              if (cardInput) {
+                cardInput.classList.add('input-error');
+                cardInput.focus();
+                cardInput.addEventListener('input', () => cardInput.classList.remove('input-error'), { once: true });
+              }
+              const errMsg = data.detail || data.message || 'رمز قسيمة باينانس غير صالح أو تم استخدامه مسبقاً أو رصيده غير كافٍ';
+              showToast(errMsg, 'error');
+            }
+          } catch(err) {
+            console.error('Binance Giftcard verification error:', err);
+            if (cardInput) cardInput.classList.add('input-error');
+            showToast('حدث خطأ أثناء الاتصال بنظام فحص قسائم باينانس', 'error');
+          } finally {
+            payBtn.innerHTML = originalBtnHtml;
+            payBtn.disabled = false;
+          }
+          return;
+        }
+
+        // Fallback or other methods
         const amounts = updateCheckoutAmounts();
         const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
         const currentEgp = amounts ? amounts.totalEgp : totalEgp;
-
-        // Generate Order ID
         const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-        showOrderSuccessModal(orderId, email, phone, selectedPaymentMethod, extraInfo, currentUsdt, currentEgp);
+        showOrderSuccessModal(orderId, email, phone, selectedPaymentMethod, '', currentUsdt, currentEgp);
       };
     }
 

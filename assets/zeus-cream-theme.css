@@ -516,3 +516,69 @@ div[style*="--ann-marquee-duration"] {
 .ann-item svg {
   color: #D97706 !important;
 }
+
+/* ==========================================================================
+   DEEP BURGUNDY ERROR NOTIFICATIONS & VALIDATION STATES
+   Rich Luxury Burgundy Palette (#7F1D1D / #4C0519) with crisp white text
+   ========================================================================== */
+.zeus-toast-error,
+div[class*="Toastify__toast--error"],
+.toast-error {
+  background: linear-gradient(135deg, #7F1D1D 0%, #4C0519 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(244, 63, 94, 0.45) !important;
+  box-shadow: 0 10px 30px -4px rgba(127, 29, 29, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.zeus-toast-error span,
+.zeus-toast-error p,
+.zeus-toast-error strong {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+.zeus-toast-error svg {
+  color: #FECDD3 !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+/* Invalid form input border highlight */
+input.input-error,
+select.input-error,
+textarea.input-error,
+input:user-invalid,
+.has-error input {
+  border-color: #991B1B !important;
+  background-color: #FFF5F5 !important;
+  box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.15) !important;
+}
+
+/* Error text alert badge */
+.badge-error,
+.text-error-burgundy {
+  color: #991B1B !important;
+  font-weight: 700 !important;
+}
+
+#zeus-toast-container {
+  position: fixed !important;
+  bottom: 2.5rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 999999 !important;
+  pointer-events: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: auto !important;
+  max-width: 90vw !important;
+}
+@media (max-width: 640px) {
+  #zeus-toast-container {
+    bottom: 5.5rem !important;
+  }
+}
+
