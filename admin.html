@@ -1398,6 +1398,12 @@
                             <i class="fa-solid fa-paper-plane text-info"></i> إرسال تنبيه تجريبي لهاتفك
                         </button>
                     </div>
+
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+                        <button class="btn btn-primary" onclick="saveStoreSettings()" style="padding: 12px 24px; font-size: 14px;">
+                            <i class="fa-solid fa-floppy-disk"></i> حفظ كافة الإعدادات
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1750,6 +1756,7 @@
             if (tabId === 'tab-products') renderProductsTable();
             if (tabId === 'tab-categories') renderCategoriesTable();
             if (tabId === 'tab-rates') renderRatesTable();
+            if (tabId === 'tab-settings') loadStoreSettings();
 
             if (window.innerWidth <= 768) {
                 const s = document.getElementById('main-sidebar');
@@ -2726,30 +2733,105 @@ ${key}
         // ==========================================
         // 10. STORE SETTINGS & MARKETING
         // ==========================================
-        window.saveStoreSettings = async function() {
-            const settings = {
-                nameAr: document.getElementById('set-store-name-ar').value.trim(),
-                nameEn: document.getElementById('set-store-name-en').value.trim(),
-                whatsapp: document.getElementById('set-whatsapp').value.trim(),
-                telegram: document.getElementById('set-telegram').value.trim(),
-                announcement: {
-                    active: document.getElementById('set-announcement-active').checked,
-                    text: document.getElementById('set-announcement-text').value.trim()
-                },
-                pixels: {
-                    tiktok: document.getElementById('set-tiktok-pixel').value.trim(),
-                    meta: document.getElementById('set-meta-pixel').value.trim(),
-                    snapchat: document.getElementById('set-snap-pixel').value.trim(),
-                    ga: document.getElementById('set-ga-tag').value.trim()
-                },
-                telegramBot: {
-                    token: document.getElementById('set-tg-token').value.trim(),
-                    chatId: document.getElementById('set-tg-chat').value.trim()
+        window.loadStoreSettings = async function() {
+            try {
+                const res = await apiFetch('/api/v1/admin/settings');
+                if (res.ok) {
+                    const s = await res.json();
+                    if (s.whatsapp !== undefined && document.getElementById('set-whatsapp')) {
+                        document.getElementById('set-whatsapp').value = s.whatsapp;
+                    }
+                    if (s.telegram !== undefined && document.getElementById('set-telegram')) {
+                        document.getElementById('set-telegram').value = s.telegram;
+                    }
+                    if (s.store_name_ar !== undefined && document.getElementById('set-store-name-ar')) {
+                        document.getElementById('set-store-name-ar').value = s.store_name_ar;
+                    }
+                    if (s.store_name_en !== undefined && document.getElementById('set-store-name-en')) {
+                        document.getElementById('set-store-name-en').value = s.store_name_en;
+                    }
+                    if (s.announcement_text !== undefined && document.getElementById('set-announcement-text')) {
+                        document.getElementById('set-announcement-text').value = s.announcement_text;
+                    }
+                    if (s.announcement_active !== undefined && document.getElementById('set-announcement-active')) {
+                        document.getElementById('set-announcement-active').checked = (s.announcement_active === 'true' || s.announcement_active === true);
+                    }
+                    if (s.tiktok_pixel !== undefined && document.getElementById('set-tiktok-pixel')) {
+                        document.getElementById('set-tiktok-pixel').value = s.tiktok_pixel;
+                    }
+                    if (s.meta_pixel !== undefined && document.getElementById('set-meta-pixel')) {
+                        document.getElementById('set-meta-pixel').value = s.meta_pixel;
+                    }
+                    if (s.snap_pixel !== undefined && document.getElementById('set-snap-pixel')) {
+                        document.getElementById('set-snap-pixel').value = s.snap_pixel;
+                    }
+                    if (s.ga_tag !== undefined && document.getElementById('set-ga-tag')) {
+                        document.getElementById('set-ga-tag').value = s.ga_tag;
+                    }
+                    if (s.tg_token !== undefined && document.getElementById('set-tg-token')) {
+                        document.getElementById('set-tg-token').value = s.tg_token;
+                    }
+                    if (s.tg_chat !== undefined && document.getElementById('set-tg-chat')) {
+                        document.getElementById('set-tg-chat').value = s.tg_chat;
+                    }
                 }
+            } catch(e) {
+                console.warn('Failed to load settings from server, trying cache:', e);
+                try {
+                    const cached = JSON.parse(localStorage.getItem('zeus_store_settings') || '{}');
+                    if (cached.whatsapp && document.getElementById('set-whatsapp')) {
+                        document.getElementById('set-whatsapp').value = cached.whatsapp;
+                    }
+                    if (cached.telegram && document.getElementById('set-telegram')) {
+                        document.getElementById('set-telegram').value = cached.telegram;
+                    }
+                } catch(err) {}
+            }
+        };
+
+        window.saveStoreSettings = async function() {
+            const saveBtns = Array.from(document.querySelectorAll('button')).filter(b => b.textContent.includes('حفظ كافة الإعدادات'));
+            saveBtns.forEach(b => {
+                b.disabled = true;
+                b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+            });
+
+            const settings = {
+                whatsapp: (document.getElementById('set-whatsapp')?.value || '').trim(),
+                telegram: (document.getElementById('set-telegram')?.value || '').trim(),
+                store_name_ar: (document.getElementById('set-store-name-ar')?.value || '').trim(),
+                store_name_en: (document.getElementById('set-store-name-en')?.value || '').trim(),
+                announcement_text: (document.getElementById('set-announcement-text')?.value || '').trim(),
+                announcement_active: document.getElementById('set-announcement-active')?.checked ? 'true' : 'false',
+                tiktok_pixel: (document.getElementById('set-tiktok-pixel')?.value || '').trim(),
+                meta_pixel: (document.getElementById('set-meta-pixel')?.value || '').trim(),
+                snap_pixel: (document.getElementById('set-snap-pixel')?.value || '').trim(),
+                ga_tag: (document.getElementById('set-ga-tag')?.value || '').trim(),
+                tg_token: (document.getElementById('set-tg-token')?.value || '').trim(),
+                tg_chat: (document.getElementById('set-tg-chat')?.value || '').trim()
             };
 
-            localStorage.setItem('zeus_store_settings', JSON.stringify(settings));
-            showToast('تم حفظ إعدادات المتجر والبكسلات بنجاح! ⚙️');
+            try {
+                const res = await apiFetch('/api/v1/admin/settings', {
+                    method: 'POST',
+                    body: JSON.stringify(settings)
+                });
+                if (res.ok) {
+                    localStorage.setItem('zeus_store_settings', JSON.stringify(settings));
+                    showToast('تم حفظ وتحديث إعدادات المتجر ورقم الواتساب بنجاح في السيرفر! ⚡');
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    showToast(err.detail || 'تعذر حفظ الإعدادات على السيرفر', 'error');
+                }
+            } catch(e) {
+                localStorage.setItem('zeus_store_settings', JSON.stringify(settings));
+                showToast('خطأ في الاتصال، تم الحفظ محلياً فقط', 'error');
+            } finally {
+                saveBtns.forEach(b => {
+                    b.disabled = false;
+                    b.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ كافة الإعدادات';
+                });
+            }
         };
 
         window.sendTestTelegramAlert = function() {
@@ -2964,6 +3046,7 @@ ${key}
             renderProductsTable();
             renderCategoriesTable();
             populateCategoryDropdown();
+            await loadStoreSettings();
         }
 
         async function checkInitialAuth() {

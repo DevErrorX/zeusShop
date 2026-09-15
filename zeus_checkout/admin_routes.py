@@ -259,13 +259,37 @@ def remove_category(category_id: str, admin_user: str = Depends(require_admin)):
 # ==========================================
 @admin_router.get("/settings")
 def get_settings(admin_user: str = Depends(require_admin)):
-    return StoreRepository.get_settings()
+    settings = StoreRepository.get_settings()
+    defaults = {
+        "whatsapp": "+4447723274122",
+        "telegram": "https://t.me/+5lDejdeKjEJjNTg0",
+        "store_name_ar": "زيوس ستور",
+        "store_name_en": "ZEUS STORE",
+        "announcement_text": "ضمان استرجاع سعر الاشتراك كاملاً لمدة 14 يوماً (تطبق سياسة الاسترداد) ⚡️",
+        "announcement_active": "true",
+        "tiktok_pixel": "",
+        "meta_pixel": "",
+        "snap_pixel": "",
+        "ga_tag": "",
+        "tg_token": "",
+        "tg_chat": ""
+    }
+    for k, v in defaults.items():
+        if k not in settings or not settings[k]:
+            settings[k] = v
+    return settings
 
 
 @admin_router.post("/settings")
-def update_setting(req: SettingUpdateRequest, admin_user: str = Depends(require_admin)):
-    StoreRepository.update_setting(req.key, req.value)
-    return {"status": "ok"}
+def update_settings(payload: Dict[str, Any], admin_user: str = Depends(require_admin)):
+    if "key" in payload and "value" in payload and len(payload) <= 2:
+        StoreRepository.update_setting(str(payload["key"]), str(payload["value"]))
+        return {"status": "ok"}
+
+    for k, v in payload.items():
+        val_str = str(v if v is not None else "")
+        StoreRepository.update_setting(k, val_str)
+    return {"status": "ok", "settings": StoreRepository.get_settings()}
 
 
 @admin_router.get("/payment-gateways")

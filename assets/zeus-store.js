@@ -121,6 +121,56 @@
     .then(r => r.json())
     .then(data => { catalogData = data; })
     .catch(() => {});
+
+  // ==========================================
+  // 1.1 STORE SETTINGS SYNC (WHATSAPP, ETC.)
+  // ==========================================
+  let activeStoreSettings = {
+    whatsapp: '+4447723274122',
+    telegram: 'https://t.me/+5lDejdeKjEJjNTg0'
+  };
+
+  function applyPublicSettings(settings) {
+    if (!settings) return;
+    activeStoreSettings = Object.assign(activeStoreSettings, settings);
+    if (settings.whatsapp) {
+      const cleanDigits = settings.whatsapp.replace(/[^0-9]/g, '');
+      const waUrl = `https://wa.me/${cleanDigits}`;
+      document.querySelectorAll('a[href*="wa.me"]').forEach(a => {
+        a.href = waUrl;
+        const numSpan = a.querySelector('.tabular-nums');
+        if (numSpan) numSpan.textContent = cleanDigits;
+      });
+    }
+    if (settings.telegram) {
+      const tgUrl = settings.telegram.startsWith('http') ? settings.telegram : `https://t.me/${settings.telegram.replace('@', '')}`;
+      document.querySelectorAll('a[aria-label="telegram"], a[title="Telegram"]').forEach(a => {
+        a.href = tgUrl;
+      });
+    }
+    if (settings.announcement_text) {
+      document.querySelectorAll('.ann-item__text').forEach(el => {
+        el.textContent = ' ' + settings.announcement_text;
+      });
+    }
+  }
+
+  function syncPublicSettings() {
+    try {
+      const cached = JSON.parse(localStorage.getItem('zeus_public_settings') || 'null');
+      if (cached) applyPublicSettings(cached);
+    } catch(e) {}
+
+    fetch('/api/v1/public-settings')
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.whatsapp) {
+          applyPublicSettings(data);
+          try { localStorage.setItem('zeus_public_settings', JSON.stringify(data)); } catch(e) {}
+        }
+      })
+      .catch(() => {});
+  }
   // ==========================================
   // 2. STATE HELPERS (Safe Storage with in-memory fallback)
   // ==========================================
@@ -1369,9 +1419,15 @@
     document.querySelectorAll('button').forEach(btn => {
       const text = btn.textContent.trim();
       if (text.includes('واتساب')) {
-        btn.onclick = () => window.open('https://wa.me/201000000000?text=مرحبا+زيوس+ستور+أرغب+في+تأكيد+الطلب', '_blank');
+        btn.onclick = () => {
+          const cleanDigits = (activeStoreSettings.whatsapp || '+4447723274122').replace(/[^0-9]/g, '');
+          window.open(`https://wa.me/${cleanDigits}?text=مرحبا+زيوس+ستور+أرغب+في+تأكيد+الطلب`, '_blank');
+        };
       } else if (text.includes('تيليجرام')) {
-        btn.onclick = () => window.open('https://t.me/zeus_store_support', '_blank');
+        btn.onclick = () => {
+          const tgUrl = activeStoreSettings.telegram || 'https://t.me/zeus_store_support';
+          window.open(tgUrl.startsWith('http') ? tgUrl : `https://t.me/${tgUrl.replace('@', '')}`, '_blank');
+        };
       }
     });
   }
@@ -1434,6 +1490,7 @@
     initScrollToTop();
     updateWishlistIcons();
     initCheckoutPage();
+    syncPublicSettings();
 
     // Background FX rate synchronization & instant UI update
     syncExchangeRates(() => {

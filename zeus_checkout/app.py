@@ -862,6 +862,18 @@ def create_app() -> FastAPI:
                 pass
         return JSONResponse(StoreRepository.list_categories())
 
+    @app.get("/api/v1/public-settings")
+    def get_public_settings():
+        settings = StoreRepository.get_settings()
+        return {
+            "whatsapp": settings.get("whatsapp", "+4447723274122"),
+            "telegram": settings.get("telegram", "https://t.me/+5lDejdeKjEJjNTg0"),
+            "store_name_ar": settings.get("store_name_ar", "زيوس ستور"),
+            "store_name_en": settings.get("store_name_en", "ZEUS STORE"),
+            "announcement_active": settings.get("announcement_active", "true") in ("true", "1", True),
+            "announcement_text": settings.get("announcement_text", "ضمان استرجاع سعر الاشتراك كاملاً لمدة 14 يوماً (تطبق سياسة الاسترداد) ⚡️"),
+        }
+
     return app
 
 app = create_app()
