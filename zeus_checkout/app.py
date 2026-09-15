@@ -751,14 +751,17 @@ def create_app() -> FastAPI:
             return page_file("order.html")
         return page_file("checkout.html")
 
+    @app.get("/admin")
     @app.get("/admin.html")
     def serve_admin():
         return page_file("admin.html")
 
+    @app.get("/legal")
     @app.get("/legal.html")
     def serve_legal():
         return page_file("legal.html")
 
+    @app.get("/maintenance")
     @app.get("/maintenance.html")
     def serve_maintenance():
         return page_file("maintenance.html")
