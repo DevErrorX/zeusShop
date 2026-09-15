@@ -153,6 +153,30 @@
         el.textContent = ' ' + settings.announcement_text;
       });
     }
+    if (settings.custom_rates && typeof settings.custom_rates === 'object') {
+      const r = settings.custom_rates;
+      const egp = parseFloat(r.EGP || 51.34);
+      if (r.USD && egp > 0) {
+        CURRENCIES.USD.rate = 1.0 / egp;
+        CURRENCIES.USD.egpPerUnit = egp;
+      }
+      if (r.USDT && egp > 0) {
+        CURRENCIES.USDT.rate = 1.0 / egp;
+        CURRENCIES.USDT.egpPerUnit = egp;
+      }
+      if (r.SAR && egp > 0) {
+        CURRENCIES.SAR.rate = parseFloat(r.SAR) / egp;
+        CURRENCIES.SAR.egpPerUnit = egp / parseFloat(r.SAR);
+      }
+      if (r.AED && egp > 0) {
+        CURRENCIES.AED.rate = parseFloat(r.AED) / egp;
+        CURRENCIES.AED.egpPerUnit = egp / parseFloat(r.AED);
+      }
+      if (r.KWD && egp > 0) {
+        CURRENCIES.KWD.rate = parseFloat(r.KWD) / egp;
+        CURRENCIES.KWD.egpPerUnit = egp / parseFloat(r.KWD);
+      }
+    }
   }
 
   function syncPublicSettings() {
@@ -554,7 +578,8 @@
     const imgEl = card ? card.querySelector('img:not(.cur-switch__btn img):not(.nv-brand__img)') : null;
     const image = imgEl ? (imgEl.src || imgEl.getAttribute('src')) : './assets/logo-ar.webp';
 
-    return { id: title.replace(/\s+/g, '-').toLowerCase(), title, price, image, quantity: 1 };
+    const prodId = card ? (card.getAttribute('data-product-id') || card.dataset?.productId) : null;
+    return { id: prodId || title.replace(/\s+/g, '-').toLowerCase(), title, price, image, quantity: 1 };
   }
 
   function handleAddToCart(e, btn) {
@@ -1479,7 +1504,272 @@
     localStorage.removeItem('zeus_cart');
     updateCartBadges();
   }
-// ==========================================
+
+  // ==========================================
+  // 11.5 STOREFRONT DYNAMIC PRODUCT RENDERING
+  // ==========================================
+  function createProductCardHtml(p) {
+    const priceEgp = (p.price_egp && p.price_egp > 0) ? p.price_egp : ((p.price_usdt || p.price_usd || 10) * (CURRENCIES.USD.egpPerUnit || 50));
+    const originalEgp = (p.original_price_sar && p.original_price_sar > p.price_sar) ? ((p.original_price_sar / 3.75) * (CURRENCIES.USD.egpPerUnit || 50)) : 0;
+    const badgeHtml = p.badge ? `
+      <div class="ls-skip absolute top-2 start-2 z-20 flex flex-col items-start gap-1">
+        <span class="ls-skip -rotate-2 inline-flex items-center rounded-md bg-red-600 px-2 py-[3px] text-[12px] font-extrabold leading-[1.3] text-white shadow-[0_3px_10px_-2px_rgba(220,38,38,0.55)]">${p.badge}</span>
+      </div>
+    ` : '';
+
+    const outOfStock = p.in_stock === false || p.in_stock === 0 || p.in_stock === "0";
+
+    return `
+    <div class="ls-skip group relative h-full product-card-item" data-product-id="${p.id}" data-category="${p.category_slug || ''}">
+      <div class="ls-skip pcv-flash relative h-full flex flex-col overflow-hidden rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-shadow">
+        <div class="ls-skip shrink-0 block relative">
+          <div class="ls-skip relative">
+            <div class="ls-skip pcv-media relative aspect-square overflow-hidden bg-secondary/25 cursor-pointer">
+              <img alt="${p.title}" width="800" height="600" class="ls-skip absolute inset-0 w-full h-full object-cover transition-[transform,opacity] duration-300 ease-out group-hover:scale-105 opacity-100" loading="lazy" decoding="async" src="${p.image || './assets/logo-ar.webp'}" onerror="this.src='./assets/logo-ar.webp'">
+            </div>
+            ${badgeHtml}
+            <div class="ls-skip absolute top-1.5 end-1.5 z-20">
+              <button type="button" aria-label="أضف إلى المفضلة" aria-pressed="false" class="ls-skip flex items-center justify-center rounded-full transition-all h-8 w-8 border border-gray-200 hover:border-rose-300 bg-white/90 hover:bg-rose-50 text-gray-500 hover:text-rose-500 cursor-pointer shadow-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-heart h-4 w-4 transition-transform"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"></path></svg>
+              </button>
+            </div>
+            ${!outOfStock ? `
+            <button type="button" aria-label="أضف للسلة" class="ls-skip pcv-press absolute z-30 end-2.5 bottom-0 translate-y-1/2 inline-flex items-center justify-center rounded-full h-[clamp(30px,16cqw,40px)] w-[clamp(30px,16cqw,40px)] text-primary-foreground ring-[3px] ring-card shadow-[0_6px_16px_-4px_color-mix(in_oklab,var(--primary)_70%,transparent)] bg-primary cursor-pointer hover:scale-110 active:scale-95 transition-transform" title="أضف للسلة">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-shopping-cart w-[clamp(14px,7.5cqw,18px)] h-[clamp(14px,7.5cqw,18px)]"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+            </button>` : ''}
+          </div>
+        </div>
+        <div class="ls-skip flex flex-1 flex-col px-2.5 pt-2 pb-3">
+          <span class="ls-skip mb-1 inline-flex w-fit items-center gap-1 rounded-md bg-amber-400/15 px-1.5 py-[2px] text-[10px] font-bold text-amber-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-zap w-3 h-3 shrink-0 fill-current"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+            ${p.duration || 'تسليم فوري'}
+          </span>
+          <h3 class="ls-skip text-[12.5px] sm:text-[13px] font-bold text-foreground line-clamp-2 leading-snug min-h-[2.6em] pe-[clamp(26px,14cqw,36px)]">${p.title}</h3>
+          <div class="ls-skip mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <span class="ls-skip">${p.platform || 'الكل'}</span>
+            <span class="ls-skip opacity-50">·</span>
+            <span class="ls-skip font-semibold ${!outOfStock ? 'text-emerald-600' : 'text-rose-500'}">${!outOfStock ? 'متوفر' : 'غير متوفر'}</span>
+          </div>
+          <div class="ls-skip mt-auto pt-2">
+            <div class="ls-skip flex items-baseline gap-1.5 flex-wrap">
+              <span class="ls-skip text-[clamp(16px,8.5cqw,20px)] font-extrabold text-primary product-price tabular-nums leading-[1.3]">
+                <span class="ls-skip price-display" data-egp-price="${priceEgp}"></span>
+              </span>
+              ${originalEgp > priceEgp ? `
+              <span class="ls-skip text-[11px] text-muted-foreground line-through product-price">
+                <span class="ls-skip price-display" data-egp-price="${originalEgp}"></span>
+              </span>` : ''}
+            </div>
+          </div>
+          <div class="mt-2.5">
+            ${!outOfStock ? `
+            <button type="button" class="w-full py-2 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+              <span>شراء الآن</span>
+            </button>` : `
+            <button type="button" disabled class="w-full py-2 px-3 rounded-lg bg-secondary text-muted-foreground text-xs font-bold opacity-60 cursor-not-allowed flex items-center justify-center gap-1.5">
+              <span>نفد من المخزون</span>
+            </button>`}
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+  }
+
+  let categoriesData = [];
+
+  function renderStorefrontProductsPage(products, categories) {
+    const grid = document.querySelector('.products-grid-performance') ||
+                 document.querySelector('.products-page-optimized .grid') ||
+                 document.querySelector('.grid.grid-cols-2.lg\\:grid-cols-4');
+    if (!grid) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const catFilter = urlParams.get('category') || '';
+    const searchFilter = (urlParams.get('search') || '').trim().toLowerCase();
+
+    let filtered = products.slice();
+    if (catFilter) {
+      filtered = filtered.filter(p => (p.category_slug === catFilter || p.slug === catFilter));
+    }
+    if (searchFilter) {
+      filtered = filtered.filter(p =>
+        (p.title && p.title.toLowerCase().includes(searchFilter)) ||
+        (p.description && p.description.toLowerCase().includes(searchFilter))
+      );
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full py-16 text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary/70 text-primary mb-4 text-2xl border border-border/60 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          </div>
+          <h3 class="text-base sm:text-lg font-bold text-foreground">لا توجد منتجات مسجلة حالياً</h3>
+          <p class="text-xs sm:text-sm text-muted-foreground mt-1.5 max-w-sm mx-auto">سيتم إضافة وتحديث الاشتراكات قريباً من لوحة الإدارة ⚡</p>
+          ${catFilter || searchFilter ? `
+          <div class="mt-4">
+            <a href="products.html" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition shadow-sm">
+              <span>عرض كافة المنتجات</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </a>
+          </div>` : ''}
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(createProductCardHtml).join('');
+  }
+
+  function renderStorefrontHomepage(products, categories) {
+    const mainEl = document.querySelector('main');
+    if (!mainEl) return;
+
+    // 1. Hide legacy hardcoded sections in main (except hero / banner at top)
+    const oldSections = mainEl.querySelectorAll('section');
+    oldSections.forEach((sec, idx) => {
+      if (idx > 0 && (sec.querySelector('.product-card-item') || sec.querySelector('h2'))) {
+        sec.style.display = 'none';
+        sec.setAttribute('data-legacy-hidden', 'true');
+      }
+    });
+
+    // 2. Remove previously injected dynamic sections
+    mainEl.querySelectorAll('.zeus-dynamic-category-section').forEach(el => el.remove());
+
+    if (!products || products.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'zeus-dynamic-category-section container mx-auto px-4 py-16 text-center max-w-2xl';
+      emptyDiv.innerHTML = `
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary/80 text-primary mb-3 border border-border/50 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        </div>
+        <h3 class="text-base sm:text-lg font-bold text-foreground">المتجر قيد تحديث المنتجات</h3>
+        <p class="text-xs sm:text-sm text-muted-foreground mt-1">يتم تحديث قائمة الاشتراكات حالياً من لوحة الإدارة ⚡</p>
+      `;
+      mainEl.appendChild(emptyDiv);
+      return;
+    }
+
+    // 3. Group products by category
+    const catMap = {};
+    if (categories && Array.isArray(categories)) {
+      categories.forEach(c => {
+        catMap[c.slug] = { name: c.name, icon: c.icon, products: [] };
+      });
+    }
+
+    products.forEach(p => {
+      const slug = p.category_slug || 'general';
+      if (catMap[slug]) {
+        catMap[slug].products.push(p);
+      } else {
+        if (!catMap[slug]) {
+          catMap[slug] = { name: p.category_slug || 'اشتراكات مميزة', icon: 'fa-gamepad', products: [] };
+        }
+        catMap[slug].products.push(p);
+      }
+    });
+
+    // 4. Render sections for categories that have products
+    Object.entries(catMap).forEach(([slug, cData]) => {
+      if (!cData.products || cData.products.length === 0) return;
+
+      const sec = document.createElement('section');
+      sec.className = 'ls-skip mb-8 zeus-dynamic-category-section';
+      sec.setAttribute('data-cat', slug);
+      sec.innerHTML = `
+        <div class="container mx-auto px-3 sm:px-4 max-w-7xl">
+          <div class="flex items-center justify-between mb-4 border-b border-border/40 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-6 rounded-full bg-primary inline-block"></span>
+              <h2 class="text-lg sm:text-xl font-black text-foreground">${cData.name}</h2>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold tabular-nums">${cData.products.length}</span>
+            </div>
+            <a href="products.html?category=${encodeURIComponent(slug)}" class="text-xs sm:text-sm font-bold text-primary hover:underline flex items-center gap-1">
+              <span>عرض الكل</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </a>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            ${cData.products.map(createProductCardHtml).join('')}
+          </div>
+        </div>
+      `;
+      mainEl.appendChild(sec);
+    });
+  }
+
+  function renderStorefrontCategoriesPage(categories, products) {
+    const grid = document.querySelector('.grid.grid-cols-2.md\\:grid-cols-3') ||
+                 document.querySelector('.grid.grid-cols-2.lg\\:grid-cols-4');
+    if (!grid || !categories || categories.length === 0) return;
+
+    grid.innerHTML = categories.map(c => {
+      const pCount = (products || []).filter(p => p.category_slug === c.slug && (p.in_stock !== false && p.in_stock !== 0)).length;
+      return `
+      <div class="ls-skip h-full">
+        <a class="ls-skip group flex h-full flex-col rounded-2xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover:-translate-y-1" href="products.html?category=${encodeURIComponent(c.slug)}">
+          <div class="ls-skip relative w-full aspect-[16/10] overflow-hidden bg-secondary/20 flex items-center justify-center">
+            <i class="${c.icon || 'fa-solid fa-gamepad'} text-4xl text-primary/70 group-hover:scale-110 transition-transform duration-300"></i>
+          </div>
+          <div class="ls-skip flex flex-1 flex-col p-3 sm:p-4">
+            <h3 class="ls-skip text-sm sm:text-base font-bold text-foreground group-hover:text-primary transition-colors">${c.name}</h3>
+            <p class="ls-skip text-xs text-muted-foreground line-clamp-2 mt-1">${c.description || 'تصفح كافة الاشتراكات والمنتجات المتاحة في هذا القسم ⚡'}</p>
+            <div class="ls-skip mt-auto pt-3 flex items-center justify-between border-t border-border/30">
+              <span class="ls-skip inline-flex items-center gap-1 text-[11px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">
+                <span>${pCount}</span> <span>منتج</span>
+              </span>
+              <span class="ls-skip text-xs text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-0.5 font-bold">
+                <span>تصفح</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </span>
+            </div>
+          </div>
+        </a>
+      </div>
+      `;
+    }).join('');
+  }
+
+  async function syncStorefrontProducts() {
+    try {
+      const [prodsRes, catsRes] = await Promise.allSettled([
+        fetch(`./catalog.json?_t=${Date.now()}`),
+        fetch(`./categories.json?_t=${Date.now()}`)
+      ]);
+
+      if (prodsRes.status === 'fulfilled' && prodsRes.value.ok) {
+        catalogData = await prodsRes.value.json();
+      }
+      if (catsRes.status === 'fulfilled' && catsRes.value.ok) {
+        categoriesData = await catsRes.value.json();
+      }
+
+      const path = (window.location.pathname || '').toLowerCase();
+      const isProductsPage = path.includes('products');
+      const isCategoriesPage = path.includes('categories');
+      const isHomePage = !isProductsPage && !isCategoriesPage && (
+        path === '/' || path.endsWith('index.html') || path === ''
+      );
+
+      if (isProductsPage) {
+        renderStorefrontProductsPage(catalogData, categoriesData);
+      } else if (isHomePage) {
+        renderStorefrontHomepage(catalogData, categoriesData);
+      } else if (isCategoriesPage) {
+        renderStorefrontCategoriesPage(categoriesData, catalogData);
+      }
+
+      applyCurrency(getCurrency());
+    } catch(e) {
+      console.warn('Sync storefront products failed:', e);
+    }
+  }
+
+  // ==========================================
   // 12. GLOBAL INITIALIZATION & DELEGATION
   // ==========================================
   function initZeusStore() {
@@ -1491,6 +1781,7 @@
     updateWishlistIcons();
     initCheckoutPage();
     syncPublicSettings();
+    syncStorefrontProducts();
 
     // Background FX rate synchronization & instant UI update
     syncExchangeRates(() => {

@@ -305,12 +305,31 @@ class StoreRepository:
     @staticmethod
     def list_categories() -> list[dict]:
         with get_db_connection() as conn:
-            rows = conn.execute("SELECT * FROM categories ORDER BY count DESC").fetchall()
+            rows = conn.execute("""
+                SELECT c.id, c.name, c.slug, c.icon,
+                       (SELECT COUNT(*) FROM products p WHERE p.category_slug = c.slug AND p.in_stock = 1) as count
+                FROM categories c
+                ORDER BY count DESC, c.name ASC
+            """).fetchall()
             return [dict(r) for r in rows]
+
+    @staticmethod
+    def sync_categories_to_file():
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cat_file = os.path.join(base, "categories.json")
+        cats = StoreRepository.list_categories()
+        try:
+            temp = cat_file + ".tmp"
+            with open(temp, "w", encoding="utf-8") as f:
+                json.dump(cats, f, ensure_ascii=False, indent=2)
+            os.replace(temp, cat_file)
+        except Exception as e:
+            print(f"Failed to sync categories.json: {e}")
 
     @staticmethod
     def upsert_category(c: dict):
         cid = c.get("id") or c.get("slug") or f"cat-{uuid.uuid4().hex[:6]}"
+        slug = c.get("slug") or cid
         with get_db_connection() as conn:
             conn.execute("""
                 INSERT INTO categories (id, name, slug, icon, count)
@@ -323,18 +342,20 @@ class StoreRepository:
             """, (
                 cid,
                 c.get("name", "تصنيف جديد"),
-                c.get("slug", cid),
+                slug,
                 c.get("icon", "fa-solid fa-gamepad"),
                 int(c.get("count", 0))
             ))
             conn.commit()
+        StoreRepository.sync_categories_to_file()
         return cid
 
     @staticmethod
     def delete_category(category_id: str):
         with get_db_connection() as conn:
-            conn.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+            conn.execute("DELETE FROM categories WHERE id = ? OR slug = ?", (category_id, category_id))
             conn.commit()
+        StoreRepository.sync_categories_to_file()
 
     # ------------------ DIGITAL KEYS VAULT ------------------
     @staticmethod

@@ -1755,6 +1755,7 @@
             if (tabId === 'tab-orders') renderOrdersTable();
             if (tabId === 'tab-products') renderProductsTable();
             if (tabId === 'tab-categories') renderCategoriesTable();
+            if (tabId === 'tab-gateways') loadGatewaysSettings();
             if (tabId === 'tab-rates') renderRatesTable();
             if (tabId === 'tab-settings') loadStoreSettings();
 
@@ -2682,6 +2683,45 @@ ${key}
             }
         };
 
+        window.loadGatewaysSettings = async function() {
+            try {
+                const res = await apiFetch('/api/v1/admin/payment-gateways');
+                if (res.ok) {
+                    const gateways = await res.json();
+                    const kashier = gateways.find(g => g.id === 'kashier');
+                    if (kashier) {
+                        const cfg = kashier.config || {};
+                        if (document.getElementById('gate-kashier-merchant-id') && cfg.merchant_id) {
+                            document.getElementById('gate-kashier-merchant-id').value = cfg.merchant_id;
+                        }
+                        if (document.getElementById('gate-kashier-api-key') && cfg.api_key) {
+                            document.getElementById('gate-kashier-api-key').value = cfg.api_key;
+                        }
+                        if (document.getElementById('gate-kashier-secret-key') && cfg.secret_key) {
+                            document.getElementById('gate-kashier-secret-key').value = cfg.secret_key;
+                        }
+                        if (document.getElementById('gate-kashier-mode') && cfg.mode) {
+                            document.getElementById('gate-kashier-mode').value = cfg.mode;
+                        }
+                        if (document.getElementById('gate-kashier-currency') && cfg.currency) {
+                            document.getElementById('gate-kashier-currency').value = cfg.currency;
+                        }
+                        if (document.getElementById('gate-kashier-api-url') && cfg.api_url) {
+                            document.getElementById('gate-kashier-api-url').value = cfg.api_url;
+                        }
+                        if (document.getElementById('gate-kashier-callback-url') && cfg.callback_url) {
+                            document.getElementById('gate-kashier-callback-url').value = cfg.callback_url;
+                        }
+                        if (document.getElementById('gate-kashier-active')) {
+                            document.getElementById('gate-kashier-active').checked = !!kashier.is_active;
+                        }
+                    }
+                }
+            } catch(e) {
+                console.warn('Failed to load gateway settings:', e);
+            }
+        };
+
         // ==========================================
         // 9. RATES & CURRENCIES
         // ==========================================
@@ -2712,22 +2752,38 @@ ${key}
             `).join('');
         }
 
-        window.saveCustomRates = function() {
+        window.saveCustomRates = async function() {
             document.querySelectorAll('.rate-override-input').forEach(inp => {
                 const code = inp.dataset.code;
                 const val = parseFloat(inp.value);
                 if (code && !isNaN(val)) state.rates[code] = val;
             });
             localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
+            try {
+                await apiFetch('/api/v1/admin/settings', {
+                    method: 'POST',
+                    body: JSON.stringify({ custom_rates: JSON.stringify(state.rates) })
+                });
+                showToast('تم حفظ أسعار الصرف بالسيرفر وبالمتجر بنجاح! 💱⚡');
+            } catch(e) {
+                showToast('تم حفظ أسعار الصرف محلياً', 'info');
+            }
             renderRatesTable();
-            showToast('تم حفظ أسعار الصرف الجديدة بنجاح! 💱');
         };
 
-        window.resetDefaultRates = function() {
+        window.resetDefaultRates = async function() {
             state.rates = { EGP: 51.34, SAR: 3.75, USD: 1.0, USDT: 1.0, AED: 3.67, KWD: 0.31, IQD: 1310.0 };
             localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
+            try {
+                await apiFetch('/api/v1/admin/settings', {
+                    method: 'POST',
+                    body: JSON.stringify({ custom_rates: JSON.stringify(state.rates) })
+                });
+                showToast('تم استرجاع أسعار الصرف الافتراضية وحفظها بالسيرفر 💱');
+            } catch(e) {
+                showToast('تم استرجاع أسعار الصرف الافتراضية');
+            }
             renderRatesTable();
-            showToast('تم استرجاع أسعار الصرف الافتراضية');
         };
 
         // ==========================================
@@ -2738,6 +2794,13 @@ ${key}
                 const res = await apiFetch('/api/v1/admin/settings');
                 if (res.ok) {
                     const s = await res.json();
+                    if (s.custom_rates) {
+                        try {
+                            const parsedRates = JSON.parse(s.custom_rates);
+                            state.rates = Object.assign(state.rates, parsedRates);
+                            renderRatesTable();
+                        } catch(re) {}
+                    }
                     if (s.whatsapp !== undefined && document.getElementById('set-whatsapp')) {
                         document.getElementById('set-whatsapp').value = s.whatsapp;
                     }
@@ -3047,6 +3110,7 @@ ${key}
             renderCategoriesTable();
             populateCategoryDropdown();
             await loadStoreSettings();
+            await loadGatewaysSettings();
         }
 
         async function checkInitialAuth() {

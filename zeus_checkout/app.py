@@ -842,29 +842,27 @@ def create_app() -> FastAPI:
 
     @app.get("/catalog.json")
     def serve_catalog():
-        catalog_path = os.path.join(BASE_DIR, "catalog.json")
-        if os.path.exists(catalog_path):
-            try:
-                with open(catalog_path, "r", encoding="utf-8") as f:
-                    return JSONResponse(json.load(f))
-            except Exception:
-                pass
         return JSONResponse(StoreRepository.list_products(500))
 
     @app.get("/categories.json")
     def serve_categories_json():
-        cat_path = os.path.join(BASE_DIR, "categories.json")
-        if os.path.exists(cat_path):
-            try:
-                with open(cat_path, "r", encoding="utf-8") as f:
-                    return JSONResponse(json.load(f))
-            except Exception:
-                pass
         return JSONResponse(StoreRepository.list_categories())
 
     @app.get("/api/v1/public-settings")
     def get_public_settings():
         settings = StoreRepository.get_settings()
+        gateways = StoreRepository.get_payment_gateways()
+        kashier = next((g for g in gateways if g.get("id") == "kashier"), {})
+        kashier_cfg = kashier.get("config", {}) if isinstance(kashier, dict) else {}
+
+        rates_raw = settings.get("custom_rates", "")
+        custom_rates = {}
+        if rates_raw:
+            try:
+                custom_rates = json.loads(rates_raw)
+            except Exception:
+                pass
+
         return {
             "whatsapp": settings.get("whatsapp", "+4447723274122"),
             "telegram": settings.get("telegram", "https://t.me/+5lDejdeKjEJjNTg0"),
@@ -872,6 +870,10 @@ def create_app() -> FastAPI:
             "store_name_en": settings.get("store_name_en", "ZEUS STORE"),
             "announcement_active": settings.get("announcement_active", "true") in ("true", "1", True),
             "announcement_text": settings.get("announcement_text", "ضمان استرجاع سعر الاشتراك كاملاً لمدة 14 يوماً (تطبق سياسة الاسترداد) ⚡️"),
+            "custom_rates": custom_rates,
+            "kashier_merchant_id": kashier_cfg.get("merchant_id", "MID-34056-532"),
+            "kashier_mode": kashier_cfg.get("mode", "live"),
+            "kashier_active": bool(kashier.get("is_active", True))
         }
 
     return app
