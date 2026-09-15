@@ -3,6 +3,8 @@
 import sqlite3
 import os
 import json
+from decimal import Decimal
+from datetime import datetime, timezone
 from .config import settings
 
 def init_db():
@@ -24,12 +26,49 @@ def init_db():
                 currency TEXT NOT NULL,
                 items_json TEXT NOT NULL,
                 status TEXT DEFAULT 'pending',
+                payment_id TEXT,
+                expected_usdt TEXT,
+                amount_egp REAL,
+                amount_iqd INTEGER,
                 delivered_key TEXT,
                 payment_proof TEXT,
                 notes TEXT,
+                paid_at TEXT,
+                confirmation_code TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Migration helper for existing databases
+        existing_cols = [c[1] for c in cursor.execute("PRAGMA table_info(orders)").fetchall()]
+        cols_to_add = {
+            "payment_id": "TEXT",
+            "expected_usdt": "TEXT",
+            "amount_egp": "REAL",
+            "amount_iqd": "INTEGER",
+            "delivered_key": "TEXT",
+            "payment_proof": "TEXT",
+            "notes": "TEXT",
+            "paid_at": "TEXT",
+            "confirmation_code": "TEXT",
+        }
+        for col, col_type in cols_to_add.items():
+            if col not in existing_cols:
+                cursor.execute(f"ALTER TABLE orders ADD COLUMN {col} {col_type}")
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_payment_id ON orders(payment_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)")
+
+        # Webhook Events Table (Replay Attack Prevention)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS webhook_events (
+                event_hash TEXT PRIMARY KEY,
+                payment_id TEXT NOT NULL,
+                normalized_status TEXT NOT NULL,
+                received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_webhook_events_payment_id ON webhook_events(payment_id)")
         
         # Products Table
         cursor.execute("""
@@ -193,3 +232,121 @@ def get_db_connection():
     conn = sqlite3.connect(settings.database_path)
     conn.row_factory = sqlite3.Row
     return conn
+
+def apply_webhook(
+    *,
+    event_hash: str,
+    payment_id: str,
+    normalized_status: str,
+    supplied_amount: int | float | Decimal | None,
+    supplied_currency: str | None,
+) -> str:
+    """
+    Apply a verified webhook event once and return a processing result.
+    Enforces:
+    1. Replay attack prevention via webhook_events (event_hash)
+    2. Existence check: SELECT FROM orders WHERE payment_id = ? OR id = ?
+    3. Mandatory supplied_amount and supplied_currency for paid status
+    4. Strict amount matching: supplied_amount > 0 and abs(expected - actual) <= 0.01
+    5. Currency matching: supplied_currency must be USD or USDT
+    6. Digital key assignment & order update to 'paid'
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(settings.database_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        cursor = conn.cursor()
+
+        # Step 1: Find order
+        order_row = cursor.execute(
+            "SELECT * FROM orders WHERE payment_id = ? OR id = ?",
+            (payment_id, payment_id),
+        ).fetchone()
+        if order_row is None:
+            conn.rollback()
+            return "unknown_payment"
+
+        # Step 2: Replay attack prevention
+        inserted = cursor.execute(
+            """
+            INSERT OR IGNORE INTO webhook_events (
+                event_hash, payment_id, normalized_status, received_at
+            ) VALUES (?, ?, ?, ?)
+            """,
+            (event_hash, payment_id, normalized_status, now),
+        )
+        if inserted.rowcount == 0:
+            conn.commit()
+            return "duplicate"
+
+        order = dict(order_row)
+
+        # Step 3: Hardened status processing
+        if normalized_status == "paid":
+            # Mandatory amount and currency check
+            if supplied_amount is None or not supplied_currency or not order.get("expected_usdt"):
+                conn.commit()
+                return "amount_mismatch"
+
+            try:
+                exp = Decimal(str(order["expected_usdt"]))
+                act = Decimal(str(supplied_amount))
+                # Strict amount matching: positive amount and tolerance <= 0.01
+                if act <= 0 or abs(exp - act) > Decimal("0.01"):
+                    conn.commit()
+                    return "amount_mismatch"
+            except Exception:
+                conn.commit()
+                return "amount_mismatch"
+
+            # Strict currency matching: USD or USDT
+            curr = str(supplied_currency).strip().upper()
+            if curr not in {"USD", "USDT"}:
+                conn.commit()
+                return "currency_mismatch"
+
+            # Assign available digital key
+            delivered_key = order.get("delivered_key")
+            if not delivered_key:
+                try:
+                    items = json.loads(order.get("items_json") or "[]")
+                    product_id = items[0].get("id") if items and isinstance(items, list) else None
+                    if product_id:
+                        key_row = cursor.execute(
+                            "SELECT id, serial_key FROM digital_keys WHERE product_id = ? AND is_used = 0 LIMIT 1",
+                            (product_id,),
+                        ).fetchone()
+                        if key_row:
+                            delivered_key = key_row["serial_key"]
+                            cursor.execute(
+                                "UPDATE digital_keys SET is_used = 1, order_id = ? WHERE id = ?",
+                                (order["id"], key_row["id"]),
+                            )
+                except Exception:
+                    pass
+                if not delivered_key:
+                    delivered_key = f"ZEUS-KEY-{order['id'][:8].upper()}"
+
+            cursor.execute(
+                """
+                UPDATE orders
+                SET status = 'paid', delivered_key = ?, paid_at = ?
+                WHERE id = ?
+                """,
+                (delivered_key, now, order["id"]),
+            )
+            conn.commit()
+            return "updated"
+        else:
+            # Other statuses (failed, cancelled, refunded)
+            if normalized_status in {"failed", "cancelled", "refunded"}:
+                cursor.execute(
+                    "UPDATE orders SET status = ? WHERE id = ?",
+                    (normalized_status, order["id"]),
+                )
+            conn.commit()
+            return "updated"
+    finally:
+        conn.close()
+

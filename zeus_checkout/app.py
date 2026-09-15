@@ -5,11 +5,13 @@ import os
 import random
 import hmac
 import hashlib
+import json
 import urllib.parse
+from decimal import Decimal
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from datetime import datetime
@@ -51,17 +53,18 @@ class MegaPayTestPayload(BaseModel):
     api_url: str | None = "https://api.mega-pay.cc/v1/payments"
 
 class KashierCreatePayload(BaseModel):
+    items: list = []
+    customer_name: str = "عميل زيوس ستور"
+    customer_phone: str | None = None
+    customer_email: str | None = None
+    currency: str = "USD"
+    order_id: str | None = None
+    title: str | None = None
+    callback_url: str | None = None
     amount_egp: float | None = None
     amount_usd: float | None = None
     amount_sar: float | None = None
     amount: float | None = None
-    currency: str = "EGP"
-    order_id: str | None = None
-    title: str = "طلب متجر زيوس"
-    customer_name: str = "عميل زيوس ستور"
-    customer_phone: str | None = None
-    customer_email: str | None = None
-    callback_url: str | None = None
 
 class KashierTestPayload(BaseModel):
     merchant_id: str
@@ -277,23 +280,44 @@ def create_app() -> FastAPI:
         mode = kashier_cfg.get("mode") or settings.kashier_mode
         base_url = kashier_cfg.get("api_url") or settings.kashier_api_url
 
+        # Condition 1: Server-Authoritative Price Calculation strictly from database
+        if not req.items or not isinstance(req.items, list) or len(req.items) == 0:
+            raise HTTPException(status_code=400, detail="يجب إرسال معرف المنتج والكمية لإتمام الطلب")
+
+        calculated_total_sar = 0.0
+        calculated_total_usd = 0.0
+        calculated_items = []
+
+        for item in req.items:
+            prod_id = str(item.get("id") or item.get("product_id") or item.get("slug") or "").strip()
+            qty = max(1, int(item.get("quantity", item.get("qty", 1))))
+            prod = StoreRepository.get_product(prod_id) if prod_id else None
+            if not prod:
+                cat_items = get_catalog()
+                prod = next((p for p in cat_items if str(p.get("id")) == prod_id or str(p.get("slug")) == prod_id), None)
+            if not prod:
+                raise HTTPException(status_code=400, detail=f"المنتج غير موجود: {prod_id}")
+
+            price_sar = float(prod.get("price_sar", 0))
+            price_usd = float(prod.get("price_usd", 0)) or round(price_sar / settings.usd_to_sar, 2)
+            calculated_total_sar += price_sar * qty
+            calculated_total_usd += price_usd * qty
+            calculated_items.append({
+                "id": prod.get("id"),
+                "title": prod.get("title"),
+                "price_sar": price_sar,
+                "price_usd": price_usd,
+                "quantity": qty
+            })
+
+        if calculated_total_sar <= 0 and calculated_total_usd <= 0:
+            raise HTTPException(status_code=400, detail="إجمالي قيمة الطلب غير صالح")
+
+        # Locked currency and amount on server (Condition 4: USD/USDT)
+        currency = "USD"
+        expected_usdt = f"{calculated_total_usd:.2f}"
         order_id = req.order_id or f"ZEUS_{int(datetime.now().timestamp())}_{random.randint(100, 999)}"
-        currency = (req.currency or "EGP").upper()
-
-        if req.amount and req.amount > 0:
-            amount_val = float(req.amount)
-        elif req.amount_egp and req.amount_egp > 0:
-            amount_val = float(req.amount_egp)
-            currency = "EGP"
-        elif req.amount_usd and req.amount_usd > 0:
-            amount_val = float(req.amount_usd)
-            currency = "USD"
-        elif req.amount_sar and req.amount_sar > 0:
-            amount_val = float(req.amount_sar)
-        else:
-            amount_val = 100.00
-
-        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/checkout.html?order_id={order_id}&kashier_return=1"
+        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/order.html?order_id={order_id}&kashier_return=1"
 
         client = KashierClient(
             merchant_id=merchant_id,
@@ -302,10 +326,12 @@ def create_app() -> FastAPI:
             mode=mode,
             base_url=base_url,
         )
+
+        # Server-to-Server direct session creation with Kashier official API
         try:
             payment = await client.create_payment_session(
                 order_id=order_id,
-                amount=f"{amount_val:.2f}",
+                amount=expected_usdt,
                 currency=currency,
                 customer_email=req.customer_email or f"customer_{order_id[:8]}@zeus.store",
                 customer_reference=req.customer_phone or f"cust_{order_id[:8]}",
@@ -313,20 +339,20 @@ def create_app() -> FastAPI:
                 description=req.title or f"طلب متجر زيوس #{order_id[:8].upper()}",
             )
 
-            try:
-                StoreRepository.create_order(
-                    order_id=order_id,
-                    customer_name=req.customer_name,
-                    customer_phone=req.customer_phone or "01000000000",
-                    customer_email=req.customer_email or "",
-                    payment_method="kashier",
-                    total_amount=amount_val,
-                    currency=currency,
-                    items=[{"name": req.title, "price": amount_val, "qty": 1}],
-                    notes=f"Kashier session: {payment.session_id}"
-                )
-            except Exception:
-                pass
+            # Store pending order with locked payment_id and expected_usdt
+            StoreRepository.create_order(
+                order_id=order_id,
+                customer_name=req.customer_name,
+                customer_phone=req.customer_phone or "",
+                customer_email=req.customer_email or "",
+                payment_method="kashier",
+                total_amount=calculated_total_sar,
+                currency="SAR",
+                items=calculated_items,
+                payment_id=payment.session_id,
+                expected_usdt=expected_usdt,
+                notes=f"Kashier session: {payment.session_id}"
+            )
 
             return {
                 "status": "ok",
@@ -338,65 +364,103 @@ def create_app() -> FastAPI:
                 "amount": payment.amount,
                 "currency": payment.currency,
             }
-        except KashierError:
-            path = f"/?payment={merchant_id}.{order_id}.{amount_val:.2f}.{currency}"
-            hash_val = hmac.new(api_key.encode("utf-8"), path.encode("utf-8"), hashlib.sha256).hexdigest()
-            hosted_url = (
-                f"https://checkout.kashier.io/?merchantId={merchant_id}&orderId={order_id}&order={order_id}"
-                f"&amount={amount_val:.2f}&currency={currency}&hash={hash_val}&mode={mode}"
-                f"&merchantRedirect={urllib.parse.quote(callback_url)}&allowedMethods=card&display=ar"
-                f"&failureRedirect=true&redirectMethod=get"
-            )
-            try:
-                StoreRepository.create_order(
-                    order_id=order_id,
-                    customer_name=req.customer_name,
-                    customer_phone=req.customer_phone or "01000000000",
-                    customer_email=req.customer_email or "",
-                    payment_method="kashier",
-                    total_amount=amount_val,
-                    currency=currency,
-                    items=[{"name": req.title, "price": amount_val, "qty": 1}],
-                    notes=f"Kashier hosted checkout fallback: {order_id}"
-                )
-            except Exception:
-                pass
-            return {
-                "status": "ok",
-                "success": True,
-                "order_id": order_id,
-                "session_id": order_id,
-                "session_url": hosted_url,
-                "payment_url": hosted_url,
-                "amount": f"{amount_val:.2f}",
-                "currency": currency,
-            }
+        except KashierError as exc:
+            raise HTTPException(status_code=502, detail=f"Kashier session creation rejected: {str(exc)}")
         except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Kashier error: {str(exc)}")
+            raise HTTPException(status_code=500, detail=f"Kashier connection error: {str(exc)}")
 
     @app.post("/webhooks/kashier")
     async def kashier_webhook(request: Request):
-        try:
-            payload = await request.json()
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid JSON")
-
         sig = request.headers.get("x-kashier-signature") or request.headers.get("X-Kashier-Signature")
+        if not sig:
+            raise HTTPException(status_code=401, detail="Missing signature header")
+
+        raw_body = await request.body()
+        try:
+            payload = json.loads(raw_body)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail="Invalid webhook JSON") from exc
+
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Invalid webhook payload")
+
+        gateways = StoreRepository.get_payment_gateways()
+        kashier_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "kashier"), {})
+        merchant_id = kashier_cfg.get("merchant_id") or settings.kashier_merchant_id
+        api_key = kashier_cfg.get("api_key") or settings.kashier_api_key
+        secret_key = kashier_cfg.get("secret_key") or settings.kashier_secret_key
+
         client = KashierClient(
-            merchant_id=settings.kashier_merchant_id,
-            api_key=settings.kashier_api_key,
-            secret_key=settings.kashier_secret_key,
+            merchant_id=merchant_id,
+            api_key=api_key,
+            secret_key=secret_key,
         )
-        if sig and not client.verify_webhook_signature(payload, sig):
-            raise HTTPException(status_code=401, detail="Invalid signature")
 
-        data = payload.get("data", {})
-        order_id = data.get("order") or data.get("merchantOrderId")
-        status = str(data.get("status") or "").upper()
-        if order_id and status in ("SUCCESS", "PAID", "CAPTURED"):
-            StoreRepository.update_order_status(order_id, "paid")
+        # Condition 3: Timing-attack resistant HMAC-SHA256 verification
+        if not client.verify_webhook_signature(payload, sig):
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
-        return {"status": "ok", "received": True}
+        # Condition 5: Replay attack prevention via SHA256(signature + raw_body)
+        event_hash = hashlib.sha256(sig.encode("utf-8") + b"\n" + raw_body).hexdigest()
+
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+        target_id = str(data.get("order") or data.get("orderId") or data.get("merchantOrderId") or data.get("sessionId") or "").strip()
+        raw_status = str(data.get("status") or payload.get("event") or "").strip().upper()
+
+        if raw_status in {"SUCCESS", "CAPTURED", "PAID", "PAY"}:
+            normalized_status = "paid"
+        elif raw_status in {"FAILED", "FAIL", "CANCELLED", "CANCELED"}:
+            normalized_status = "failed"
+        elif raw_status in {"REFUNDED", "REFUND"}:
+            normalized_status = "refunded"
+        else:
+            normalized_status = "pending"
+
+        raw_amount = data.get("amount")
+        try:
+            amount = Decimal(str(raw_amount)) if raw_amount is not None else None
+        except Exception:
+            amount = None
+
+        currency = str(data.get("currency") or "").strip().upper() or None
+
+        # Condition 4: Amount & currency hardening via apply_webhook
+        result = StoreRepository.apply_webhook(
+            event_hash=event_hash,
+            payment_id=target_id,
+            normalized_status=normalized_status,
+            supplied_amount=amount,
+            supplied_currency=currency,
+        )
+
+        if result == "duplicate":
+            return {"status": "ok", "received": True, "result": "duplicate"}
+        if result == "unknown_payment":
+            return JSONResponse({"status": "error", "result": "unknown_payment"}, status_code=404)
+        if result in {"amount_mismatch", "currency_mismatch"}:
+            return JSONResponse({"status": "error", "result": result}, status_code=400)
+
+        return {"status": "ok", "received": True, "result": result}
+
+    @app.get("/api/v1/order/{order_id}/status")
+    def api_get_order_status(order_id: str):
+        order = StoreRepository.get_order(order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="الطلب غير موجود")
+        return {
+            "status": "ok",
+            "order_id": order["id"],
+            "order_status": order["status"],
+            "is_paid": order["status"] == "paid",
+            "delivered_key": order.get("delivered_key") if order["status"] == "paid" else None,
+            "payment_method": order.get("payment_method"),
+            "total_amount": order.get("total_amount"),
+            "currency": order.get("currency"),
+            "customer_email": order.get("customer_email"),
+            "customer_phone": order.get("customer_phone"),
+            "paid_at": order.get("paid_at"),
+            "items": order.get("items", [])
+        }
 
     # Include Admin API
     # ==========================================
@@ -677,6 +741,14 @@ def create_app() -> FastAPI:
     @app.get("/checkout")
     @app.get("/checkout.html")
     def serve_checkout():
+        return page_file("checkout.html")
+
+    @app.get("/order")
+    @app.get("/order.html")
+    def serve_order():
+        order_path = os.path.join(BASE_DIR, "order.html")
+        if os.path.exists(order_path):
+            return page_file("order.html")
         return page_file("checkout.html")
 
     @app.get("/admin.html")

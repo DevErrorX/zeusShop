@@ -1037,7 +1037,6 @@
 
     // Check if returning from Kashier Gateway callback
     const urlParams = new URLSearchParams(window.location.search);
-    const kashierStatus = (urlParams.get('paymentStatus') || '').toUpperCase();
     const isKashierReturn = urlParams.has('kashier_return') || urlParams.has('paymentStatus');
 
     if (isKashierReturn) {
@@ -1048,37 +1047,41 @@
         window.history.replaceState({}, '', window.location.pathname);
       } catch(e) {}
 
-      // Case 1: STRICT SUCCESS ONLY
-      if (kashierStatus === 'SUCCESS') {
-        let pendingData = {};
-        try {
-          pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
-        } catch(e) {}
+      // Condition 2: Anti-spoofing - Verify exclusively against server orders.db
+      if (orderId) {
+        fetch(`/api/v1/order/${encodeURIComponent(orderId)}/status`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.is_paid) {
+              let pendingData = {};
+              try {
+                pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
+              } catch(e) {}
+              const email = pendingData.email || data.customer_email || 'العميل';
+              const phone = pendingData.phone || data.customer_phone || '';
+              const totalUsdt = data.expected_usdt || pendingData.totalUsdt || '0.00';
+              const totalSar = data.total_amount || 0;
+              const deliveredKey = data.delivered_key ? `\nكود التفعيل: ${data.delivered_key}` : '';
 
-        const email = pendingData.email || urlParams.get('customerEmail') || 'العميل';
-        const phone = pendingData.phone || '';
-        const totalUsdt = pendingData.totalUsdt || '0.00';
-        const totalEgp = pendingData.totalEgp || urlParams.get('amount') || 0;
-        const txId = urlParams.get('transactionId') ? `رقم العملية لدى كاشير: #${urlParams.get('transactionId')}` : '';
+              localStorage.removeItem('zeus_pending_order');
+              saveCart([]);
+              if (typeof updateCartBadges === 'function') updateCartBadges();
 
-        localStorage.removeItem('zeus_pending_order');
-        saveCart([]);
-        if (typeof updateCartBadges === 'function') updateCartBadges();
-
-        setTimeout(() => {
-          showOrderSuccessModal(orderId || 'ZEUS-ORDER', email, phone, 'kashier', `تم تأكيد الدفع بنجاح عبر كاشير (Kashier) ⚡\n${txId}`, totalUsdt, totalEgp);
-        }, 400);
-      } 
-      // Case 2: PAYMENT FAILED OR CANCELLED
-      else if (kashierStatus === 'FAILED' || kashierStatus === 'FAILURE' || kashierStatus === 'CANCELLED') {
-        showToast('⚠️ فشلت عملية الدفع أو تم إلغاؤها من البنك (لم يتم خصم أي مبالغ). يمكنك إعادة المحاولة ⚡', 'error');
-        const pendingStateEl = document.getElementById('zeus-payment-pending-state');
-        if (pendingStateEl) pendingStateEl.classList.add('hidden');
-        localStorage.removeItem('zeus_pending_order');
-      }
-      // Case 3: INCOMPLETE / PENDING / NO FINAL STATUS
-      else {
-        showToast('لم يتم إتمام عملية السداد في بوابة كاشير. لم يتم خصم أي مبلغ ℹ️', 'info');
+              setTimeout(() => {
+                showOrderSuccessModal(orderId, email, phone, 'kashier', `تم تأكيد الدفع بنجاح عبر كاشير (Kashier) ⚡${deliveredKey}`, totalUsdt, totalSar);
+              }, 400);
+            } else if (data && (data.order_status === 'failed' || data.order_status === 'cancelled')) {
+              showToast('⚠️ فشلت عملية الدفع أو تم إلغاؤها من البنك (لم يتم خصم أي مبالغ). يمكنك إعادة المحاولة ⚡', 'error');
+              const pendingStateEl = document.getElementById('zeus-payment-pending-state');
+              if (pendingStateEl) pendingStateEl.classList.add('hidden');
+              localStorage.removeItem('zeus_pending_order');
+            } else {
+              showToast('جاري التحقق وبانتظار وصول إشعار السداد المعتمد من كاشير... ⚡', 'info');
+            }
+          })
+          .catch(() => {
+            showToast('بانتظار تأكيد الدفع من كاشير... ⚡', 'info');
+          });
       }
     }
 
@@ -1178,47 +1181,7 @@
       return pureJsSha256(oKeyPad + innerHash);
     }
 
-    async function computeKashierHmacSha256(keyStr, messageStr) {
-      try {
-        if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
-          const enc = new TextEncoder();
-          const keyData = enc.encode(keyStr);
-          const msgData = enc.encode(messageStr);
-          const cryptoKey = await window.crypto.subtle.importKey(
-            "raw",
-            keyData,
-            { name: "HMAC", hash: { name: "SHA-256" } },
-            false,
-            ["sign"]
-          );
-          const sig = await window.crypto.subtle.sign("HMAC", cryptoKey, msgData);
-          return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-      } catch(e) {}
-      return pureJsHmacSha256(keyStr, messageStr);
-    }
-
-    async function generateKashierHostedCheckoutUrl({ merchantId, apiKey, orderId, amount, currency = 'EGP', mode = 'live', callbackUrl }) {
-      const amountStr = Number(amount).toFixed(2);
-      const path = `/?payment=${merchantId}.${orderId}.${amountStr}.${currency}`;
-      const hash = await computeKashierHmacSha256(apiKey, path);
-
-      const url = new URL('https://checkout.kashier.io/');
-      url.searchParams.set('merchantId', merchantId);
-      url.searchParams.set('orderId', orderId);
-      url.searchParams.set('order', orderId);
-      url.searchParams.set('amount', amountStr);
-      url.searchParams.set('currency', currency);
-      url.searchParams.set('hash', hash);
-      url.searchParams.set('mode', mode || 'live');
-      url.searchParams.set('merchantRedirect', callbackUrl);
-      url.searchParams.set('allowedMethods', 'card');
-      url.searchParams.set('display', 'ar');
-      url.searchParams.set('failureRedirect', 'true');
-      url.searchParams.set('redirectMethod', 'get');
-      return url.toString();
-    }
-    window.generateKashierHostedCheckoutUrl = generateKashierHostedCheckoutUrl;
+    // Note: All payment session creation is strictly Server-to-Server via /api/v1/payment/kashier/create
 
     // Handle "اضغط هنا للدفع الآن" / Submit Checkout Button
     const payBtn = document.getElementById('zeus-checkout-submit-btn') || Array.from(document.querySelectorAll('button')).find(b => 
@@ -1269,11 +1232,14 @@
           return;
         }
 
-        // Kashier Flow (100% SAME AS RAES)
+        // Kashier Flow (Condition 1: Server-Authoritative Price Calculation & Direct S2S Session)
         if (selectedPaymentMethod === 'kashier' || selectedPaymentMethod === 'megapay') {
-          const amounts = updateCheckoutAmounts();
-          const currentEgp = amounts ? amounts.totalEgp : totalEgp;
-          const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
+          const cart = getCart();
+          const itemsPayload = (cart && cart.length > 0) ? cart.map(it => ({
+            id: it.id || 'zeus-cod-60',
+            quantity: it.quantity || 1
+          })) : [{ id: 'zeus-cod-60', quantity: 1 }];
+
           const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
           const orderTitle = `طلب متجر زيوس #${orderId}`;
           const customerName = (document.querySelector('input[name="name"]')?.value || email.split('@')[0] || 'عميل زيوس').trim();
@@ -1297,7 +1263,7 @@
             }
           } catch(e) {}
 
-          // Show RAES-style Pending State on checkout
+          // Show Pending State on checkout
           const pendingStateEl = document.getElementById('zeus-payment-pending-state');
           const pendingAmountEl = document.getElementById('zeus-pending-amount-val');
           const pendingOrderRef = document.getElementById('zeus-pending-order-ref');
@@ -1305,28 +1271,24 @@
           const pendingRefreshBtn = document.getElementById('zeus-pending-refresh-btn');
           const pendingCancelBtn = document.getElementById('zeus-pending-cancel-btn');
 
-          if (pendingAmountEl) pendingAmountEl.textContent = `${currentEgp.toLocaleString('en-US')} ج.م (${currentUsdt} USDT)`;
           if (pendingOrderRef) pendingOrderRef.textContent = `رقم الطلب: #${orderId}`;
           if (pendingStateEl) {
             pendingStateEl.classList.remove('hidden');
             pendingStateEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
 
-          const callbackUrl = window.location.origin + window.location.pathname + `?order_id=${orderId}&kashier_return=1`;
-          const kMerchantId = (localStorage.getItem('zeus_kashier_merchant_id') || 'MID-34056-532').trim();
-          const kApiKey = (localStorage.getItem('zeus_kashier_api_key') || '60963e5a-e0fd-4ddc-be8f-1346168d21a3').trim();
-          const kMode = (localStorage.getItem('zeus_kashier_mode') || 'live').trim();
+          const callbackUrl = window.location.origin + '/order.html?order_id=' + orderId + '&kashier_return=1';
 
-          // Call API or direct gateway
           (async () => {
             let paymentUrl = '';
             try {
+              // Server calculates all prices and creates session Server-to-Server
               const resp = await fetch('/api/v1/payment/kashier/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  amount_egp: currentEgp,
-                  currency: 'EGP',
+                  items: itemsPayload,
+                  currency: 'USD',
                   title: orderTitle,
                   customer_name: customerName,
                   customer_phone: phone,
@@ -1339,21 +1301,20 @@
                 const resData = await resp.json();
                 if (resData.session_url || resData.payment_url) {
                   paymentUrl = resData.session_url || resData.payment_url;
+                  if (pendingAmountEl && resData.amount) {
+                    pendingAmountEl.textContent = `${resData.amount} ${resData.currency || 'USD'}`;
+                  }
                 }
+              } else {
+                const errData = await resp.json().catch(() => ({}));
+                showToast(errData.detail || 'تعذر بدء جلسة الدفع الآمنة، يرجى المحاولة لاحقاً', 'error');
+                if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+                return;
               }
-            } catch(e) {}
-
-            // If backend is offline or static hosting (e.g. GitHub Pages), generate signed Kashier checkout URL
-            if (!paymentUrl) {
-              paymentUrl = await generateKashierHostedCheckoutUrl({
-                merchantId: kMerchantId,
-                apiKey: kApiKey,
-                orderId: orderId,
-                amount: currentEgp,
-                currency: 'EGP',
-                mode: kMode,
-                callbackUrl: callbackUrl
-              });
+            } catch(e) {
+              showToast('خطأ في الاتصال بالسيرفر لإتمام الدفع', 'error');
+              if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+              return;
             }
 
             if (pendingOpenLink) {
@@ -1369,24 +1330,30 @@
             localStorage.setItem('zeus_pending_order', JSON.stringify({
               orderId,
               method: 'kashier',
-              amountEgp: currentEgp,
               paymentUrl,
               email,
               phone,
-              totalUsdt: currentUsdt,
-              totalEgp: currentEgp,
               timestamp: Date.now()
             }));
 
-            showToast('تم بدء معاملة كاشير (Kashier)! يرجى إتمام الدفع في نافذة البوابة ⚡', 'success');
+            showToast('تم بدء معاملة كاشير (Kashier) الآمنة! يرجى إتمام الدفع في نافذة البوابة ⚡', 'success');
           })();
 
           if (pendingRefreshBtn) {
             pendingRefreshBtn.onclick = () => {
-              showToast('جاري التحقق من وصول إشعار السداد... ', 'info');
-              setTimeout(() => {
-                showToast('بانتظار تأكيد الدفع من كاشير... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
-              }, 1200);
+              showToast('جاري التحقق من السيرفر... ', 'info');
+              fetch(`/api/v1/order/${encodeURIComponent(orderId)}/status`)
+                .then(r => r.json())
+                .then(st => {
+                  if (st && st.is_paid) {
+                    window.location.href = `/order.html?order_id=${encodeURIComponent(orderId)}`;
+                  } else {
+                    showToast('بانتظار تأكيد الدفع من كاشير... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
+                  }
+                })
+                .catch(() => {
+                  showToast('بانتظار تأكيد الدفع من كاشير...', 'info');
+                });
             };
           }
           if (pendingCancelBtn) {

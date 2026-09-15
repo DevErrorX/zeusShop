@@ -7,32 +7,75 @@ from .database import get_db_connection
 class StoreRepository:
     # ------------------ ORDERS ------------------
     @staticmethod
-    def create_order(customer_name: str, customer_phone: str, customer_email: str | None,
-                     payment_method: str, total_amount: float, currency: str, items: list,
-                     payment_proof: str | None = None, notes: str | None = None) -> str:
-        order_id = f"ZEUS-{uuid.uuid4().hex[:6].upper()}"
+    def create_order(
+        customer_name: str,
+        customer_phone: str,
+        customer_email: str | None,
+        payment_method: str,
+        total_amount: float,
+        currency: str,
+        items: list,
+        order_id: str | None = None,
+        payment_id: str | None = None,
+        expected_usdt: str | float | None = None,
+        amount_egp: float | None = None,
+        payment_proof: str | None = None,
+        notes: str | None = None
+    ) -> str:
+        oid = order_id or f"ZEUS-{uuid.uuid4().hex[:6].upper()}"
+        usdt_str = str(expected_usdt) if expected_usdt is not None else None
         with get_db_connection() as conn:
             conn.execute(
                 """INSERT INTO orders (id, customer_name, customer_phone, customer_email,
                                        payment_method, total_amount, currency, items_json,
-                                       status, payment_proof, notes)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)""",
-                (order_id, customer_name, customer_phone, customer_email,
+                                       status, payment_id, expected_usdt, amount_egp,
+                                       payment_proof, notes)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
+                   ON CONFLICT(id) DO UPDATE SET
+                       payment_id=COALESCE(excluded.payment_id, orders.payment_id),
+                       expected_usdt=COALESCE(excluded.expected_usdt, orders.expected_usdt),
+                       amount_egp=COALESCE(excluded.amount_egp, orders.amount_egp),
+                       notes=COALESCE(excluded.notes, orders.notes)
+                """,
+                (oid, customer_name, customer_phone, customer_email,
                  payment_method, total_amount, currency, json.dumps(items, ensure_ascii=False),
+                 payment_id, usdt_str, amount_egp,
                  payment_proof, notes)
             )
             conn.commit()
-        return order_id
+        return oid
 
     @staticmethod
     def get_order(order_id: str) -> dict | None:
         with get_db_connection() as conn:
-            row = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+            row = conn.execute("SELECT * FROM orders WHERE id = ? OR payment_id = ?", (order_id, order_id)).fetchone()
             if row:
                 d = dict(row)
                 d["items"] = json.loads(d["items_json"]) if d.get("items_json") else []
                 return d
         return None
+
+    @staticmethod
+    def get_order_by_payment_id(payment_id: str) -> dict | None:
+        return StoreRepository.get_order(payment_id)
+
+    @staticmethod
+    def apply_webhook(
+        *,
+        event_hash: str,
+        payment_id: str,
+        normalized_status: str,
+        supplied_amount,
+        supplied_currency,
+    ) -> str:
+        from .database import apply_webhook as db_apply_webhook
+        return db_apply_webhook(
+            event_hash=event_hash,
+            payment_id=payment_id,
+            normalized_status=normalized_status,
+            supplied_amount=supplied_amount,
+            supplied_currency=supplied_currency,
+        )
 
     @staticmethod
     def list_orders(limit: int = 100, status_filter: str | None = None) -> list[dict]:
