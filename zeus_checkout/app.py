@@ -759,12 +759,14 @@ def create_app() -> FastAPI:
 
     @app.get("/products")
     @app.get("/products.html")
-    def serve_products():
+    @app.get("/products/{slug:path}")
+    def serve_products(slug: str | None = None):
         return page_file("products.html")
 
     @app.get("/categories")
     @app.get("/categories.html")
-    def serve_categories():
+    @app.get("/categories/{slug:path}")
+    def serve_categories(slug: str | None = None):
         return page_file("categories.html")
 
     @app.get("/about")

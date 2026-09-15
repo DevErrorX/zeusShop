@@ -80,6 +80,8 @@ class TelegramAdminBot:
                         },
                     )
                     failures = 0
+                    if not isinstance(result, list):
+                        continue
                     for update in result:
                         if not isinstance(update, dict):
                             continue
@@ -95,7 +97,7 @@ class TelegramAdminBot:
                     raise
                 except (RuntimeError, httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
                     failures += 1
-                    LOGGER.warning("Telegram admin polling failed: %s", type(exc).__name__)
+                    LOGGER.warning("Telegram admin polling failed: %s - %s", type(exc).__name__, exc)
                     try:
                         await asyncio.wait_for(
                             stop_event.wait(),
