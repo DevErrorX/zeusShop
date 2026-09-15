@@ -2759,8 +2759,7 @@ ${key}
                 showToast('يرجى إدخال Bot Token و Chat ID أولاً', 'error');
                 return;
             }
-            const msg = '⚡️ *تجربة إشعار ZEUS STORE*
-تم ربط لوحة التحكم بنجاح! ستصلك تنبيهات فورية بكل طلب جديد 👑';
+            const msg = `⚡️ *تجربة إشعار ZEUS STORE*\nتم ربط لوحة التحكم بنجاح! ستصلك تنبيهات فورية بكل طلب جديد 👑`;
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2856,11 +2855,11 @@ ${key}
                             <tr><td>${(order.items && order.items[0]) ? order.items[0].title : (order.product_title || 'منتج رقمي')}</td><td>${order.total_amount} ${order.currency || 'د.ع'}</td></tr>
                         </table>
                     </div>
-                    <script>window.print();<\/script>
                 </body>
                 </html>
             `);
             w.document.close();
+            w.print();
         };
 
         window.handleGlobalSearch = function(query) {
