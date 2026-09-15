@@ -1,5 +1,6 @@
 """Store repository for orders, products, digital keys, settings, and analytics."""
 
+import os
 import json
 import uuid
 from .database import get_db_connection, generate_confirmation_code
