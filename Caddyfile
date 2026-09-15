@@ -1,15 +1,20 @@
-zeus.duckdns.org {
-    encode zstd gzip
-    
-    # Static Assets Cache
-    @static path /assets/* *.css *.js *.webp *.png *.svg *.ico
-    header @static Cache-Control "public, max-age=86400"
-    
-    # Reverse proxy to FastAPI backend
-    reverse_proxy 127.0.0.1:8000 {
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-    }
+www.zeus-store.site {
+    redir https://zeus-store.site{uri} permanent
 }
+
+zeus-store.site, zeusshop.duckdns.org {
+    @zeus_admin_image_upload path /api/v1/admin/uploads/images
+    @zeus_non_image_upload not path /api/v1/admin/uploads/images
+    request_body @zeus_admin_image_upload {
+        max_size 5MB
+    }
+    request_body @zeus_non_image_upload {
+        max_size 64KB
+    }
+    header {
+        -Server
+    }
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8001
+}
+

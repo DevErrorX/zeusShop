@@ -763,6 +763,24 @@ def create_app() -> FastAPI:
     def serve_maintenance():
         return page_file("maintenance.html")
 
+    @app.get("/favicon.ico")
+    def serve_favicon():
+        return page_file("favicon.ico")
+
+    @app.get("/manifest.json")
+    @app.get("/manifest.webmanifest")
+    def serve_manifest():
+        if os.path.exists(os.path.join(BASE_DIR, "manifest.webmanifest")):
+            return page_file("manifest.webmanifest")
+        return page_file("manifest.json")
+
+    @app.get("/og-image.jpg")
+    @app.get("/og-image.png")
+    @app.get("/og-image.webp")
+    def serve_og_image(request: Request):
+        path = request.url.path.lstrip("/")
+        return page_file(path)
+
     return app
 
 app = create_app()
