@@ -49,6 +49,13 @@ class Settings(BaseModel):
     kashier_mode: str = Field(default_factory=lambda: os.getenv("KASHIER_MODE", "live"))
     kashier_api_url: str = Field(default_factory=lambda: os.getenv("KASHIER_API_URL", "https://api.kashier.io"))
 
+    # Telegram Admin Bot
+    telegram_admin_bot_token: str = Field(default_factory=lambda: os.getenv("TELEGRAM_ADMIN_BOT_TOKEN", "8812148671:AAHOavmadji5u2-jXjlQHpC1AH8AkL8rc2g"))
+    telegram_admin_user_ids: list[int] = Field(default_factory=lambda: [7565750369, 5794434215])
+    telegram_admin_enabled: bool = Field(default_factory=lambda: os.getenv("TELEGRAM_ADMIN_ENABLED", "true").lower() in ("true", "1"))
+    telegram_support_username: str = Field(default_factory=lambda: os.getenv("TELEGRAM_SUPPORT_USERNAME", "abxc18"))
+    public_base_url: str = Field(default_factory=lambda: os.getenv("PUBLIC_BASE_URL", "https://zeus-store.site"))
+
 settings = Settings()
 
 

@@ -6,7 +6,9 @@ import random
 import hmac
 import hashlib
 import json
+import asyncio
 import urllib.parse
+from contextlib import asynccontextmanager
 from decimal import Decimal
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +18,7 @@ from pydantic import BaseModel
 
 from datetime import datetime
 from .config import settings
-from .database import init_db
+from .database import init_db, register_order_paid_callback
 from .catalog import get_catalog, get_categories
 from .rates import get_all_rates
 from .store_repository import StoreRepository
@@ -24,6 +26,7 @@ from .crypto import get_crypto_instructions
 from .admin_routes import admin_router
 from .megapay import MegaPayClient, MegaPayError
 from .kashier import KashierClient, KashierError, KashierPayment
+from .telegram_admin import TelegramAdminBot
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -93,13 +96,53 @@ class BinanceVerifyGiftCardPayload(BaseModel):
     api_key: str | None = None
     api_secret: str | None = None
 
+async def _notify_telegram_paid(bot, order_id: str):
+    try:
+        order = StoreRepository.get_order(order_id)
+        if order and order.get("status") == "paid":
+            await bot.notify_paid_order(order)
+    except Exception as e:
+        print(f"Failed to send telegram paid notification: {e}")
+
 def create_app() -> FastAPI:
-    init_db()
-    
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        init_db()
+        telegram_admin_bot = None
+        telegram_stop = asyncio.Event()
+        telegram_task = None
+        if settings.telegram_admin_enabled and settings.telegram_admin_bot_token:
+            telegram_admin_bot = TelegramAdminBot(
+                token=settings.telegram_admin_bot_token,
+                allowed_user_ids=tuple(settings.telegram_admin_user_ids),
+                public_base_url=settings.public_base_url,
+                repository=StoreRepository,
+            )
+            app.state.telegram_admin = telegram_admin_bot
+            telegram_task = asyncio.create_task(
+                telegram_admin_bot.run(telegram_stop), name="zeus-telegram-admin"
+            )
+
+            def on_paid(order_id: str):
+                asyncio.create_task(_notify_telegram_paid(telegram_admin_bot, order_id))
+            register_order_paid_callback(on_paid)
+
+        try:
+            yield
+        finally:
+            if telegram_task is not None:
+                telegram_stop.set()
+                telegram_task.cancel()
+                try:
+                    await telegram_task
+                except asyncio.CancelledError:
+                    pass
+
     app = FastAPI(
         title="ZEUS STORE API",
         description="High performance API for digital services & games",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan
     )
     
     app.add_middleware(
@@ -447,15 +490,26 @@ def create_app() -> FastAPI:
         order = StoreRepository.get_order(order_id)
         if not order:
             raise HTTPException(status_code=404, detail="الطلب غير موجود")
+        is_paid = order["status"] == "paid"
+        conf_code = order.get("confirmation_code") or order["id"]
+        telegram_url = None
+        if is_paid:
+            import urllib.parse
+            msg = f"مرحباً، تم الدفع في ZEUS STORE. كود التأكيد: {conf_code}"
+            telegram_url = f"https://t.me/{settings.telegram_support_username}?text={urllib.parse.quote(msg)}"
+
         return {
             "status": "ok",
             "order_id": order["id"],
             "order_status": order["status"],
-            "is_paid": order["status"] == "paid",
-            "delivered_key": order.get("delivered_key") if order["status"] == "paid" else None,
+            "is_paid": is_paid,
+            "confirmation_code": conf_code,
+            "telegram_url": telegram_url,
+            "delivered_key": order.get("delivered_key") if is_paid else None,
             "payment_method": order.get("payment_method"),
             "total_amount": order.get("total_amount"),
             "currency": order.get("currency"),
+            "customer_name": order.get("customer_name"),
             "customer_email": order.get("customer_email"),
             "customer_phone": order.get("customer_phone"),
             "paid_at": order.get("paid_at"),

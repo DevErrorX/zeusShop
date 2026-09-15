@@ -3,9 +3,31 @@
 import sqlite3
 import os
 import json
+import secrets
 from decimal import Decimal
 from datetime import datetime, timezone
 from .config import settings
+
+_on_order_paid_callbacks = []
+
+def register_order_paid_callback(fn):
+    if fn not in _on_order_paid_callbacks:
+        _on_order_paid_callbacks.append(fn)
+
+def generate_confirmation_code(cursor_or_conn=None) -> str:
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    for _ in range(30):
+        code = "ZEUS-" + "".join(secrets.choice(alphabet) for _ in range(8))
+        if cursor_or_conn:
+            try:
+                exists = cursor_or_conn.execute("SELECT 1 FROM orders WHERE confirmation_code = ?", (code,)).fetchone()
+                if not exists:
+                    return code
+            except Exception:
+                return code
+        else:
+            return code
+    return f"ZEUS-{secrets.token_hex(4).upper()}"
 
 def init_db():
     db_path = settings.database_path
@@ -328,15 +350,27 @@ def apply_webhook(
                 if not delivered_key:
                     delivered_key = f"ZEUS-KEY-{order['id'][:8].upper()}"
 
+            conf_code = order.get("confirmation_code")
+            if not conf_code:
+                conf_code = generate_confirmation_code(cursor)
+
             cursor.execute(
                 """
                 UPDATE orders
-                SET status = 'paid', delivered_key = ?, paid_at = ?
+                SET status = 'paid', delivered_key = ?, paid_at = ?, confirmation_code = COALESCE(confirmation_code, ?)
                 WHERE id = ?
                 """,
-                (delivered_key, now, order["id"]),
+                (delivered_key, now, conf_code, order["id"]),
             )
             conn.commit()
+
+            # Trigger notification callbacks
+            for cb in _on_order_paid_callbacks:
+                try:
+                    cb(order["id"])
+                except Exception as cb_err:
+                    print(f"Warning: Order paid callback failed: {cb_err}")
+
             return "updated"
         else:
             # Other statuses (failed, cancelled, refunded)

@@ -105,27 +105,38 @@
 
         <div class="space-y-1.5">
           <span class="inline-block px-3 py-0.5 rounded-full text-xs font-extrabold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-            تم الدفع والتسليم بنجاح ✓
+            تم الدفع بنجاح ✅
           </span>
           <h1 class="text-xl sm:text-2xl font-black text-foreground">شكراً لطلبك من زيوس ستور!</h1>
           <p class="text-xs sm:text-sm text-muted-foreground">
-            تم استلام وتأكيد سداد العملية رسمياً من بوابة كاشير، وكود التفعيل متاح أدناه:
+            تم تأكيد استلام سداد العملية بنجاح. كود التأكيد الخاص بك مسجل أدناه:
           </p>
         </div>
 
-        <!-- Serial Key Vault Card -->
+        <!-- Confirmation Code Box -->
         <div class="code-box rounded-2xl p-5 sm:p-6 text-center space-y-3">
           <div class="text-xs text-muted-foreground font-bold flex items-center justify-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span>كود التفعيل الرقمي (Digital Serial Key)</span>
+            <span>كود التأكيد الخاص بك (Confirmation Code)</span>
           </div>
-          <div id="delivered-key-val" class="font-mono text-base sm:text-xl font-black text-primary bg-card/90 py-3 px-4 rounded-xl border border-primary/30 select-all tracking-wider shadow-inner">
+          <div id="delivered-key-val" class="font-mono text-xl sm:text-2xl font-black text-primary bg-card/90 py-3 px-4 rounded-xl border border-primary/30 select-all tracking-wider shadow-inner">
             ZEUS-PENDING
           </div>
           <button id="btn-copy-key" type="button" class="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs sm:text-sm shadow hover:brightness-110 transition-all cursor-pointer inline-flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             <span id="copy-btn-text">نسخ الكود</span>
           </button>
+        </div>
+
+        <!-- Telegram Delivery Button -->
+        <div class="space-y-2 pt-1">
+          <a id="btn-telegram-delivery" href="https://t.me/abxc18" target="_blank" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2.5 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            <span>إرسال الكود واستلام الطلب عبر تيليجرام (@abxc18)</span>
+          </a>
+          <p id="telegram-redirect-notice" class="text-[11px] text-muted-foreground animate-pulse font-medium">
+            جاري تحويلك تلقائياً إلى محادثة تيليجرام (@abxc18) خلال لحظات...
+          </p>
         </div>
 
         <div class="rounded-2xl bg-muted/40 border border-border/70 p-4 text-xs space-y-2 text-start">
@@ -135,11 +146,11 @@
           </div>
           <div class="flex justify-between py-1 border-b border-border/40">
             <span class="text-muted-foreground">حالة السداد:</span>
-            <span class="font-black text-emerald-600">مدفوع ومؤكد (Paid)</span>
+            <span class="font-black text-emerald-600">مدفوع ومؤكد رسمياً (Paid)</span>
           </div>
           <div class="flex justify-between py-1">
             <span class="text-muted-foreground">طريقة الدفع:</span>
-            <span class="font-semibold text-foreground">كاشير (Kashier - Visa / Mastercard / Apple Pay)</span>
+            <span id="paid-payment-method" class="font-semibold text-foreground">كاشير / بطاقة دفع</span>
           </div>
         </div>
 
@@ -218,10 +229,10 @@
             const data = await resp.json();
             const status = (data.order_status || data.status || '').toLowerCase();
 
-            // Condition 2: Genuine server database check ONLY
+            // Genuine server database check ONLY
             if (status === 'paid') {
               if (pollInterval) clearInterval(pollInterval);
-              showPaidState(data.delivered_key || 'ZEUS-PRO-KEY-SUCCESS');
+              showPaidState(data);
               return;
             } else if (status === 'failed' || status === 'cancelled') {
               if (pollInterval) clearInterval(pollInterval);
@@ -236,14 +247,36 @@
         }
       }
 
-      function showPaidState(key) {
+      function showPaidState(data) {
         statePending.classList.add('hidden');
         stateFailed.classList.add('hidden');
         statePaid.classList.remove('hidden');
-        if (deliveredKeyEl) deliveredKeyEl.textContent = key;
+
+        const confCode = data.confirmation_code || data.delivered_key || ('ZEUS-' + (data.order_id || '').replace(/^ZEUS-/, ''));
+        if (deliveredKeyEl) deliveredKeyEl.textContent = confCode;
+
+        const defaultMsg = 'مرحباً، تم الدفع في ZEUS STORE. كود التأكيد: ' + confCode;
+        const tgUrl = data.telegram_url || ('https://t.me/abxc18?text=' + encodeURIComponent(defaultMsg));
+        
+        const tgBtn = document.getElementById('btn-telegram-delivery');
+        if (tgBtn) {
+          tgBtn.href = tgUrl;
+        }
+
+        const methodEl = document.getElementById('paid-payment-method');
+        if (methodEl && data.payment_method) {
+          methodEl.textContent = data.payment_method;
+        }
+
         try {
           localStorage.removeItem('zeus_pending_order');
+          localStorage.removeItem('zeus_cart');
         } catch(e) {}
+
+        // Automatically redirect to Telegram support chat @abxc18
+        setTimeout(() => {
+          window.location.href = tgUrl;
+        }, 1800);
       }
 
       function showFailedState() {

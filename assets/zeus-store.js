@@ -1047,40 +1047,29 @@
         window.history.replaceState({}, '', window.location.pathname);
       } catch(e) {}
 
-      // Condition 2: Anti-spoofing - Verify exclusively against server orders.db
+      // Anti-spoofing - Verify exclusively against server orders.db
       if (orderId) {
         fetch(`/api/v1/order/${encodeURIComponent(orderId)}/status`)
           .then(res => res.json())
           .then(data => {
             if (data && data.is_paid) {
-              let pendingData = {};
-              try {
-                pendingData = JSON.parse(localStorage.getItem('zeus_pending_order') || '{}');
-              } catch(e) {}
-              const email = pendingData.email || data.customer_email || 'العميل';
-              const phone = pendingData.phone || data.customer_phone || '';
-              const totalUsdt = data.expected_usdt || pendingData.totalUsdt || '0.00';
-              const totalSar = data.total_amount || 0;
-              const deliveredKey = data.delivered_key ? `\nكود التفعيل: ${data.delivered_key}` : '';
-
               localStorage.removeItem('zeus_pending_order');
               saveCart([]);
               if (typeof updateCartBadges === 'function') updateCartBadges();
 
-              setTimeout(() => {
-                showOrderSuccessModal(orderId, email, phone, 'kashier', `تم تأكيد الدفع بنجاح عبر كاشير (Kashier) ⚡${deliveredKey}`, totalUsdt, totalSar);
-              }, 400);
+              // Redirect directly to order.html which shows confirmation code and redirects to @abxc18
+              window.location.href = `/order.html?order_id=${encodeURIComponent(orderId)}`;
             } else if (data && (data.order_status === 'failed' || data.order_status === 'cancelled')) {
               showToast('⚠️ فشلت عملية الدفع أو تم إلغاؤها من البنك (لم يتم خصم أي مبالغ). يمكنك إعادة المحاولة ⚡', 'error');
               const pendingStateEl = document.getElementById('zeus-payment-pending-state');
               if (pendingStateEl) pendingStateEl.classList.add('hidden');
               localStorage.removeItem('zeus_pending_order');
             } else {
-              showToast('جاري التحقق وبانتظار وصول إشعار السداد المعتمد من كاشير... ⚡', 'info');
+              showToast('جاري التحقق وبانتظار وصول إشعار السداد المعتمد من بوابة الدفع... ⚡', 'info');
             }
           })
           .catch(() => {
-            showToast('بانتظار تأكيد الدفع من كاشير... ⚡', 'info');
+            showToast('بانتظار تأكيد الدفع... ⚡', 'info');
           });
       }
     }
@@ -1387,46 +1376,41 @@
     });
   }
 
-  function showOrderSuccessModal(orderId, email, phone, method, extraInfo, totalUsdt, totalEgp) {
+  function showOrderSuccessModal(orderId, email, phone, method, extraInfo, totalUsdt, totalEgp, confirmationCode) {
     const methodName = 'بطاقة دفع بنكية (Visa / Mastercard)';
     const egpText = typeof totalEgp === 'number' ? ` (${totalEgp.toLocaleString('en-US')} ج.م)` : '';
+    const confCode = confirmationCode || orderId;
 
-    const waLines = [
-      'مرحبا زيوس ستور، قمت بعمل طلب جديد:',
-      `رقم الطلب: ${orderId}`,
-      `وسيلة الدفع: ${methodName}`,
-      extraInfo ? extraInfo : '',
-      `المبلغ: ${totalUsdt} USDT${egpText}`
-    ].filter(Boolean);
-    const waUrl = 'https://wa.me/201000000000?text=' + encodeURIComponent(waLines.join('\n'));
+    const tgMsg = encodeURIComponent(`مرحباً، تم الدفع في ZEUS STORE. كود التأكيد: ${confCode}`);
+    const tgUrl = `https://t.me/abxc18?text=${tgMsg}`;
 
     const modalHtml = `
       <div id="zeus-order-modal" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
         <div class="w-full max-w-md bg-slate-900 border border-cyan-500/30 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
-          <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-amber-600 mx-auto flex items-center justify-center">
+          <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-amber-500 mx-auto flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
           <h3 class="text-xl font-extrabold text-white">تم الشراء والدفع بنجاح!</h3>
           <p class="text-xs text-amber-400 font-bold">كود التأكيد الخاص بك:</p>
-          <div class="px-4 py-2.5 bg-amber-500/10 rounded-xl font-mono text-amber-400 text-sm font-bold border border-amber-500/30 select-all">
-            CONF-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${orderId.replace('ZEUS-', '')}
+          <div class="px-4 py-2.5 bg-amber-500/10 rounded-xl font-mono text-amber-400 text-base font-bold border border-amber-500/30 select-all tracking-wider">
+            ${confCode}
           </div>
           <p class="text-xs text-slate-300">رقم الطلب الخاص بك:</p>
-          <div class="px-4 py-2 bg-slate-950 rounded-xl font-mono text-amber-600 text-lg font-black tracking-wider border border-white/10 select-all">
+          <div class="px-4 py-2 bg-slate-950 rounded-xl font-mono text-amber-500 text-sm font-black tracking-wider border border-white/10 select-all">
             ${orderId}
           </div>
           <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-start space-y-1 text-slate-300">
             <div><span class="text-slate-400">طريقة الدفع:</span> <strong class="text-white">${methodName}</strong></div>
-            <div><span class="text-slate-400">المبلغ المطلوب:</span> <strong class="text-amber-600 font-mono">${totalUsdt} USDT${egpText}</strong></div>
+            <div><span class="text-slate-400">المبلغ المطلوب:</span> <strong class="text-amber-400 font-mono">${totalUsdt} USDT${egpText}</strong></div>
             <div><span class="text-slate-400">البريد:</span> <strong class="text-white">${email}</strong></div>
             <div><span class="text-slate-400">الهاتف:</span> <strong class="text-white">${phone}</strong></div>
             ${extraInfo ? `<div class="text-amber-400 pt-1 border-t border-white/10 font-mono text-[11px]">${extraInfo}</div>` : ''}
           </div>
-          <p class="text-xs text-slate-400">تم تسجيل بيانات الدفع، اضغط أدناه لتأكيد الطلب واستلام كود التفعيل فوراً عبر واتساب أو تيليجرام.</p>
+          <p class="text-xs text-slate-400">تم تأكيد الدفع بنجاح، اضغط أدناه لإرسال كود التأكيد واستلام كود التفعيل فوراً عبر تيليجرام.</p>
           
           <div class="pt-2 flex flex-col gap-2.5">
-            <a href="${waUrl}" target="_blank" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition">
-              <span>تأكيد واستلام الكود عبر واتساب</span>
+            <a href="${tgUrl}" target="_blank" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition">
+              <span>إرسال كود التأكيد عبر تيليجرام (@abxc18)</span>
             </a>
             <button onclick="document.getElementById('zeus-order-modal').remove(); window.location.href='index.html';" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold transition">
               العودة للمتجر الرئيسي
