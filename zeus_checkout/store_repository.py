@@ -193,16 +193,63 @@ class StoreRepository:
         return None
 
     @staticmethod
+    def sync_catalog_to_file():
+        catalog_file = os.getenv("CATALOG_PATH")
+        if not catalog_file or not os.path.isabs(catalog_file):
+            base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            catalog_file = os.path.join(base, "catalog.json")
+
+        prods = StoreRepository.list_products(limit=500)
+        out = []
+        for p in prods:
+            item = {
+                "id": p["id"],
+                "title": p["title"],
+                "slug": p.get("slug") or p["id"],
+                "category_slug": p.get("category_slug") or "gaming-subs",
+                "price_sar": float(p.get("price_sar") or 0.0),
+                "price_usd": float(p.get("price_usd") or 0.0),
+                "price_iqd": int(p.get("price_iqd") or (float(p.get("price_usdt") or p.get("price_usd") or 0) * 1320)),
+                "price_egp": float(p.get("price_egp") or 0.0),
+                "price_usdt": float(p.get("price_usdt") or p.get("price_usd") or 0.0),
+                "original_price_sar": float(p.get("original_price_sar") or 0.0),
+                "image": p.get("image") or "assets/logo-ar.webp",
+                "badge": p.get("badge") or "",
+                "duration": p.get("duration") or "30 يوماً",
+                "platform": p.get("platform") or "الكل",
+                "in_stock": bool(p.get("in_stock")),
+                "featured": bool(p.get("featured")),
+                "description": p.get("description") or "",
+                "features": p.get("features") or []
+            }
+            out.append(item)
+
+        try:
+            temp_file = catalog_file + ".tmp"
+            with open(temp_file, "w", encoding="utf-8") as f:
+                json.dump(out, f, ensure_ascii=False, indent=2)
+            os.replace(temp_file, catalog_file)
+        except Exception as err:
+            print(f"Warning: Failed to sync catalog.json: {err}")
+
+    @staticmethod
     def upsert_product(p: dict):
         pid = p.get("id") or f"zeus-{uuid.uuid4().hex[:8]}"
         features_json = json.dumps(p.get("features", []), ensure_ascii=False)
+        price_usdt = float(p.get("price_usdt") or p.get("price_usd") or 0.0)
+        price_usd = float(p.get("price_usd") or price_usdt)
+        # Automatic conversions from USDT if not provided
+        price_sar = float(p.get("price_sar") or (price_usdt * 3.75))
+        price_egp = float(p.get("price_egp") or (price_usdt * 48.5))
+        price_iqd = int(p.get("price_iqd") or (price_usdt * 1320))
+
         with get_db_connection() as conn:
             conn.execute("""
                 INSERT INTO products (
                     id, title, slug, category_slug, price_sar, price_usd, price_egp,
-                    price_usdt, original_price_sar, image, badge, duration, platform,
+                    price_usdt, price_iqd, original_price_sar, image, badge, duration, platform,
                     in_stock, featured, description, features_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     title=excluded.title,
                     slug=excluded.slug,
@@ -211,6 +258,7 @@ class StoreRepository:
                     price_usd=excluded.price_usd,
                     price_egp=excluded.price_egp,
                     price_usdt=excluded.price_usdt,
+                    price_iqd=excluded.price_iqd,
                     original_price_sar=excluded.original_price_sar,
                     image=excluded.image,
                     badge=excluded.badge,
@@ -224,11 +272,12 @@ class StoreRepository:
                 pid,
                 p.get("title", "منتج جديد"),
                 p.get("slug") or pid,
-                p.get("category_slug", "gaming"),
-                float(p.get("price_sar", 0)),
-                float(p.get("price_usd", 0)),
-                float(p.get("price_egp", 0)),
-                float(p.get("price_usdt", 0)),
+                p.get("category_slug", "gaming-subs"),
+                price_sar,
+                price_usd,
+                price_egp,
+                price_usdt,
+                price_iqd,
                 float(p.get("original_price_sar", 0)),
                 p.get("image", "assets/logo-ar.webp"),
                 p.get("badge", ""),
@@ -240,6 +289,8 @@ class StoreRepository:
                 features_json
             ))
             conn.commit()
+
+        StoreRepository.sync_catalog_to_file()
         return pid
 
     @staticmethod
@@ -247,6 +298,7 @@ class StoreRepository:
         with get_db_connection() as conn:
             conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
             conn.commit()
+        StoreRepository.sync_catalog_to_file()
 
     # ------------------ CATEGORIES ------------------
     @staticmethod
@@ -318,15 +370,27 @@ class StoreRepository:
             total_orders = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
             paid_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE status IN ('paid', 'completed', 'delivered')").fetchone()[0]
             pending_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE status = 'pending'").fetchone()[0]
-            
-            revenue_row = conn.execute("SELECT SUM(total_amount) FROM orders WHERE status IN ('paid', 'completed', 'delivered')").fetchone()
-            total_revenue_sar = revenue_row[0] or 0.0
+
+            # Sum of revenues by currency from verified paid orders
+            iqd_row = conn.execute(
+                "SELECT SUM(COALESCE(amount_iqd, total_amount)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'IQD'"
+            ).fetchone()
+            revenue_iqd = int(iqd_row[0] or 0)
+
+            egp_row = conn.execute(
+                "SELECT SUM(COALESCE(amount_egp, total_amount)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'EGP'"
+            ).fetchone()
+            revenue_egp = float(egp_row[0] or 0.0)
+
+            usdt_row = conn.execute(
+                "SELECT SUM(CAST(expected_usdt AS REAL)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND expected_usdt IS NOT NULL"
+            ).fetchone()
+            revenue_usdt = round(float(usdt_row[0] or 0.0), 2)
 
             total_products = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-            available_keys = conn.execute("SELECT COUNT(*) FROM digital_keys WHERE is_used = 0").fetchone()[0]
 
-            # Recent orders for mini-table
-            recent_rows = conn.execute("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5").fetchall()
+            # Recent orders
+            recent_rows = conn.execute("SELECT * FROM orders ORDER BY created_at DESC LIMIT 10").fetchall()
             recent_orders = []
             for r in recent_rows:
                 d = dict(r)
@@ -337,12 +401,11 @@ class StoreRepository:
                 "created_orders": total_orders,
                 "paid_orders": paid_orders,
                 "pending_orders": pending_orders,
-                "revenue_iqd": int(total_revenue_sar * 350) or 0,
-                "unique_visitors": 142,
+                "revenue_iqd": revenue_iqd,
+                "revenue_egp": revenue_egp,
+                "revenue_usdt": revenue_usdt,
                 "total_orders": total_orders,
-                "total_revenue_sar": round(total_revenue_sar, 2),
                 "total_products": total_products,
-                "available_keys": available_keys,
                 "recent_orders": recent_orders
             }
 

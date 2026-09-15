@@ -103,6 +103,7 @@ def init_db():
                 price_usd REAL DEFAULT 0,
                 price_egp REAL DEFAULT 0,
                 price_usdt REAL DEFAULT 0,
+                price_iqd INTEGER DEFAULT 0,
                 original_price_sar REAL DEFAULT 0,
                 image TEXT,
                 badge TEXT,
@@ -115,6 +116,10 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        existing_prod_cols = [c[1] for c in cursor.execute("PRAGMA table_info(products)").fetchall()]
+        if "price_iqd" not in existing_prod_cols:
+            cursor.execute("ALTER TABLE products ADD COLUMN price_iqd INTEGER DEFAULT 0")
         
         # Categories Table
         cursor.execute("""

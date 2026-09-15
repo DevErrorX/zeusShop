@@ -16,6 +16,9 @@ class Settings(BaseModel):
     # Security & Admin
     admin_username: str = Field(default_factory=lambda: os.getenv("ADMIN_USERNAME", "admin"))
     admin_password: str = Field(default_factory=lambda: os.getenv("ADMIN_PASSWORD", "zeus2026"))
+    admin_password_hash: str = Field(default_factory=lambda: os.getenv("ADMIN_PASSWORD_HASH", ""))
+    admin_session_idle_seconds: int = Field(default_factory=lambda: int(os.getenv("ADMIN_SESSION_IDLE_SECONDS", "3600")))
+    admin_session_absolute_seconds: int = Field(default_factory=lambda: int(os.getenv("ADMIN_SESSION_ABSOLUTE_SECONDS", "86400")))
     jwt_secret: str = Field(default_factory=lambda: os.getenv("JWT_SECRET", "zeus_secret_key_change_me_99281"))
     
     # Storage

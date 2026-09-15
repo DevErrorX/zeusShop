@@ -838,6 +838,28 @@ def create_app() -> FastAPI:
         path = request.url.path.lstrip("/")
         return page_file(path)
 
+    @app.get("/catalog.json")
+    def serve_catalog():
+        catalog_path = os.path.join(BASE_DIR, "catalog.json")
+        if os.path.exists(catalog_path):
+            try:
+                with open(catalog_path, "r", encoding="utf-8") as f:
+                    return JSONResponse(json.load(f))
+            except Exception:
+                pass
+        return JSONResponse(StoreRepository.list_products(500))
+
+    @app.get("/categories.json")
+    def serve_categories_json():
+        cat_path = os.path.join(BASE_DIR, "categories.json")
+        if os.path.exists(cat_path):
+            try:
+                with open(cat_path, "r", encoding="utf-8") as f:
+                    return JSONResponse(json.load(f))
+            except Exception:
+                pass
+        return JSONResponse(StoreRepository.list_categories())
+
     return app
 
 app = create_app()

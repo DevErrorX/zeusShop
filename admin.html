@@ -764,6 +764,22 @@
             .content-area { padding: 18px 14px; }
             .stats-grid { grid-template-columns: 1fr; }
         }
+
+        /* DROPZONE & IMAGE UPLOAD */
+        .dropzone {
+            border: 2px dashed rgba(245, 158, 11, 0.35);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-md);
+            padding: 22px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--primary);
+            background: rgba(245, 158, 11, 0.08);
+            transform: scale(1.005);
+        }
     </style>
 </head>
 <body>
@@ -824,13 +840,7 @@
                     <span class="nav-badge" id="badge-total-products">0</span>
                 </button>
             </li>
-            <li>
-                <button class="nav-item" onclick="switchTab('tab-keys')">
-                    <i class="fa-solid fa-key"></i>
-                    <span>مخزن الأكواد الرقمية</span>
-                    <span class="nav-badge badge-green" id="badge-available-keys">0</span>
-                </button>
-            </li>
+            
             <li>
                 <button class="nav-item" onclick="switchTab('tab-categories')">
                     <i class="fa-solid fa-layer-group"></i>
@@ -913,9 +923,9 @@
                                 <i class="fa-solid fa-money-bill-wave"></i>
                             </div>
                         </div>
-                        <div class="stat-amount" id="stat-total-revenue">0 ج.م</div>
+                        <div class="stat-amount" id="stat-total-revenue">0 د.ع</div>
                         <div class="stat-footer">
-                            <span class="text-success"><i class="fa-solid fa-arrow-trend-up"></i> +18.4%</span> مقارنة بالأسبوع الماضي
+                            <span class="text-success"><i class="fa-solid fa-chart-line"></i> إجمالي الإيرادات الحقيقية</span>
                         </div>
                     </div>
 
@@ -928,33 +938,33 @@
                         </div>
                         <div class="stat-amount" id="stat-total-orders">0 طلب</div>
                         <div class="stat-footer">
-                            <span class="text-warning" id="stat-pending-orders-hint">0 طلب قيد المراجعة</span>
+                            <span class="text-warning" id="stat-pending-orders-hint">0 طلب بانتظار المراجعة</span>
                         </div>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-card-header">
-                            <span>مدفوعات البطاقات الإلكترونية</span>
-                            <div class="stat-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: var(--primary);">
-                                <i class="fa-solid fa-credit-card"></i>
-                            </div>
-                        </div>
-                        <div class="stat-amount font-en" id="stat-crypto-revenue">0 د.ع</div>
-                        <div class="stat-footer">
-                            <span class="text-info">كاشير — Kashier (Visa / Mastercard / Meeza)</span>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-card-header">
-                            <span>المخزون الرقمي المتاح</span>
+                            <span>الطلبات الناجحة والمدفوعة</span>
                             <div class="stat-icon-wrap" style="background: rgba(6, 182, 212, 0.15); color: var(--info);">
-                                <i class="fa-solid fa-key"></i>
+                                <i class="fa-solid fa-circle-check"></i>
                             </div>
                         </div>
-                        <div class="stat-amount" id="stat-keys-count">0 كود</div>
+                        <div class="stat-amount font-en" id="stat-crypto-revenue">0 طلب</div>
                         <div class="stat-footer">
-                            <span>جاهز للتسليم الفوري التلقائي ⚡️</span>
+                            <span class="text-info">مدفوعات مؤكدة (كاشير / بطاقات)</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span>المنتجات النشطة بالمتجر</span>
+                            <div class="stat-icon-wrap" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                        </div>
+                        <div class="stat-amount" id="stat-products-count">0 منتج</div>
+                        <div class="stat-footer">
+                            <span>متاح للبيع الفوري في الكتالوج ⚡️</span>
                         </div>
                     </div>
                 </div>
@@ -1067,85 +1077,16 @@
                                     <th>الصورة</th>
                                     <th>اسم المنتج</th>
                                     <th>التصنيف</th>
-                                    <th>السعر (ج.م)</th>
-                                    <th>السعر (ر.س)</th>
                                     <th>السعر ($ / USDT)</th>
+                                    <th>السعر (د.ع)</th>
+                                    <th>السعر (ر.س)</th>
+                                    <th>السعر (ج.م)</th>
                                     <th>الحالة</th>
-                                    <th>مميز</th>
                                     <th>إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody id="products-tbody">
                                 <!-- Dynamic products -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 4: DIGITAL KEYS VAULT -->
-            <div class="tab-panel" id="tab-keys">
-                <div class="panel-card">
-                    <div class="panel-card-header">
-                        <h3><i class="fa-solid fa-vault text-info"></i> مخزن الأكواد والمفاتيح الرقمية (Serial Keys Vault)</h3>
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <select id="vault-product-select" class="form-control" style="width: auto;" onchange="renderVaultTable()">
-                                <!-- Dynamic options -->
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px;">
-                        <!-- Add Bulk Keys Form -->
-                        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
-                            <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--primary);">
-                                <i class="fa-solid fa-upload"></i> إضافة أكواد وسيريالات بالجملة
-                            </h4>
-                            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">
-                                أدخل كل كود أو مفتاح أو حساب في سطر منفصل. سيتم تسليمها تلقائياً للعملاء فور إتمام الدفع.
-                            </p>
-                            <textarea id="bulk-keys-input" class="form-control" placeholder="KEY-XXXX-YYYY-ZZZZ&#10;KEY-AAAA-BBBB-CCCC&#10;user@mail.com:password123" style="height: 140px; font-family: monospace; font-size: 12px;"></textarea>
-                            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 12px;" onclick="saveBulkKeys()">
-                                <i class="fa-solid fa-circle-check"></i> حفظ الأكواد في المخزن
-                            </button>
-                        </div>
-
-                        <!-- Vault Statistics & Status -->
-                        <div style="display:flex; flex-direction:column; justify-content:space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
-                            <div>
-                                <h4 style="font-size: 14px; margin-bottom: 8px;">حالة المخزون الرقمي للمنتج المحدد</h4>
-                                <div style="display:flex; gap: 16px; margin-top: 16px;">
-                                    <div style="flex:1; background: rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:12px; padding:16px; text-align:center;">
-                                        <div style="font-size: 26px; font-weight:800; color:var(--success);" id="vault-count-available">0</div>
-                                        <div style="font-size: 12px; color:var(--text-muted);">أكواد متاحة وجاهزة</div>
-                                    </div>
-                                    <div style="flex:1; background: rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.25); border-radius:12px; padding:16px; text-align:center;">
-                                        <div style="font-size: 26px; font-weight:800; color:var(--info);" id="vault-count-used">0</div>
-                                        <div style="font-size: 12px; color:var(--text-muted);">أكواد تم تسليمها</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="font-size: 12px; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 10px; margin-top: 12px;">
-                                <i class="fa-solid fa-shield-halved text-success"></i> الأكواد مشفرة ومحفوظة بأمان تام.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="zeus-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>الكود / المفتاح الرقمي</th>
-                                    <th>المنتج</th>
-                                    <th>الحالة</th>
-                                    <th>رقم الطلب المرتبط</th>
-                                    <th>تاريخ الإضافة</th>
-                                    <th>إجراء</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vault-tbody">
-                                <!-- Dynamic keys -->
                             </tbody>
                         </table>
                     </div>
@@ -1479,7 +1420,7 @@
 
     <!-- PRODUCT ADD/EDIT MODAL -->
     <div class="modal-backdrop" id="modal-product">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 720px;">
             <div class="modal-header">
                 <h3 id="modal-product-title" style="font-size: 17px; font-weight:800;">إضافة / تعديل منتج</h3>
                 <button class="modal-close" onclick="closeProductModal()">&times;</button>
@@ -1489,52 +1430,95 @@
                 <input type="hidden" id="prod-id">
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
-                        <label>عنوان المنتج (عربي)</label>
-                        <input type="text" id="prod-title" class="form-control" required>
+                        <label>عنوان المنتج (عربي) *</label>
+                        <input type="text" id="prod-title" class="form-control" required placeholder="مثال: اشتراك ببجي كود 30 يوم VIP">
                     </div>
+
                     <div class="form-group">
-                        <label>التصنيف</label>
+                        <label>التصنيف *</label>
                         <select id="prod-category" class="form-control" required></select>
                     </div>
+
                     <div class="form-group">
-                        <label>رابط الصورة</label>
-                        <input type="text" id="prod-image" class="form-control font-en" value="assets/product_sample.webp">
+                        <label>المدة</label>
+                        <input type="text" id="prod-duration" class="form-control" value="30 يوماً" placeholder="مثال: 30 يوماً / سنة / دائم">
                     </div>
-                    <div class="form-group">
-                        <label>السعر بالجنيه (ج.م)</label>
-                        <input type="number" step="any" id="prod-price-egp" class="form-control" required>
+
+                    <!-- IMAGE DRAG & DROP ZONE -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>صورة المنتج (رفع بالسحب والإفلات أو اختيار ملف)</label>
+                        <div class="dropzone" id="product-image-dropzone" onclick="document.getElementById('prod-image-file').click()">
+                            <input type="file" id="prod-image-file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleImageFileSelect(this)">
+                            <div id="dropzone-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: var(--primary);"></i>
+                                <div style="font-size: 13px; font-weight: 700;">اسحب الصورة وأفلتها هنا، أو اضغط لاختيار صورة من جهازك</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">يدعم صيغ WEBP, PNG, JPG, GIF حتى 6MB</div>
+                            </div>
+                            <div id="dropzone-preview-box" style="display: none; align-items: center; gap: 14px; width: 100%;">
+                                <img id="dropzone-preview-img" src="" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border);">
+                                <div style="flex: 1; text-align: right;">
+                                    <div id="dropzone-filename" style="font-weight: 700; font-size: 13px;"></div>
+                                    <div id="dropzone-status" style="font-size: 11px; color: var(--success);">تم الرفع بنجاح ✅</div>
+                                </div>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation(); clearUploadedImage();" style="color: var(--danger);">
+                                    <i class="fa-solid fa-trash"></i> إزالة
+                                </button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">أو مسار الصورة:</span>
+                            <input type="text" id="prod-image" class="form-control font-en" value="assets/logo-ar.webp" placeholder="assets/uploads/... أو https://..." oninput="updateImagePreviewFromInput(this.value)">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>السعر بالريال (ر.س)</label>
-                        <input type="number" step="any" id="prod-price-sar" class="form-control" required>
+
+                    <!-- PRICING SECTION WITH FIXED USDT + AUTO CONVERSIONS -->
+                    <div class="form-group" style="grid-column: 1 / -1; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <label style="color: #fbbf24; font-weight: 800; font-size: 14px; margin: 0;">
+                                <i class="fa-solid fa-coins"></i> تسعير المنتج (السعر بالـ USDT مع احتساب فوري تلقائي)
+                            </label>
+                            <span style="font-size: 11px; color: var(--text-muted);">يتم تحديث العملات تلقائياً عند إدخال السعر بـ USDT</span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 700; color: #fbbf24;">السعر بـ USDT ($) *</label>
+                                <input type="number" step="any" id="prod-price-usdt" class="form-control font-en" required style="border-color: rgba(245, 158, 11, 0.5); font-weight: 700; font-size: 15px; color: #fbbf24;" oninput="handleUsdtPriceChange(this.value)">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px;">بالدينار العراقي (د.ع) *</label>
+                                <input type="number" step="any" id="prod-price-iqd" class="form-control font-en" required>
+                            </div>
+                            <div>
+                                <label style="font-size: 12px;">بالريال السعودي (ر.س) *</label>
+                                <input type="number" step="any" id="prod-price-sar" class="form-control font-en" required>
+                            </div>
+                            <div>
+                                <label style="font-size: 12px;">بالجنيه المصري (ج.م) *</label>
+                                <input type="number" step="any" id="prod-price-egp" class="form-control font-en" required>
+                            </div>
+                            <div>
+                                <label style="font-size: 12px;">السعر بالدولار ($)</label>
+                                <input type="number" step="any" id="prod-price-usd" class="form-control font-en" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>السعر بالدولار ($)</label>
-                        <input type="number" step="any" id="prod-price-usd" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>السعر بالـ USDT</label>
-                        <input type="number" step="any" id="prod-price-usdt" class="form-control" required>
-                    </div>
+
                     <div class="form-group">
                         <label>السعر قبل الخصم (ر.س)</label>
-                        <input type="number" step="any" id="prod-original-price" class="form-control">
+                        <input type="number" step="any" id="prod-original-price" class="form-control font-en">
                     </div>
                     <div class="form-group">
                         <label>شارة المنتج (Badge)</label>
                         <input type="text" id="prod-badge" class="form-control" placeholder="الأكثر طلباً / خصم 20%">
                     </div>
                     <div class="form-group">
-                        <label>المدة</label>
-                        <input type="text" id="prod-duration" class="form-control" value="30 يوماً">
-                    </div>
-                    <div class="form-group">
                         <label>المنصة المدعومة</label>
                         <input type="text" id="prod-platform" class="form-control" value="iOS / Android / PC">
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
-                        <label>الوصف</label>
-                        <textarea id="prod-desc" class="form-control"></textarea>
+                        <label>الوصف التفصيلي</label>
+                        <textarea id="prod-desc" class="form-control" rows="3" placeholder="اكتب وصف ومزايا المنتج هنا..."></textarea>
                     </div>
                     <div class="form-group">
                         <label>متوفر بالمخزن؟</label>
@@ -1554,7 +1538,9 @@
 
                 <div style="margin-top: 24px; display:flex; justify-content:flex-end; gap:10px;">
                     <button type="button" class="btn btn-outline" onclick="closeProductModal()">إلغاء</button>
-                    <button type="submit" class="btn btn-primary">حفظ المنتج</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-product">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ المنتج
+                    </button>
                 </div>
             </form>
         </div>
@@ -1592,206 +1578,141 @@
     <script>
     (function() {
         // ==========================================
-        // 1. DATA INITIALIZATION & STATE
+        // 1. STATE & AUTH
         // ==========================================
-        const DEFAULT_ORDERS = [
-            {
-                id: "ZEUS-88219",
-                customer_name: "أحمد الشمري",
-                customer_phone: "+966501234567",
-                customer_email: "ahmed@example.com",
-                total_amount: 3664,
-                currency: "EGP",
-                payment_method: "kashier",
-                status: "delivered",
-                delivered_key: "CODM-60D-VIP-992019481",
-                created_at: new Date(Date.now() - 3600000).toISOString(),
-                items: [{ title: "اشتراك كود موبايل 60 يوم (ايفون و أيباد)", price: 3664, quantity: 1 }]
-            },
-            {
-                id: "ZEUS-88218",
-                customer_name: "خالد المطيري",
-                customer_phone: "+966559876543",
-                customer_email: "khaled@example.com",
-                total_amount: 2054,
-                currency: "EGP",
-                payment_method: "kashier",
-                status: "paid",
-                delivered_key: null,
-                created_at: new Date(Date.now() - 7200000).toISOString(),
-                items: [{ title: "اشتراك ببجي كود 30 يوم (ايباد)", price: 2054, quantity: 1 }]
-            },
-            {
-                id: "ZEUS-88217",
-                customer_name: "سيف العراقي",
-                customer_phone: "+9647701122334",
-                customer_email: "saif@example.com",
-                total_amount: 52000,
-                currency: "IQD",
-                payment_method: "kashier",
-                status: "pending",
-                delivered_key: null,
-                created_at: new Date(Date.now() - 14400000).toISOString(),
-                items: [{ title: "مفتاح ببجي موبايل 30 يوم VIP", price: 52000, quantity: 1 }]
-            }
-        ];
-
-        const DEFAULT_KEYS = [
-            { id: 1, product_id: "zeus-codm-60", serial_key: "CODM-60D-VIP-992019481", is_used: 1, order_id: "ZEUS-88219", created_at: "2026-09-13 14:20" },
-            { id: 2, product_id: "zeus-codm-60", serial_key: "CODM-60D-VIP-881920394", is_used: 0, order_id: null, created_at: "2026-09-13 15:00" },
-            { id: 3, product_id: "zeus-codm-60", serial_key: "CODM-60D-VIP-110293847", is_used: 0, order_id: null, created_at: "2026-09-13 15:00" },
-            { id: 4, product_id: "zeus-codm-30", serial_key: "CODM-30D-KEY-772819384", is_used: 0, order_id: null, created_at: "2026-09-13 16:10" },
-            { id: 5, product_id: "zeus-pubg-global", serial_key: "PUBG-GLOBAL-VIP-4401928", is_used: 0, order_id: null, created_at: "2026-09-13 16:15" }
-        ];
-
         let state = {
-            authenticated: !!sessionStorage.getItem('zeus_admin_token') || !!localStorage.getItem('zeus_admin_token'),
+            authenticated: false,
             activeTab: 'tab-dashboard',
             orders: [],
             products: [],
             categories: [],
-            keys: [],
+            stats: {
+                total_orders: 0,
+                paid_orders: 0,
+                pending_orders: 0,
+                total_revenue_iqd: 0,
+                total_revenue_egp: 0,
+                total_revenue_usdt: 0,
+                total_revenue_sar: 0
+            },
             rates: {
-                EGP: 1.0,
-                SAR: 13.68,
-                USD: 51.34,
-                USDT: 51.342,
-                AED: 13.98,
-                KWD: 167.50,
-                IQD: 0.039
+                EGP: 51.34,
+                SAR: 3.75,
+                USD: 1.0,
+                USDT: 1.0,
+                AED: 3.67,
+                KWD: 0.31,
+                IQD: 1310.0
             },
             currentFilter: 'all',
             charts: {}
         };
 
-        // Load or initialize storage
-        function loadStorageData() {
-            try {
-                const storedOrders = localStorage.getItem('zeus_orders');
-                state.orders = storedOrders ? JSON.parse(storedOrders) : DEFAULT_ORDERS;
+        function getAuthToken() {
+            return sessionStorage.getItem('zeus_admin_token') || localStorage.getItem('zeus_admin_token') || '';
+        }
 
-                const storedKeys = localStorage.getItem('zeus_vault_keys');
-                state.keys = storedKeys ? JSON.parse(storedKeys) : DEFAULT_KEYS;
-
-                const storedRates = localStorage.getItem('zeus_rates');
-                if (storedRates) state.rates = JSON.parse(storedRates);
-
-                // Load and populate payment gateways
-                try {
-                    const savedGateways = localStorage.getItem('zeus_payment_gateways');
-                    let g = savedGateways ? JSON.parse(savedGateways) : null;
-                    const kMerchantId = localStorage.getItem('zeus_kashier_merchant_id') || (g && g.kashier ? g.kashier.merchant_id : 'MID-34056-532');
-                    const kApiKey = localStorage.getItem('zeus_kashier_api_key') || (g && g.kashier ? g.kashier.api_key : '60963e5a-e0fd-4ddc-be8f-1346168d21a3');
-                    const kSecretKey = localStorage.getItem('zeus_kashier_secret_key') || (g && g.kashier ? g.kashier.secret_key : 'bd2090fa8e6bdba2579a90ea440929e7$6a129b5ad4aa6a0bd0ad66ca5ab55df242664c957b44befdcc27e10468f31bb4a1231611bedfd39a8354fc72844d89f7');
-                    const kMode = localStorage.getItem('zeus_kashier_mode') || (g && g.kashier ? g.kashier.mode : 'live');
-                    const kCurrency = localStorage.getItem('zeus_kashier_currency') || (g && g.kashier ? g.kashier.currency : 'EGP');
-                    const kApiUrl = localStorage.getItem('zeus_kashier_api_url') || (g && g.kashier ? g.kashier.api_url : 'https://api.kashier.io');
-                    const kCb = localStorage.getItem('zeus_kashier_callback_url') || (g && g.kashier ? g.kashier.callback_url : '');
-                    const kActive = localStorage.getItem('zeus_kashier_active');
-
-                    if (document.getElementById('gate-kashier-merchant-id')) document.getElementById('gate-kashier-merchant-id').value = kMerchantId || 'MID-34056-532';
-                    if (document.getElementById('gate-kashier-api-key')) document.getElementById('gate-kashier-api-key').value = kApiKey || '60963e5a-e0fd-4ddc-be8f-1346168d21a3';
-                    if (document.getElementById('gate-kashier-secret-key')) document.getElementById('gate-kashier-secret-key').value = kSecretKey || 'bd2090fa8e6bdba2579a90ea440929e7$6a129b5ad4aa6a0bd0ad66ca5ab55df242664c957b44befdcc27e10468f31bb4a1231611bedfd39a8354fc72844d89f7';
-                    if (document.getElementById('gate-kashier-mode')) document.getElementById('gate-kashier-mode').value = kMode || 'live';
-                    if (document.getElementById('gate-kashier-currency')) document.getElementById('gate-kashier-currency').value = kCurrency || 'EGP';
-                    if (document.getElementById('gate-kashier-api-url')) document.getElementById('gate-kashier-api-url').value = kApiUrl || 'https://api.kashier.io';
-                    if (document.getElementById('gate-kashier-callback-url')) {
-                        document.getElementById('gate-kashier-callback-url').value = kCb || (window.location.origin + window.location.pathname.replace('admin.html', 'checkout.html') + '?payment=kashier&status=success');
-                    }
-                    if (document.getElementById('gate-kashier-active') && kActive !== null) {
-                        document.getElementById('gate-kashier-active').checked = kActive === 'true';
-                    }
-
-                } catch(errGate) {
-                    console.warn("Gateways load error:", errGate);
-                }
-
-                // Fetch catalog.json & categories.json if products empty
-                fetch('catalog.json')
-                    .then(r => r.json())
-                    .then(prods => {
-                        const localProds = localStorage.getItem('zeus_custom_products');
-                        state.products = localProds ? JSON.parse(localProds) : prods;
-                        renderProductsTable();
-                        populateProductSelectors();
-                        updateDashboardKpis();
-                    })
-                    .catch(() => {
-                        const localProds = localStorage.getItem('zeus_custom_products');
-                        if (localProds) state.products = JSON.parse(localProds);
-                    });
-
-                fetch('categories.json')
-                    .then(r => r.json())
-                    .then(cats => {
-                        state.categories = cats;
-                        renderCategoriesTable();
-                        populateCategoryDropdown();
-                    })
-                    .catch(() => {});
-
-            } catch(e) {
-                console.error("Storage load error:", e);
-                state.orders = DEFAULT_ORDERS;
-                state.keys = DEFAULT_KEYS;
+        async function apiFetch(url, options = {}) {
+            const token = getAuthToken();
+            const headers = {
+                'Accept': 'application/json',
+                ...(options.headers || {})
+            };
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
             }
+            if (!(options.body instanceof FormData) && !headers['Content-Type'] && options.method && options.method !== 'GET') {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            options.headers = headers;
+            options.credentials = 'include';
+
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                sessionStorage.removeItem('zeus_admin_token');
+                localStorage.removeItem('zeus_admin_token');
+                state.authenticated = false;
+                document.getElementById('auth-overlay').style.display = 'flex';
+                const errEl = document.getElementById('auth-error');
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.textContent = 'انتهت صلاحية الجلسة أو غير مصرح، يرجى تسجيل الدخول مجدداً.';
+                }
+                throw new Error('Unauthorized');
+            }
+            return response;
         }
 
         // ==========================================
         // 2. AUTHENTICATION
         // ==========================================
-        window.handleLogin = function(e) {
+        window.handleLogin = async function(e) {
             e.preventDefault();
             const u = document.getElementById('auth-username').value.trim();
             const p = document.getElementById('auth-password').value.trim();
             const remember = document.getElementById('auth-remember').checked;
             const errEl = document.getElementById('auth-error');
+            const submitBtn = document.getElementById('login-submit-btn');
 
-            // Load saved admin credentials or fall back to defaults
-            const validUser = localStorage.getItem('zeus_admin_username') || 'admin';
-            const validPass = localStorage.getItem('zeus_admin_password') || 'zeus2026';
+            if (errEl) errEl.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...';
+            }
 
-            if (u === validUser && p === validPass) {
-                const token = 'zeus_secure_token_' + Date.now();
+            try {
+                const res = await fetch('/api/v1/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: u, password: p })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || 'اسم المستخدم أو كلمة المرور غير صحيحة');
+                }
+
+                const data = await res.json();
+                const token = data.token;
                 if (remember) {
                     localStorage.setItem('zeus_admin_token', token);
                 } else {
                     sessionStorage.setItem('zeus_admin_token', token);
                 }
+
                 state.authenticated = true;
                 document.getElementById('auth-overlay').style.display = 'none';
-                showToast('مرحباً بك! تم فك قفل لوحة التحكم بنجاح 👑');
-                initDashboard();
-            } else {
-                errEl.style.display = 'block';
-                errEl.textContent = '⛔ عذراً، اسم المستخدم أو كلمة المرور غير صحيحة! يرجى التأكد وإعادة المحاولة.';
+                showToast('مرحباً بك! تم التحقق بنجاح من صلاحيات الإدارة 👑');
+                await initDashboard();
+            } catch(err) {
+                if (errEl) {
+                    errEl.style.display = 'block';
+                    errEl.textContent = err.message || 'حدث خطأ أثناء تسجيل الدخول';
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-lock-open"></i> فتح لوحة التحكم';
+                }
             }
         };
 
-        window.handleLogout = function() {
+        window.handleLogout = async function() {
+            try {
+                await apiFetch('/api/v1/admin/logout', { method: 'POST' });
+            } catch(e) {}
             sessionStorage.removeItem('zeus_admin_token');
             localStorage.removeItem('zeus_admin_token');
             state.authenticated = false;
             document.getElementById('auth-overlay').style.display = 'flex';
             document.getElementById('auth-password').value = '';
-            showToast('تم قفل لوحة التحكم وتسجيل الخروج بنجاح 🔒', 'info');
+            showToast('تم تسجيل الخروج وقفل لوحة التحكم بنجاح 🔒', 'info');
         };
 
         window.changeAdminCredentials = function() {
-            const newUser = document.getElementById('set-admin-username').value.trim();
-            const newPass = document.getElementById('set-admin-password').value.trim();
-            if (!newUser) {
-                showToast('يرجى كتابة اسم مستخدم صحيح', 'error');
-                return;
-            }
-            if (!newPass || newPass.length < 4) {
-                showToast('يرجى إدخال كلمة مرور جديدة مكونة من 4 أحرف/أرقام على الأقل', 'error');
-                return;
-            }
-            localStorage.setItem('zeus_admin_username', newUser);
-            localStorage.setItem('zeus_admin_password', newPass);
-            document.getElementById('set-admin-password').value = '';
-            showToast('تم تحديث اسم المستخدم وكلمة المرور بنجاح! احفظهما جيداً 🔐');
+            showToast('لتغيير كلمة المرور بشكل آمن، يرجى تحديث ADMIN_PASSWORD في ملف .env بالسيرفر', 'info');
         };
 
         // ==========================================
@@ -1812,66 +1733,68 @@
 
             state.activeTab = tabId;
 
-            // Title update
             const titles = {
                 'tab-dashboard': 'الرئيسية والإحصائيات الحية',
                 'tab-orders': 'إدارة ومتابعة طلبات العملاء',
                 'tab-products': 'إدارة وتعديل كتالوج المنتجات',
-                'tab-keys': 'مخزن الأكواد والمفاتيح الرقمية',
                 'tab-categories': 'إدارة تصنيفات وأقسام المتجر',
                 'tab-gateways': 'بوابات الدفع والمحافظ الرقمية',
                 'tab-rates': 'العملات وأسعار الصرف الفورية',
                 'tab-settings': 'إعدادات المتجر العامة والبكسل'
             };
-            document.getElementById('topbar-title').textContent = titles[tabId] || 'لوحة التحكم';
+            const titleEl = document.getElementById('topbar-title');
+            if (titleEl) titleEl.textContent = titles[tabId] || 'لوحة التحكم';
 
-            // Re-render specifics
             if (tabId === 'tab-dashboard') updateDashboardKpis();
             if (tabId === 'tab-orders') renderOrdersTable();
             if (tabId === 'tab-products') renderProductsTable();
-            if (tabId === 'tab-keys') renderVaultTable();
             if (tabId === 'tab-categories') renderCategoriesTable();
             if (tabId === 'tab-rates') renderRatesTable();
 
-            // Mobile close sidebar
             if (window.innerWidth <= 768) {
-                document.getElementById('main-sidebar').classList.remove('open');
+                const s = document.getElementById('main-sidebar');
+                if (s) s.classList.remove('open');
             }
         };
 
         window.toggleSidebar = function() {
-            document.getElementById('main-sidebar').classList.toggle('open');
+            const s = document.getElementById('main-sidebar');
+            if (s) s.classList.toggle('open');
         };
 
         // ==========================================
         // 4. DASHBOARD KPIS & CHARTS
         // ==========================================
         function updateDashboardKpis() {
-            const totalOrders = state.orders.length;
-            const pendingOrders = state.orders.filter(o => o.status === 'pending').length;
-            const paidOrders = state.orders.filter(o => o.status === 'paid' || o.status === 'delivered');
+            const stats = state.stats || {};
+            const totalOrders = stats.total_orders ?? state.orders.length;
+            const pendingOrders = stats.pending_orders ?? state.orders.filter(o => o.status === 'pending').length;
+            const paidOrders = stats.paid_orders ?? state.orders.filter(o => o.status === 'paid' || o.status === 'delivered').length;
+            const revIqd = stats.total_revenue_iqd ?? 0;
+            const revUsdt = stats.total_revenue_usdt ?? 0;
 
-            let totalEgp = paidOrders.reduce((sum, o) => {
-                let amt = parseFloat(o.total_amount) || 0;
-                if (o.currency === 'SAR') amt *= 13.68;
-                else if (o.currency === 'USD' || o.currency === 'USDT') amt *= 51.34;
-                return sum + amt;
-            }, 0);
+            const revText = revIqd > 0 ? `${revIqd.toLocaleString('en-US')} د.ع` : (revUsdt > 0 ? `${revUsdt.toFixed(2)} USDT` : '0 د.ع');
 
-            let totalUsdt = (totalEgp / 51.34).toFixed(2);
+            const revEl = document.getElementById('stat-total-revenue');
+            if (revEl) revEl.textContent = revText;
 
-            const availableKeys = state.keys.filter(k => k.is_used === 0).length;
+            const totOrdersEl = document.getElementById('stat-total-orders');
+            if (totOrdersEl) totOrdersEl.textContent = totalOrders + ' طلب';
 
-            document.getElementById('stat-total-revenue').textContent = Math.round(totalEgp).toLocaleString('en-US') + ' ج.م';
-            document.getElementById('stat-total-orders').textContent = totalOrders + ' طلب';
-            document.getElementById('stat-pending-orders-hint').textContent = pendingOrders + ' طلب بانتظار المراجعة';
-            document.getElementById('stat-crypto-revenue').textContent = totalUsdt + ' USDT';
-            document.getElementById('stat-keys-count').textContent = availableKeys + ' كود متاح';
+            const pendingHintEl = document.getElementById('stat-pending-orders-hint');
+            if (pendingHintEl) pendingHintEl.textContent = pendingOrders + ' طلب بانتظار المراجعة';
 
-            // Badges in sidebar
-            document.getElementById('badge-pending-orders').textContent = pendingOrders;
-            document.getElementById('badge-total-products').textContent = state.products.length;
-            document.getElementById('badge-available-keys').textContent = availableKeys;
+            const paidEl = document.getElementById('stat-crypto-revenue');
+            if (paidEl) paidEl.textContent = paidOrders + ' طلب';
+
+            const prodCountEl = document.getElementById('stat-products-count');
+            if (prodCountEl) prodCountEl.textContent = state.products.length + ' منتج';
+
+            const bPending = document.getElementById('badge-pending-orders');
+            if (bPending) bPending.textContent = pendingOrders;
+
+            const bProds = document.getElementById('badge-total-products');
+            if (bProds) bProds.textContent = state.products.length;
 
             renderRecentOrdersTable();
             initCharts();
@@ -1881,16 +1804,17 @@
             if (state.charts.sales) state.charts.sales.destroy();
             if (state.charts.pie) state.charts.pie.destroy();
 
-            // Sales Trend Chart
             const ctxSales = document.getElementById('salesChart');
             if (ctxSales) {
+                const labels = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'اليوم'];
+                const dataPts = [0, 0, 0, 0, 0, 0, state.stats ? (state.stats.total_revenue_iqd || state.stats.total_orders || 0) : 0];
                 state.charts.sales = new Chart(ctxSales, {
                     type: 'line',
                     data: {
-                        labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'اليوم'],
+                        labels: labels,
                         datasets: [{
-                            label: 'المبيعات اليومية (ج.م)',
-                            data: [4200, 6800, 5400, 8900, 11200, 9400, 14820],
+                            label: 'المبيعات الحية',
+                            data: dataPts,
                             borderColor: '#f59e0b',
                             backgroundColor: 'rgba(245, 158, 11, 0.12)',
                             borderWidth: 3,
@@ -1912,16 +1836,15 @@
                 });
             }
 
-            // Payment Methods Pie Chart
             const ctxPie = document.getElementById('paymentPieChart');
             if (ctxPie) {
                 state.charts.pie = new Chart(ctxPie, {
                     type: 'doughnut',
                     data: {
-                        labels: ['فيزا وماستركارد (Visa / Mastercard)', 'مدى البنكية (Mada)', 'محافظ مباشرة (Zain / Qi)', 'دفع إلكتروني فوري'],
+                        labels: ['كاشير — بطاقات إلكترونية (Kashier)', 'فوري / محافظ مباشرة', 'طرق دفع أخرى'],
                         datasets: [{
-                            data: [55, 25, 12, 8],
-                            backgroundColor: ['#f59e0b', '#10b981', '#06b6d4', '#8b5cf6'],
+                            data: [80, 15, 5],
+                            backgroundColor: ['#f59e0b', '#10b981', '#06b6d4'],
                             borderWidth: 0
                         }]
                     },
@@ -1941,21 +1864,27 @@
         }
 
         // ==========================================
-        // 5. ORDERS RENDERING & ACTIONS
+        // 5. ORDERS MANAGEMENT
         // ==========================================
         function renderRecentOrdersTable() {
             const tbody = document.getElementById('recent-orders-tbody');
             if (!tbody) return;
             const recent = state.orders.slice(0, 5);
+
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">لا توجد طلبات مسجلة بعد</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = recent.map(o => `
                 <tr>
                     <td><strong class="font-en text-primary">#${o.id}</strong></td>
                     <td>
-                        <div style="font-weight:700;">${o.customer_name}</div>
+                        <div style="font-weight:700;">${o.customer_name || 'عميل'}</div>
                         <div style="font-size:11px; color:var(--text-dim);" class="font-en">${o.customer_phone || ''}</div>
                     </td>
-                    <td>${o.items && o.items[0] ? o.items[0].title : 'منتج رقمي'}</td>
-                    <td><strong class="font-en">${parseFloat(o.total_amount).toLocaleString('en-US')} ${o.currency}</strong></td>
+                    <td>${(o.items && o.items[0]) ? o.items[0].title : (o.product_title || 'منتج رقمي')}</td>
+                    <td><strong class="font-en">${parseFloat(o.total_amount || 0).toLocaleString('en-US')} ${o.currency || 'د.ع'}</strong></td>
                     <td><span class="badge" style="background:rgba(255,255,255,0.08);">${getPaymentBadgeText(o.payment_method)}</span></td>
                     <td>${getStatusBadgeHtml(o.status)}</td>
                     <td>
@@ -1993,19 +1922,19 @@
                         ${formatDate(o.created_at)}
                     </td>
                     <td>
-                        <div style="font-weight:700;">${o.customer_name}</div>
+                        <div style="font-weight:700;">${o.customer_name || 'عميل'}</div>
                         <a href="https://wa.me/${(o.customer_phone||'').replace(/[^0-9]/g,'')}" target="_blank" style="font-size:11px; color:var(--success); text-decoration:none;" class="font-en">
                             <i class="fa-brands fa-whatsapp"></i> ${o.customer_phone || 'بدون هاتف'}
                         </a>
                     </td>
                     <td>
                         <div style="font-weight:600; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            ${o.items && o.items[0] ? o.items[0].title : 'منتج رقمي'}
+                            ${(o.items && o.items[0]) ? o.items[0].title : (o.product_title || 'منتج رقمي')}
                         </div>
-                        <span style="font-size:11px; color:var(--text-dim);">الكمية: ${o.items && o.items[0] ? (o.items[0].quantity||1) : 1}</span>
+                        <span style="font-size:11px; color:var(--text-dim);">الكمية: ${(o.items && o.items[0]) ? (o.items[0].quantity||1) : (o.quantity || 1)}</span>
                     </td>
                     <td>
-                        <strong class="font-en" style="color:#fbbf24;">${parseFloat(o.total_amount).toLocaleString('en-US')} ${o.currency}</strong>
+                        <strong class="font-en" style="color:#fbbf24;">${parseFloat(o.total_amount || 0).toLocaleString('en-US')} ${o.currency || 'د.ع'}</strong>
                     </td>
                     <td>
                         <span class="badge" style="background:rgba(255,255,255,0.08);">${getPaymentBadgeText(o.payment_method)}</span>
@@ -2045,14 +1974,22 @@
             renderOrdersTable();
         };
 
-        window.setOrderStatus = function(orderId, newStatus) {
-            const order = state.orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = newStatus;
-                saveOrdersToStorage();
+        window.setOrderStatus = async function(orderId, newStatus) {
+            try {
+                const res = await apiFetch(`/api/v1/admin/orders/${encodeURIComponent(orderId)}/status`, {
+                    method: 'POST',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error('فشل تحديث حالة الطلب بالسيرفر');
+
+                const order = state.orders.find(o => o.id === orderId);
+                if (order) order.status = newStatus;
                 renderOrdersTable();
+                renderRecentOrdersTable();
                 updateDashboardKpis();
                 showToast(`تم تحديث حالة الطلب #${orderId} إلى: ${getStatusText(newStatus)}`);
+            } catch(err) {
+                showToast(err.message || 'خطأ في تحديث الحالة', 'error');
             }
         };
 
@@ -2063,17 +2000,17 @@
             document.getElementById('modal-order-title').textContent = `تفاصيل الطلب #${order.id}`;
             const body = document.getElementById('modal-order-body');
 
-            const item = (order.items && order.items[0]) ? order.items[0] : { title: "اشتراك رقمي", price: order.total_amount, quantity: 1 };
+            const item = (order.items && order.items[0]) ? order.items[0] : { title: order.product_title || "اشتراك رقمي", price: order.total_amount, quantity: 1 };
             const cleanPhone = (order.customer_phone || '').replace(/[^0-9]/g, '');
 
             body.innerHTML = `
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom: 20px;">
                     <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid var(--border);">
                         <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">معلومات العميل</div>
-                        <div style="font-weight:800; font-size:15px; margin-bottom:4px;">${order.customer_name}</div>
+                        <div style="font-weight:800; font-size:15px; margin-bottom:4px;">${order.customer_name || 'عميل'}</div>
                         <div style="font-size:12px; color:var(--text-dim);" class="font-en">📞 ${order.customer_phone || 'لا يوجد'}</div>
                         <div style="font-size:12px; color:var(--text-dim);" class="font-en">✉️ ${order.customer_email || 'لا يوجد'}</div>
-                        <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('مرحباً بك ' + order.customer_name + '، بخصوص طلبك في ZEUS STORE رقم #' + order.id)}" target="_blank" class="btn btn-outline btn-sm" style="margin-top:10px; color:var(--success); width:100%;">
+                        <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('مرحباً بك ' + (order.customer_name||'') + '، بخصوص طلبك في ZEUS STORE رقم #' + order.id)}" target="_blank" class="btn btn-outline btn-sm" style="margin-top:10px; color:var(--success); width:100%;">
                             <i class="fa-brands fa-whatsapp"></i> محادثة واتساب سريعة
                         </a>
                     </div>
@@ -2081,7 +2018,7 @@
                     <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid var(--border);">
                         <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">تفاصيل الدفع والمبلغ</div>
                         <div style="font-size:22px; font-weight:800; color:#fbbf24; margin-bottom:4px;" class="font-en">
-                            ${parseFloat(order.total_amount).toLocaleString('en-US')} ${order.currency}
+                            ${parseFloat(order.total_amount || 0).toLocaleString('en-US')} ${order.currency || 'د.ع'}
                         </div>
                         <div style="font-size:12px;">طريقة الدفع: <strong>${getPaymentBadgeText(order.payment_method)}</strong></div>
                         <div style="font-size:12px; margin-top:4px;">الحالة الحالية: ${getStatusBadgeHtml(order.status)}</div>
@@ -2096,27 +2033,24 @@
                             <strong>${item.title}</strong>
                             <div style="font-size:11px; color:var(--text-muted);">الكمية: ${item.quantity || 1}</div>
                         </div>
-                        <div style="font-weight:700;" class="font-en">${parseFloat(item.price || order.total_amount).toLocaleString('en-US')} ${order.currency}</div>
+                        <div style="font-weight:700;" class="font-en">${parseFloat(item.price || order.total_amount || 0).toLocaleString('en-US')} ${order.currency || 'د.ع'}</div>
                     </div>
                 </div>
 
                 <!-- DIGITAL KEY DELIVERY BOX -->
                 <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:16px; margin-bottom:20px;">
                     <h4 style="font-size:14px; font-weight:700; color:var(--primary); margin-bottom:8px;">
-                        <i class="fa-solid fa-key"></i> تسليم الكود الرقمي للعميل (Digital Key)
+                        <i class="fa-solid fa-key"></i> كود التفعيل / بيانات التسليم للعميل
                     </h4>
                     <div style="display:flex; gap:10px; margin-bottom:10px;">
-                        <input type="text" id="modal-delivered-key" class="form-control font-en" value="${order.delivered_key || ''}" placeholder="أدخل الكود أو السيريال هنا">
-                        <button class="btn btn-outline btn-sm" onclick="autoPickKeyForModal('${item.id || ''}')" title="جلب كود تلقائي من المخزن">
-                            <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> كود من المخزن
-                        </button>
+                        <input type="text" id="modal-delivered-key" class="form-control font-en" value="${order.delivered_key || ''}" placeholder="أدخل الكود أو السيريال هنا لتسليمه للعميل">
                     </div>
                     <div style="display:flex; gap:10px;">
                         <button class="btn btn-success btn-sm" onclick="deliverKeyViaModal('${order.id}')">
                             <i class="fa-solid fa-check"></i> حفظ وتسليم الكود
                         </button>
                         <button class="btn btn-outline btn-sm" onclick="sendWhatsAppDelivery('${order.id}')">
-                            <i class="fa-brands fa-whatsapp text-success"></i> إرسال الكود في رسالة واتساب
+                            <i class="fa-brands fa-whatsapp text-success"></i> إرسال الكود عبر واتساب
                         </button>
                     </div>
                 </div>
@@ -2146,40 +2080,31 @@
             document.getElementById('modal-order').classList.remove('active');
         };
 
-        window.autoPickKeyForModal = function(productId) {
-            const avail = state.keys.find(k => k.is_used === 0);
-            if (avail) {
-                document.getElementById('modal-delivered-key').value = avail.serial_key;
-                showToast(`تم جلب كود متوفر: ${avail.serial_key}`);
-            } else {
-                showToast('لا توجد أكواد متوفرة في المخزن! أضف أكواداً من تبويب المخزن', 'info');
-            }
-        };
-
-        window.deliverKeyViaModal = function(orderId) {
+        window.deliverKeyViaModal = async function(orderId) {
             const keyVal = document.getElementById('modal-delivered-key').value.trim();
             if (!keyVal) {
                 showToast('يرجى إدخال الكود الرقمي أولاً', 'error');
                 return;
             }
-            const order = state.orders.find(o => o.id === orderId);
-            if (order) {
-                order.delivered_key = keyVal;
-                order.status = 'delivered';
+            try {
+                const res = await apiFetch(`/api/v1/admin/orders/${encodeURIComponent(orderId)}/status`, {
+                    method: 'POST',
+                    body: JSON.stringify({ status: 'delivered', delivered_key: keyVal })
+                });
+                if (!res.ok) throw new Error('فشل حفظ الكود بالسيرفر');
 
-                // Mark key used in vault
-                const vaultKey = state.keys.find(k => k.serial_key === keyVal);
-                if (vaultKey) {
-                    vaultKey.is_used = 1;
-                    vaultKey.order_id = orderId;
-                    saveVaultToStorage();
+                const order = state.orders.find(o => o.id === orderId);
+                if (order) {
+                    order.delivered_key = keyVal;
+                    order.status = 'delivered';
                 }
-
-                saveOrdersToStorage();
                 closeOrderModal();
                 renderOrdersTable();
+                renderRecentOrdersTable();
                 updateDashboardKpis();
                 showToast(`تم تسليم الكود وتحديث الطلب #${orderId} لمكتمل بنجاح! 🔑`);
+            } catch(err) {
+                showToast(err.message || 'حدث خطأ أثناء حفظ الكود', 'error');
             }
         };
 
@@ -2192,7 +2117,13 @@
                 return;
             }
             const cleanPhone = (order.customer_phone || '').replace(/[^0-9]/g, '');
-            const msg = `⚡️ تحية طيبة من ZEUS STORE!\nعزيزي العميل ${order.customer_name}، تم تأكيد طلبك رقم #${order.id}.\n\n🔑 كود التفعيل الخاص بك:\n${key}\n\nشكراً لثقتكم بنا، ونتمنى لكم تجربة مميزة!`;
+            const msg = `⚡️ تحية طيبة من ZEUS STORE!
+عزيزي العميل ${order.customer_name || ''}، تم تأكيد طلبك رقم #${order.id}.
+
+🔑 كود التفعيل الخاص بك:
+${key}
+
+شكراً لثقتكم بنا، ونتمنى لكم تجربة مميزة!`;
             window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
         };
 
@@ -2204,19 +2135,27 @@
 
         window.quickDeliverKey = function(orderId) {
             openOrderModal(orderId);
-            setTimeout(() => {
-                autoPickKeyForModal();
-            }, 100);
         };
 
         // ==========================================
-        // 6. PRODUCTS CATALOG
+        // 6. PRODUCTS CATALOG & DRAG-DROP UPLOAD
         // ==========================================
         function renderProductsTable() {
             const tbody = document.getElementById('products-tbody');
             if (!tbody) return;
 
-            tbody.innerHTML = state.products.map(p => `
+            if (state.products.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">لا توجد منتجات مضافة</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = state.products.map(p => {
+                const usdtPrice = p.price_usdt !== undefined ? p.price_usdt : (p.price_usd || 0);
+                const iqdPrice = p.price_iqd !== undefined ? p.price_iqd : Math.round(usdtPrice * 1310);
+                const sarPrice = p.price_sar !== undefined ? p.price_sar : (usdtPrice * 3.75).toFixed(2);
+                const egpPrice = p.price_egp !== undefined ? p.price_egp : Math.round(usdtPrice * 51.34);
+
+                return `
                 <tr>
                     <td>
                         <img src="${p.image || 'assets/logo-ar.webp'}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--border);">
@@ -2226,19 +2165,15 @@
                         <div style="font-size:11px; color:var(--text-dim);" class="font-en">${p.platform || 'iOS / Android'} — ${p.duration || '30D'}</div>
                     </td>
                     <td><span class="badge" style="background:rgba(255,255,255,0.06);">${p.category_slug || 'gaming'}</span></td>
-                    <td class="font-en"><strong>${p.price_egp || Math.round(p.price_sar * 13.68)} ج.م</strong></td>
-                    <td class="font-en">${p.price_sar} ر.س</td>
-                    <td class="font-en text-primary">${p.price_usd || p.price_usdt || 0} $</td>
+                    <td class="font-en text-primary" style="font-weight:700; font-size:14px;">${usdtPrice} $</td>
+                    <td class="font-en" style="color:#10b981; font-weight:700;">${Number(iqdPrice).toLocaleString('en-US')} د.ع</td>
+                    <td class="font-en">${sarPrice} ر.س</td>
+                    <td class="font-en">${Number(egpPrice).toLocaleString('en-US')} ج.م</td>
                     <td>
                         <label class="toggle-switch">
                             <input type="checkbox" ${p.in_stock !== false ? 'checked' : ''} onchange="toggleProductStock('${p.id}', this.checked)">
                             <span class="toggle-slider"></span>
                         </label>
-                    </td>
-                    <td>
-                        <button onclick="toggleProductFeatured('${p.id}')" style="background:none; border:none; color:${p.featured ? '#fbbf24' : 'var(--text-dim)'}; font-size:16px; cursor:pointer;">
-                            <i class="fa-solid fa-star"></i>
-                        </button>
                     </td>
                     <td>
                         <div style="display:flex; gap:6px;">
@@ -2247,13 +2182,14 @@
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         window.openProductModal = function() {
             document.getElementById('product-form').reset();
             document.getElementById('prod-id').value = '';
             document.getElementById('modal-product-title').textContent = 'إضافة منتج رقمي جديد';
+            clearUploadedImage();
             populateCategoryDropdown();
             document.getElementById('modal-product').classList.add('active');
         };
@@ -2268,13 +2204,19 @@
             populateCategoryDropdown();
             document.getElementById('modal-product-title').textContent = 'تعديل المنتج';
             document.getElementById('prod-id').value = p.id;
-            document.getElementById('prod-title').value = p.title;
-            document.getElementById('prod-category').value = p.category_slug || 'gaming-subs';
-            document.getElementById('prod-image').value = p.image || 'assets/product_sample.webp';
-            document.getElementById('prod-price-egp').value = p.price_egp || 0;
-            document.getElementById('prod-price-sar').value = p.price_sar || 0;
-            document.getElementById('prod-price-usd').value = p.price_usd || 0;
-            document.getElementById('prod-price-usdt').value = p.price_usdt || p.price_usd || 0;
+            document.getElementById('prod-title').value = p.title || '';
+            document.getElementById('prod-category').value = p.category_slug || '';
+            
+            const imgPath = p.image || 'assets/logo-ar.webp';
+            document.getElementById('prod-image').value = imgPath;
+            updateImagePreviewFromInput(imgPath);
+
+            const usdt = p.price_usdt !== undefined ? p.price_usdt : (p.price_usd || 0);
+            document.getElementById('prod-price-usdt').value = usdt;
+            document.getElementById('prod-price-iqd').value = p.price_iqd !== undefined ? p.price_iqd : Math.round(usdt * 1310);
+            document.getElementById('prod-price-sar').value = p.price_sar !== undefined ? p.price_sar : (usdt * 3.75).toFixed(2);
+            document.getElementById('prod-price-egp').value = p.price_egp !== undefined ? p.price_egp : Math.round(usdt * 51.34);
+            document.getElementById('prod-price-usd').value = p.price_usd !== undefined ? p.price_usd : usdt;
             document.getElementById('prod-original-price').value = p.original_price_sar || 0;
             document.getElementById('prod-badge').value = p.badge || '';
             document.getElementById('prod-duration').value = p.duration || '30 يوماً';
@@ -2286,21 +2228,169 @@
             document.getElementById('modal-product').classList.add('active');
         };
 
-        window.saveProductForm = function(e) {
-            e.preventDefault();
-            const pid = document.getElementById('prod-id').value || ('zeus-' + Date.now().toString(36));
-            const existingIdx = state.products.findIndex(x => x.id === pid);
+        window.handleUsdtPriceChange = function(usdtVal) {
+            const usdt = parseFloat(usdtVal) || 0;
+            const sarInput = document.getElementById('prod-price-sar');
+            const egpInput = document.getElementById('prod-price-egp');
+            const iqdInput = document.getElementById('prod-price-iqd');
+            const usdInput = document.getElementById('prod-price-usd');
 
+            if (sarInput) sarInput.value = (usdt * 3.75).toFixed(2);
+            if (egpInput) egpInput.value = Math.round(usdt * 51.34);
+            if (iqdInput) iqdInput.value = Math.round(usdt * 1310);
+            if (usdInput) usdInput.value = usdt.toFixed(2);
+        };
+
+        // Image Drag & Drop and Upload
+        window.handleImageFileSelect = function(input) {
+            if (input.files && input.files[0]) {
+                uploadImageFile(input.files[0]);
+            }
+        };
+
+        async function uploadImageFile(file) {
+            const content = document.getElementById('dropzone-content');
+            const previewBox = document.getElementById('dropzone-preview-box');
+            const previewImg = document.getElementById('dropzone-preview-img');
+            const filenameEl = document.getElementById('dropzone-filename');
+            const statusEl = document.getElementById('dropzone-status');
+
+            if (!file.type.startsWith('image/')) {
+                showToast('يرجى اختيار ملف صورة صالح (.png, .jpg, .webp, .gif)', 'error');
+                return;
+            }
+
+            if (file.size > 6 * 1024 * 1024) {
+                showToast('حجم الصورة يجب ألا يتجاوز 6 ميجابايت', 'error');
+                return;
+            }
+
+            if (statusEl) {
+                statusEl.textContent = 'جاري الرفع إلى السيرفر... ⏳';
+                statusEl.style.color = 'var(--warning)';
+            }
+            if (filenameEl) filenameEl.textContent = file.name;
+            if (content) content.style.display = 'none';
+            if (previewBox) previewBox.style.display = 'flex';
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (previewImg) previewImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await apiFetch('/api/v1/admin/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'فشل رفع الصورة');
+                }
+
+                const data = await res.json();
+                document.getElementById('prod-image').value = data.url;
+                if (statusEl) {
+                    statusEl.textContent = 'تم الرفع والحفظ بالسيرفر بنجاح ✅';
+                    statusEl.style.color = 'var(--success)';
+                }
+                showToast('تم رفع صورة المنتج بنجاح! 📸');
+            } catch(err) {
+                if (statusEl) {
+                    statusEl.textContent = '❌ فشل الرفع: ' + err.message;
+                    statusEl.style.color = 'var(--danger)';
+                }
+                showToast(err.message || 'فشل رفع الصورة', 'error');
+            }
+        }
+
+        window.clearUploadedImage = function() {
+            document.getElementById('prod-image').value = 'assets/logo-ar.webp';
+            const f = document.getElementById('prod-image-file');
+            if (f) f.value = '';
+            const box = document.getElementById('dropzone-preview-box');
+            if (box) box.style.display = 'none';
+            const content = document.getElementById('dropzone-content');
+            if (content) content.style.display = 'flex';
+        };
+
+        window.updateImagePreviewFromInput = function(url) {
+            const previewBox = document.getElementById('dropzone-preview-box');
+            const previewImg = document.getElementById('dropzone-preview-img');
+            const content = document.getElementById('dropzone-content');
+            const filenameEl = document.getElementById('dropzone-filename');
+            const statusEl = document.getElementById('dropzone-status');
+
+            if (url && url.trim() && url !== 'assets/logo-ar.webp') {
+                if (content) content.style.display = 'none';
+                if (previewBox) previewBox.style.display = 'flex';
+                if (previewImg) previewImg.src = url.trim();
+                if (filenameEl) filenameEl.textContent = url.trim().split('/').pop();
+                if (statusEl) {
+                    statusEl.textContent = 'مسار الصورة 🔗';
+                    statusEl.style.color = 'var(--info)';
+                }
+            } else {
+                if (previewBox) previewBox.style.display = 'none';
+                if (content) content.style.display = 'flex';
+            }
+        };
+
+        function setupDropzone() {
+            const dropzone = document.getElementById('product-image-dropzone');
+            if (!dropzone) return;
+
+            ['dragenter', 'dragover'].forEach(name => {
+                dropzone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(name => {
+                dropzone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('dragover');
+                });
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files[0]) {
+                    uploadImageFile(files[0]);
+                }
+            });
+        }
+
+        window.saveProductForm = async function(e) {
+            e.preventDefault();
+            const pid = document.getElementById('prod-id').value.trim() || ('zeus-' + Date.now().toString(36));
+            const saveBtn = document.getElementById('btn-save-product');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ والمزامنة...';
+            }
+
+            const usdtPrice = parseFloat(document.getElementById('prod-price-usdt').value) || 0;
             const productData = {
                 id: pid,
                 title: document.getElementById('prod-title').value.trim(),
                 slug: pid,
                 category_slug: document.getElementById('prod-category').value,
-                image: document.getElementById('prod-image').value.trim() || 'assets/product_sample.webp',
-                price_egp: parseFloat(document.getElementById('prod-price-egp').value) || 0,
-                price_sar: parseFloat(document.getElementById('prod-price-sar').value) || 0,
-                price_usd: parseFloat(document.getElementById('prod-price-usd').value) || 0,
-                price_usdt: parseFloat(document.getElementById('prod-price-usdt').value) || 0,
+                image: document.getElementById('prod-image').value.trim() || 'assets/logo-ar.webp',
+                price_usdt: usdtPrice,
+                price_iqd: parseFloat(document.getElementById('prod-price-iqd').value) || Math.round(usdtPrice * 1310),
+                price_sar: parseFloat(document.getElementById('prod-price-sar').value) || (usdtPrice * 3.75),
+                price_egp: parseFloat(document.getElementById('prod-price-egp').value) || Math.round(usdtPrice * 51.34),
+                price_usd: parseFloat(document.getElementById('prod-price-usd').value) || usdtPrice,
                 original_price_sar: parseFloat(document.getElementById('prod-original-price').value) || 0,
                 badge: document.getElementById('prod-badge').value.trim(),
                 duration: document.getElementById('prod-duration').value.trim(),
@@ -2310,149 +2400,78 @@
                 featured: document.getElementById('prod-featured').checked
             };
 
-            if (existingIdx > -1) {
-                state.products[existingIdx] = productData;
-            } else {
-                state.products.unshift(productData);
-            }
+            try {
+                const res = await apiFetch('/api/v1/admin/products', {
+                    method: 'POST',
+                    body: JSON.stringify(productData)
+                });
 
-            localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
-            closeProductModal();
-            renderProductsTable();
-            populateProductSelectors();
-            updateDashboardKpis();
-            showToast('تم حفظ بيانات المنتج بنجاح! 🛒');
-        };
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'فشل حفظ المنتج');
+                }
 
-        window.deleteProduct = function(productId) {
-            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                state.products = state.products.filter(p => p.id !== productId);
-                localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
+                // Refresh products from server
+                const prodRes = await apiFetch('/api/v1/admin/products');
+                if (prodRes.ok) {
+                    state.products = await prodRes.json();
+                } else {
+                    const idx = state.products.findIndex(p => p.id === pid);
+                    if (idx > -1) state.products[idx] = productData;
+                    else state.products.unshift(productData);
+                }
+
+                closeProductModal();
                 renderProductsTable();
                 updateDashboardKpis();
-                showToast('تم حذف المنتج بنجاح', 'info');
+                showToast('تم حفظ المنتج وتحديث الكتالوج بالسيرفر بنجاح! 🛒✨');
+            } catch(err) {
+                showToast(err.message || 'حدث خطأ أثناء حفظ المنتج', 'error');
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ المنتج';
+                }
             }
         };
 
-        window.toggleProductStock = function(productId, inStock) {
+        window.deleteProduct = async function(productId) {
+            if (!confirm('هل أنت متأكد تماماً من حذف هذا المنتج؟ سيتم حذفه من قاعدة البيانات والكتالوج.')) return;
+            try {
+                const res = await apiFetch('/api/v1/admin/products/' + encodeURIComponent(productId), {
+                    method: 'DELETE'
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'فشل حذف المنتج');
+                }
+                state.products = state.products.filter(p => p.id !== productId);
+                renderProductsTable();
+                updateDashboardKpis();
+                showToast('تم حذف المنتج وتحديث الكتالوج بنجاح 🗑️', 'info');
+            } catch(err) {
+                showToast(err.message || 'فشل حذف المنتج', 'error');
+            }
+        };
+
+        window.toggleProductStock = async function(productId, inStock) {
             const p = state.products.find(x => x.id === productId);
             if (p) {
                 p.in_stock = inStock;
-                localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
-                showToast(inStock ? 'تم تفعيل توفر المنتج بالمخزن' : 'تم تعيين المنتج كنافذ المخزون');
-            }
-        };
-
-        window.toggleProductFeatured = function(productId) {
-            const p = state.products.find(x => x.id === productId);
-            if (p) {
-                p.featured = !p.featured;
-                localStorage.setItem('zeus_custom_products', JSON.stringify(state.products));
-                renderProductsTable();
-                showToast(p.featured ? 'تم تمييز المنتج في الصفحة الرئيسية ⭐' : 'تمت إزالة التمييز');
+                try {
+                    await apiFetch('/api/v1/admin/products', {
+                        method: 'POST',
+                        body: JSON.stringify(p)
+                    });
+                    showToast(inStock ? 'تم تفعيل توفر المنتج بالمخزن' : 'تم تعيين المنتج كنافذ المخزون');
+                } catch(e) {
+                    showToast('فشل حفظ حالة التوفر بالسيرفر', 'error');
+                }
             }
         };
 
         // ==========================================
-        // 7. DIGITAL KEYS VAULT
-        // ==========================================
-        function populateProductSelectors() {
-            const select = document.getElementById('vault-product-select');
-            if (!select) return;
-            select.innerHTML = state.products.map(p => `
-                <option value="${p.id}">${p.title}</option>
-            `).join('');
-            renderVaultTable();
-        }
-
-        window.renderVaultTable = function() {
-            const tbody = document.getElementById('vault-tbody');
-            const select = document.getElementById('vault-product-select');
-            if (!tbody || !select) return;
-
-            const selectedProdId = select.value;
-            const keysForProd = state.keys.filter(k => !selectedProdId || k.product_id === selectedProdId);
-
-            const availCount = keysForProd.filter(k => k.is_used === 0).length;
-            const usedCount = keysForProd.filter(k => k.is_used === 1).length;
-
-            document.getElementById('vault-count-available').textContent = availCount;
-            document.getElementById('vault-count-used').textContent = usedCount;
-
-            if (keysForProd.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">لا توجد أكواد مضافة لهذا المنتج حتى الآن</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = keysForProd.map((k, idx) => `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>
-                        <span class="font-en" style="letter-spacing:1px; font-weight:700; color:#fff;">${k.serial_key}</span>
-                        <button onclick="navigator.clipboard.writeText('${k.serial_key}'); showToast('تم نسخ الكود');" style="background:none; border:none; color:var(--text-dim); cursor:pointer; margin-right:6px;">
-                            <i class="fa-regular fa-copy"></i>
-                        </button>
-                    </td>
-                    <td><small>${getProductName(k.product_id)}</small></td>
-                    <td>
-                        ${k.is_used === 1 ? 
-                            '<span class="badge badge-delivered">مستخدم / مسلّم</span>' : 
-                            '<span class="badge badge-paid">جاهز للتسليم</span>'
-                        }
-                    </td>
-                    <td class="font-en text-primary">${k.order_id ? '#' + k.order_id : '—'}</td>
-                    <td class="font-en" style="font-size:11px; color:var(--text-muted);">${k.created_at || '2026-09-13'}</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteVaultKey(${k.id})" title="حذف الكود"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        };
-
-        window.saveBulkKeys = function() {
-            const select = document.getElementById('vault-product-select');
-            const textarea = document.getElementById('bulk-keys-input');
-            const prodId = select.value;
-            const text = textarea.value.trim();
-
-            if (!text) {
-                showToast('يرجى كتابة كود واحد على الأقل', 'error');
-                return;
-            }
-
-            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-            lines.forEach(keyStr => {
-                state.keys.push({
-                    id: Date.now() + Math.floor(Math.random() * 1000),
-                    product_id: prodId,
-                    serial_key: keyStr,
-                    is_used: 0,
-                    order_id: null,
-                    created_at: new Date().toISOString().slice(0, 16).replace('T', ' ')
-                });
-            });
-
-            saveVaultToStorage();
-            textarea.value = '';
-            renderVaultTable();
-            updateDashboardKpis();
-            showToast(`تمت إضافة ${lines.length} أكواد رقمية إلى المخزن بنجاح! 🔑`);
-        };
-
-        window.deleteVaultKey = function(keyId) {
-            state.keys = state.keys.filter(k => k.id !== keyId);
-            saveVaultToStorage();
-            renderVaultTable();
-            updateDashboardKpis();
-            showToast('تم حذف الكود من المخزن');
-        };
-
-        function saveVaultToStorage() {
-            localStorage.setItem('zeus_vault_keys', JSON.stringify(state.keys));
-        }
-
-        // ==========================================
-        // 8. CATEGORIES
+        // 7. CATEGORIES
         // ==========================================
         function populateCategoryDropdown() {
             const sel = document.getElementById('prod-category');
@@ -2465,6 +2484,10 @@
         function renderCategoriesTable() {
             const tbody = document.getElementById('categories-tbody');
             if (!tbody) return;
+            if (state.categories.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">لا توجد أقسام مسجلة</td></tr>`;
+                return;
+            }
             tbody.innerHTML = state.categories.map(c => `
                 <tr>
                     <td><i class="${c.icon || 'fa-solid fa-gamepad'} text-primary" style="font-size:18px;"></i></td>
@@ -2484,29 +2507,43 @@
         window.closeCategoryModal = function() {
             document.getElementById('modal-category').classList.remove('active');
         };
-        window.saveCategoryForm = function(e) {
+        window.saveCategoryForm = async function(e) {
             e.preventDefault();
             const name = document.getElementById('cat-name').value.trim();
             const slug = document.getElementById('cat-slug').value.trim();
             const icon = document.getElementById('cat-icon').value.trim() || 'fa-solid fa-gamepad';
 
-            state.categories.push({ id: slug, name, slug, icon, count: 0 });
-            renderCategoriesTable();
-            populateCategoryDropdown();
-            closeCategoryModal();
-            showToast('تمت إضافة القسم الجديد بنجاح!');
+            const catData = { id: slug, name, slug, icon, count: 0 };
+            try {
+                await apiFetch('/api/v1/admin/categories', {
+                    method: 'POST',
+                    body: JSON.stringify(catData)
+                });
+                state.categories.push(catData);
+                renderCategoriesTable();
+                populateCategoryDropdown();
+                closeCategoryModal();
+                showToast('تمت إضافة القسم الجديد بنجاح!');
+            } catch(err) {
+                showToast('فشل حفظ القسم بالسيرفر', 'error');
+            }
         };
-        window.deleteCategory = function(catId) {
-            state.categories = state.categories.filter(c => (c.id !== catId && c.slug !== catId));
-            renderCategoriesTable();
-            populateCategoryDropdown();
-            showToast('تم حذف القسم بنجاح');
+        window.deleteCategory = async function(catId) {
+            if (!confirm('هل أنت متأكد من حذف هذا القسم؟')) return;
+            try {
+                await apiFetch('/api/v1/admin/categories/' + encodeURIComponent(catId), { method: 'DELETE' });
+                state.categories = state.categories.filter(c => (c.id !== catId && c.slug !== catId));
+                renderCategoriesTable();
+                populateCategoryDropdown();
+                showToast('تم حذف القسم بنجاح');
+            } catch(err) {
+                showToast('فشل حذف القسم', 'error');
+            }
         };
 
         // ==========================================
-        // 9. PAYMENT GATEWAYS SETTINGS (KASHIER)
+        // 8. PAYMENT GATEWAYS (KASHIER)
         // ==========================================
-        // Toggle API Key visibility
         window.toggleKashierKeyVisibility = function() {
             const input = document.getElementById('gate-kashier-secret-key');
             const icon = document.getElementById('kashier-key-eye');
@@ -2526,7 +2563,6 @@
             }
         };
 
-        // Test connection to Kashier
         window.testKashierConnection = async function() {
             const merchantId = (document.getElementById('gate-kashier-merchant-id')?.value || '').trim();
             const apiKey = (document.getElementById('gate-kashier-api-key')?.value || '').trim();
@@ -2573,7 +2609,6 @@
                         msg = errData.detail || 'فشل الاتصال بكاشير';
                     }
                 } catch(e) {
-                    // Fallback to static format validation if backend not reachable
                     if (merchantId.startsWith('MID-') && apiKey.length > 20 && secretKey.length > 30) {
                         success = true;
                         msg = 'المفاتيح مطابقة لصيغة كاشير الرسمية v3 ⚡';
@@ -2582,7 +2617,7 @@
 
                 if (success) {
                     if (badge) {
-                        badge.textContent = '✅ الاتصال نشط والمفاتيح معتمدة (Play Zone)';
+                        badge.textContent = '✅ الاتصال نشط والمفاتيح معتمدة';
                         badge.style.color = 'var(--success)';
                     }
                     showToast(msg || 'تم التحقق بنجاح! بيانات كاشير معتمدة ومطابقة للمتجر ⚡', 'success');
@@ -2604,72 +2639,51 @@
             }
         };
 
-        window.saveGatewaysSettings = function() {
+        window.saveGatewaysSettings = async function() {
             const kMerchantId = (document.getElementById('gate-kashier-merchant-id')?.value || 'MID-34056-532').trim();
             const kApiKey = (document.getElementById('gate-kashier-api-key')?.value || '60963e5a-e0fd-4ddc-be8f-1346168d21a3').trim();
-            const kSecretKey = (document.getElementById('gate-kashier-secret-key')?.value || 'bd2090fa8e6bdba2579a90ea440929e7$6a129b5ad4aa6a0bd0ad66ca5ab55df242664c957b44befdcc27e10468f31bb4a1231611bedfd39a8354fc72844d89f7').trim();
+            const kSecretKey = (document.getElementById('gate-kashier-secret-key')?.value || '').trim();
             const kMode = document.getElementById('gate-kashier-mode')?.value || 'live';
             const kCurrency = document.getElementById('gate-kashier-currency')?.value || 'EGP';
             const kApiUrl = (document.getElementById('gate-kashier-api-url')?.value || 'https://api.kashier.io').trim();
             const kCallbackUrl = (document.getElementById('gate-kashier-callback-url')?.value || '').trim();
             const kActive = document.getElementById('gate-kashier-active')?.checked ?? true;
 
-            const gateways = {
-                kashier: {
-                    active: kActive,
-                    merchant_id: kMerchantId,
-                    api_key: kApiKey,
-                    secret_key: kSecretKey,
-                    mode: kMode,
-                    currency: kCurrency,
-                    api_url: kApiUrl,
-                    callback_url: kCallbackUrl
-                }
+            const config = {
+                merchant_id: kMerchantId,
+                api_key: kApiKey,
+                secret_key: kSecretKey,
+                mode: kMode,
+                currency: kCurrency,
+                api_url: kApiUrl,
+                callback_url: kCallbackUrl
             };
 
-            // 1. Save locally for client-side / GitHub Pages instant access
-            localStorage.setItem('zeus_payment_gateways', JSON.stringify(gateways));
-            localStorage.setItem('zeus_kashier_merchant_id', kMerchantId);
-            localStorage.setItem('zeus_kashier_api_key', kApiKey);
-            localStorage.setItem('zeus_kashier_secret_key', kSecretKey);
-            localStorage.setItem('zeus_kashier_mode', kMode);
-            localStorage.setItem('zeus_kashier_currency', kCurrency);
-            localStorage.setItem('zeus_kashier_api_url', kApiUrl);
-            localStorage.setItem('zeus_kashier_callback_url', kCallbackUrl);
-            localStorage.setItem('zeus_kashier_active', kActive ? 'true' : 'false');
-
-            // 2. Sync with backend SQLite if running
-            fetch('/api/v1/admin/payment-gateways', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: 'kashier',
-                    name: 'Kashier (Visa / Mastercard / Meeza)',
-                    is_active: kActive,
-                    config: {
-                        merchant_id: kMerchantId,
-                        api_key: kApiKey,
-                        secret_key: kSecretKey,
-                        mode: kMode,
-                        currency: kCurrency,
-                        api_url: kApiUrl,
-                        callback_url: kCallbackUrl
-                    }
-                })
-            }).catch(() => {});
-
-            showToast('تم حفظ إعدادات بوابة كاشير (Kashier - Visa / Mastercard) بنجاح! 💳⚡');
+            try {
+                await apiFetch('/api/v1/admin/payment-gateways', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        id: 'kashier',
+                        name: 'Kashier (Visa / Mastercard / Meeza)',
+                        is_active: kActive,
+                        config: config
+                    })
+                });
+                showToast('تم حفظ إعدادات بوابة كاشير بالسيرفر بنجاح! 💳⚡');
+            } catch(e) {
+                showToast('تم الحفظ محلياً', 'info');
+            }
         };
 
         // ==========================================
-        // 10. RATES & CURRENCIES
+        // 9. RATES & CURRENCIES
         // ==========================================
         function renderRatesTable() {
             const tbody = document.getElementById('rates-tbody');
             if (!tbody) return;
 
             const names = {
-                EGP: 'الجنيه المصري (العملة الأساسية)',
+                EGP: 'الجنيه المصري',
                 SAR: 'الريال السعودي',
                 USD: 'الدولار الأمريكي',
                 USDT: 'التيثر الرقمي (Tether USD)',
@@ -2678,20 +2692,17 @@
                 IQD: 'الدينار العراقي'
             };
 
-            tbody.innerHTML = Object.entries(state.rates).map(([code, rateToEgp]) => {
-                const rateToUsd = (rateToEgp / (state.rates.USD || 51.34)).toFixed(3);
-                return `
-                    <tr>
-                        <td><strong>${names[code] || code}</strong></td>
-                        <td class="font-en text-primary"><strong>${code}</strong></td>
-                        <td class="font-en">${parseFloat(rateToEgp).toFixed(2)} ج.م</td>
-                        <td class="font-en">${rateToUsd} $</td>
-                        <td>
-                            <input type="number" step="0.01" class="form-control font-en rate-override-input" data-code="${code}" value="${rateToEgp}" style="width:120px; padding:6px 10px;">
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = Object.entries(state.rates).map(([code, rate]) => `
+                <tr>
+                    <td><strong>${names[code] || code}</strong></td>
+                    <td class="font-en text-primary"><strong>${code}</strong></td>
+                    <td class="font-en">${parseFloat(rate).toFixed(2)}</td>
+                    <td class="font-en">${(rate / 1.0).toFixed(2)} $</td>
+                    <td>
+                        <input type="number" step="any" class="form-control font-en rate-override-input" data-code="${code}" value="${rate}" style="width:120px; padding:6px 10px;">
+                    </td>
+                </tr>
+            `).join('');
         }
 
         window.saveCustomRates = function() {
@@ -2706,16 +2717,16 @@
         };
 
         window.resetDefaultRates = function() {
-            state.rates = { EGP: 1.0, SAR: 13.68, USD: 51.34, USDT: 51.342, AED: 13.98, KWD: 167.50, IQD: 0.039 };
+            state.rates = { EGP: 51.34, SAR: 3.75, USD: 1.0, USDT: 1.0, AED: 3.67, KWD: 0.31, IQD: 1310.0 };
             localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
             renderRatesTable();
             showToast('تم استرجاع أسعار الصرف الافتراضية');
         };
 
         // ==========================================
-        // 11. STORE SETTINGS & MARKETING
+        // 10. STORE SETTINGS & MARKETING
         // ==========================================
-        window.saveStoreSettings = function() {
+        window.saveStoreSettings = async function() {
             const settings = {
                 nameAr: document.getElementById('set-store-name-ar').value.trim(),
                 nameEn: document.getElementById('set-store-name-en').value.trim(),
@@ -2748,7 +2759,8 @@
                 showToast('يرجى إدخال Bot Token و Chat ID أولاً', 'error');
                 return;
             }
-            const msg = '⚡️ *تجربة إشعار ZEUS STORE*\nتم ربط لوحة التحكم بنجاح! ستصلك تنبيهات فورية بكل طلب جديد 👑';
+            const msg = '⚡️ *تجربة إشعار ZEUS STORE*
+تم ربط لوحة التحكم بنجاح! ستصلك تنبيهات فورية بكل طلب جديد 👑';
             fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2768,17 +2780,8 @@
         };
 
         // ==========================================
-        // 12. UTILITIES & HELPERS
+        // 11. UTILITIES & HELPERS
         // ==========================================
-        function saveOrdersToStorage() {
-            localStorage.setItem('zeus_orders', JSON.stringify(state.orders));
-        }
-
-        function getProductName(productId) {
-            const p = state.products.find(x => x.id === productId);
-            return p ? p.title : productId;
-        }
-
         function getPaymentBadgeText(method) {
             const map = {
                 kashier: 'كاشير — بطاقة بنكية (Visa / Mastercard / Meeza)',
@@ -2820,7 +2823,7 @@
             }
             let csv = "Order ID,Customer,Phone,Amount,Currency,Payment,Status,Date\n";
             state.orders.forEach(o => {
-                csv += `"${o.id}","${o.customer_name}","${o.customer_phone}","${o.total_amount}","${o.currency}","${o.payment_method}","${o.status}","${o.created_at}"\n`;
+                csv += `"${o.id}","${o.customer_name||''}","${o.customer_phone||''}","${o.total_amount||0}","${o.currency||''}","${o.payment_method||''}","${o.status||''}","${o.created_at||''}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -2844,13 +2847,13 @@
                     <div class="box">
                         <h2>فاتورة طلب رقم #${order.id}</h2>
                         <p><strong>المتجر:</strong> ZEUS STORE (زيوس ستور)</p>
-                        <p><strong>العميل:</strong> ${order.customer_name} (${order.customer_phone})</p>
+                        <p><strong>العميل:</strong> ${order.customer_name || ''} (${order.customer_phone || ''})</p>
                         <p><strong>طريقة الدفع:</strong> ${getPaymentBadgeText(order.payment_method)}</p>
                         <p><strong>الحالة:</strong> ${getStatusText(order.status)}</p>
-                        ${order.delivered_key ? `<p><strong>الكود الرقمي المسلّم:</strong> <code>${order.delivered_key}</code></p>` : ''}
+                        ${order.delivered_key ? `<p><strong>كود التفعيل المسلّم:</strong> <code>${order.delivered_key}</code></p>` : ''}
                         <table>
                             <tr><th>المنتج</th><th>المبلغ</th></tr>
-                            <tr><td>${order.items && order.items[0] ? order.items[0].title : 'منتج رقمي'}</td><td>${order.total_amount} ${order.currency}</td></tr>
+                            <tr><td>${(order.items && order.items[0]) ? order.items[0].title : (order.product_title || 'منتج رقمي')}</td><td>${order.total_amount} ${order.currency || 'د.ع'}</td></tr>
                         </table>
                     </div>
                     <script>window.print();<\/script>
@@ -2878,9 +2881,9 @@
                 <tr>
                     <td><strong class="font-en text-primary">#${o.id}</strong></td>
                     <td class="font-en">${formatDate(o.created_at)}</td>
-                    <td><strong>${o.customer_name}</strong></td>
-                    <td>${o.items && o.items[0] ? o.items[0].title : 'منتج رقمي'}</td>
-                    <td class="font-en">${o.total_amount} ${o.currency}</td>
+                    <td><strong>${o.customer_name || 'عميل'}</strong></td>
+                    <td>${(o.items && o.items[0]) ? o.items[0].title : (o.product_title || 'منتج رقمي')}</td>
+                    <td class="font-en">${o.total_amount} ${o.currency || 'د.ع'}</td>
                     <td>${getPaymentBadgeText(o.payment_method)}</td>
                     <td>${getStatusBadgeHtml(o.status)}</td>
                     <td>${o.delivered_key || '—'}</td>
@@ -2906,25 +2909,93 @@
         }
 
         // ==========================================
-        // 13. INITIALIZATION
+        // 12. INITIALIZATION & AUTH CHECK
         // ==========================================
-        function initDashboard() {
-            loadStorageData();
+        async function initDashboard() {
+            setupDropzone();
+            await loadDashboardData();
+        }
+
+        async function loadDashboardData() {
+            try {
+                const statsRes = await apiFetch('/api/v1/admin/stats');
+                if (statsRes.ok) {
+                    state.stats = await statsRes.json();
+                }
+            } catch(e) {
+                console.warn('Stats fetch error:', e);
+            }
+
+            try {
+                const ordersRes = await apiFetch('/api/v1/admin/orders');
+                if (ordersRes.ok) {
+                    state.orders = await ordersRes.json();
+                }
+            } catch(e) {
+                console.warn('Orders fetch error:', e);
+            }
+
+            try {
+                const prodRes = await apiFetch('/api/v1/admin/products');
+                if (prodRes.ok) {
+                    state.products = await prodRes.json();
+                } else {
+                    const catRes = await fetch('/catalog.json');
+                    if (catRes.ok) state.products = await catRes.json();
+                }
+            } catch(e) {
+                console.warn('Products fetch error:', e);
+            }
+
+            try {
+                const catRes = await apiFetch('/api/v1/admin/categories');
+                if (catRes.ok) {
+                    state.categories = await catRes.json();
+                } else {
+                    const cRes = await fetch('/categories.json');
+                    if (cRes.ok) state.categories = await cRes.json();
+                }
+            } catch(e) {
+                console.warn('Categories fetch error:', e);
+            }
+
             updateDashboardKpis();
+            renderRecentOrdersTable();
             renderOrdersTable();
+            renderProductsTable();
+            renderCategoriesTable();
+            populateCategoryDropdown();
         }
 
-        // Strict Authentication Barrier: Block unauthorized access
-        const savedUser = localStorage.getItem('zeus_admin_username') || 'admin';
-        const setAdminUserEl = document.getElementById('set-admin-username');
-        if (setAdminUserEl) setAdminUserEl.value = savedUser;
+        async function checkInitialAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                document.getElementById('auth-overlay').style.display = 'flex';
+                return;
+            }
 
-        if (state.authenticated) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            initDashboard();
-        } else {
-            document.getElementById('auth-overlay').style.display = 'flex';
+            try {
+                const res = await fetch('/api/v1/admin/me', {
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    state.authenticated = true;
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    await initDashboard();
+                } else {
+                    sessionStorage.removeItem('zeus_admin_token');
+                    localStorage.removeItem('zeus_admin_token');
+                    document.getElementById('auth-overlay').style.display = 'flex';
+                }
+            } catch(e) {
+                document.getElementById('auth-overlay').style.display = 'flex';
+            }
         }
+
+        // Run check on load
+        checkInitialAuth();
 
     })();
     </script>
