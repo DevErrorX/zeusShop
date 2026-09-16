@@ -798,13 +798,22 @@ input:user-invalid,
 /* ==========================================================================
    Customer Testimonials / Reviews Infinite Marquee
    ========================================================================== */
+
+/* Fix mobile overflow: the reviews section and its children must clip horizontally */
+section[data-rv-off] {
+  overflow-x: hidden !important;
+  overflow-x: clip !important; /* clip prevents scroll, hidden can create stacking context issues */
+}
+
 .rv-marquee-row {
   overflow: hidden !important;
   position: relative !important;
   width: 100% !important;
+  max-width: 100% !important;
   mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
 }
+
 
 .rv-marquee-track {
   display: flex !important;
