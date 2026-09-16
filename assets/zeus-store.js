@@ -1560,85 +1560,94 @@
 
     // Note: All payment session creation is strictly Server-to-Server via /api/v1/payment/kashier/create
 
+    // ─────────────────────────────────────────────────────────────────
+    // ZEUS CUSTOMER INFO MODAL — shown when user clicks the pay button
+    // ─────────────────────────────────────────────────────────────────
+    function zeusOpenInfoModal(onConfirm) {
+      const modal    = document.getElementById('zeus-info-modal');
+      const nameInp  = document.getElementById('zeus-modal-name');
+      const emailInp = document.getElementById('zeus-modal-email');
+      const submitBtn = document.getElementById('zeus-modal-submit');
+      const closeBtn  = document.getElementById('zeus-modal-close');
+      const backdrop  = document.getElementById('zeus-info-modal-backdrop');
+      if (!modal) { onConfirm('عميل زيوس', ''); return; }
+
+      if (nameInp)  { nameInp.value  = ''; nameInp.style.borderColor  = ''; nameInp.style.boxShadow  = ''; }
+      if (emailInp) { emailInp.value = ''; emailInp.style.borderColor = ''; emailInp.style.boxShadow = ''; }
+
+      [nameInp, emailInp].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('focus', () => { inp.style.borderColor = 'var(--primary,#D97706)'; inp.style.boxShadow = '0 0 0 3px rgba(217,119,6,0.18)'; });
+        inp.addEventListener('blur',  () => { inp.style.borderColor = ''; inp.style.boxShadow = ''; });
+      });
+
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => nameInp && nameInp.focus(), 80);
+
+      function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+
+      function handleSubmit() {
+        const name  = nameInp  ? nameInp.value.trim()  : '';
+        const email = emailInp ? emailInp.value.trim() : '';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!name) {
+          if (nameInp) { nameInp.style.borderColor = '#ef4444'; nameInp.focus(); }
+          showToast('يجب إدخال الاسم الكامل', 'error');
+          return;
+        }
+        if (!email) {
+          if (emailInp) { emailInp.style.borderColor = '#ef4444'; emailInp.focus(); }
+          showToast('يجب إدخال البريد الإلكتروني', 'error');
+          return;
+        }
+        if (!emailRegex.test(email)) {
+          if (emailInp) { emailInp.style.borderColor = '#ef4444'; emailInp.focus(); }
+          showToast('يرجى كتابة بريد إلكتروني صحيح (مثال: name@example.com)', 'error');
+          return;
+        }
+        closeModal();
+        onConfirm(name, email);
+      }
+
+      if (submitBtn) submitBtn.onclick = handleSubmit;
+      if (closeBtn)  closeBtn.onclick  = closeModal;
+      if (backdrop)  backdrop.onclick  = closeModal;
+      if (emailInp) emailInp.onkeydown = (ev) => { if (ev.key === 'Enter') handleSubmit(); };
+      if (nameInp)  nameInp.onkeydown  = (ev) => { if (ev.key === 'Enter') emailInp && emailInp.focus(); };
+    }
+
     // Handle "اضغط هنا للدفع الآن" / Submit Checkout Button
     const payBtn = document.getElementById('zeus-checkout-submit-btn') || Array.from(document.querySelectorAll('button')).find(b => 
       b.textContent.includes('اضغط هنا للدفع') || b.textContent.includes('الدفع الآن') || b.closest('.co-sec-submit')
     );
     if (payBtn) {
-      payBtn.onclick = async function(e) {
+      payBtn.onclick = function(e) {
         e.preventDefault();
-        const emailInp = document.querySelector('input[type="email"]');
-        const phoneInp = document.getElementById('zeus-customer-phone-input') || document.querySelector('input[type="tel"]');
+        zeusOpenInfoModal(async function(customerName, email) {
+          await zeusProcessPayment(customerName, email);
+        });
+      };
+    }
 
-        const email = emailInp ? emailInp.value.trim() : '';
-        const phone = phoneInp ? phoneInp.value.trim() : '';
+    async function zeusProcessPayment(customerName, email) {
+      const formattedPhone = ''; // phone removed — name+email modal flow
 
-        // Clear previous input error indicators
-        if (emailInp) emailInp.classList.remove('input-error');
-        if (phoneInp) phoneInp.classList.remove('input-error');
+      // Kashier Flow (Condition 1: Server-Authoritative Price Calculation & Direct S2S Session)
+      if (selectedPaymentMethod === 'kashier' || selectedPaymentMethod === 'megapay') {
+        const cart = getCart();
+        const itemsPayload = (cart && cart.length > 0) ? cart.map(it => ({
+          id: it.id || 'zeus-cod-60',
+          title: it.title || '',
+          quantity: it.quantity || 1
+        })) : [{ id: 'zeus-cod-60', title: 'اشتراك زيوس', quantity: 1 }];
 
-        // Burgundy error notifications for input validation
-        if (!email) {
-          showToast('يجب إدخال البريد الإلكتروني لمتابعة الطلب واستلام الأكواد', 'error');
-          if (emailInp) {
-            emailInp.classList.add('input-error');
-            emailInp.focus();
-            emailInp.addEventListener('input', () => emailInp.classList.remove('input-error'), { once: true });
-          }
-          return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          showToast('يرجى كتابة عنوان بريد إلكتروني صحيح (مثال: name@example.com)', 'error');
-          if (emailInp) {
-            emailInp.classList.add('input-error');
-            emailInp.focus();
-            emailInp.addEventListener('input', () => emailInp.classList.remove('input-error'), { once: true });
-          }
-          return;
-        }
-
-        if (!phone) {
-          showToast('يجب إدخال رقم الهاتف للتواصل وتأكيد الطلب', 'error');
-          if (phoneInp) {
-            phoneInp.classList.add('input-error');
-            phoneInp.focus();
-            phoneInp.addEventListener('input', () => phoneInp.classList.remove('input-error'), { once: true });
-          }
-          return;
-        }
-
-        // Format phone with selected country dial code
-        const selectedDial = (document.getElementById('zeus-country-dial-code')?.textContent || '+20').trim();
-        let formattedPhone = phone.replace(/[^\d+]/g, '');
-        if (!formattedPhone.startsWith('+')) {
-          formattedPhone = formattedPhone.replace(/^0+/, '');
-          formattedPhone = selectedDial + formattedPhone;
-        }
-
-        if (formattedPhone.replace(/\D/g, '').length < 7) {
-          showToast('يرجى التأكد من كتابة رقم هاتف صحيح للتواصل', 'error');
-          if (phoneInp) {
-            phoneInp.classList.add('input-error');
-            phoneInp.focus();
-            phoneInp.addEventListener('input', () => phoneInp.classList.remove('input-error'), { once: true });
-          }
-          return;
-        }
-
-        // Kashier Flow (Condition 1: Server-Authoritative Price Calculation & Direct S2S Session)
-        if (selectedPaymentMethod === 'kashier' || selectedPaymentMethod === 'megapay') {
-          const cart = getCart();
-          const itemsPayload = (cart && cart.length > 0) ? cart.map(it => ({
-            id: it.id || 'zeus-cod-60',
-            title: it.title || '',
-            quantity: it.quantity || 1
-          })) : [{ id: 'zeus-cod-60', title: 'اشتراك زيوس', quantity: 1 }];
-
-          const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-          const orderTitle = `طلب متجر زيوس #${orderId}`;
-          const customerName = (document.querySelector('input[name="name"]')?.value || email.split('@')[0] || 'عميل زيوس').trim();
+        const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
+        const orderTitle = `طلب متجر زيوس #${orderId}`;
+        const finalCustomerName = (customerName || email.split('@')[0] || 'عميل زيوس').trim();
 
           // Open blank payment tab early to prevent browser popup block
           let paymentWindow = null;
@@ -1686,7 +1695,7 @@
                   items: itemsPayload,
                   currency: 'EGP',
                   title: orderTitle,
-                  customer_name: customerName,
+                  customer_name: finalCustomerName,
                   customer_phone: formattedPhone,
                   customer_email: email,
                   order_id: orderId,
@@ -1767,9 +1776,7 @@
         const amounts = updateCheckoutAmounts();
         const currentUsdt = amounts ? amounts.totalUsdt : totalUsdt;
         const currentEgp = amounts ? amounts.totalEgp : totalEgp;
-        const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
-        showOrderSuccessModal(orderId, email, phone, selectedPaymentMethod, '', currentUsdt, currentEgp);
-      };
+        showOrderSuccessModal(orderId, email, formattedPhone, selectedPaymentMethod, '', currentUsdt, currentEgp);
     }
 
     // Direct WhatsApp / Telegram buttons on checkout
