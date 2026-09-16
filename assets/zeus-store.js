@@ -1051,7 +1051,7 @@
   }
 
   function initCheckoutPage() {
-    if (!window.location.pathname.includes('checkout')) return;
+    if (!window.location.pathname.includes('checkout') && !document.getElementById('zeus-country-picker-btn')) return;
 
     // Window wheel delegation for desktop
     window.addEventListener('wheel', function(e) {
@@ -1060,6 +1060,269 @@
         scroller.scrollTop += e.deltaY;
       }
     }, { passive: true });
+
+    // ==============================================================
+    // ZEUS INTERNATIONAL COUNTRY PICKER & GEO-IP AUTO-DETECTION
+    // ==============================================================
+    const ZEUS_COUNTRIES = [
+      // Top Arab / GCC Countries
+      { code: 'EG', nameAr: 'مصر', nameEn: 'Egypt', dial: '+20', placeholder: '01012345678' },
+      { code: 'SA', nameAr: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia', dial: '+966', placeholder: '0512345678' },
+      { code: 'IQ', nameAr: 'العراق', nameEn: 'Iraq', dial: '+964', placeholder: '07801234567' },
+      { code: 'AE', nameAr: 'الإمارات العربية المتحدة', nameEn: 'United Arab Emirates', dial: '+971', placeholder: '0501234567' },
+      { code: 'KW', nameAr: 'الكويت', nameEn: 'Kuwait', dial: '+965', placeholder: '91234567' },
+      { code: 'QA', nameAr: 'قطر', nameEn: 'Qatar', dial: '+974', placeholder: '33123456' },
+      { code: 'BH', nameAr: 'البحرين', nameEn: 'Bahrain', dial: '+973', placeholder: '39123456' },
+      { code: 'OM', nameAr: 'عُمان', nameEn: 'Oman', dial: '+968', placeholder: '91234567' },
+      { code: 'JO', nameAr: 'الأردن', nameEn: 'Jordan', dial: '+962', placeholder: '0791234567' },
+      { code: 'PS', nameAr: 'فلسطين', nameEn: 'Palestine', dial: '+970', placeholder: '0591234567' },
+      { code: 'YE', nameAr: 'اليمن', nameEn: 'Yemen', dial: '+967', placeholder: '771234567' },
+      { code: 'LY', nameAr: 'ليبيا', nameEn: 'Libya', dial: '+218', placeholder: '0911234567' },
+      { code: 'DZ', nameAr: 'الجزائر', nameEn: 'Algeria', dial: '+213', placeholder: '0551234567' },
+      { code: 'MA', nameAr: 'المغرب', nameEn: 'Morocco', dial: '+212', placeholder: '0612345678' },
+      { code: 'TN', nameAr: 'تونس', nameEn: 'Tunisia', dial: '+216', placeholder: '20123456' },
+      { code: 'SD', nameAr: 'السودان', nameEn: 'Sudan', dial: '+249', placeholder: '0912345678' },
+      { code: 'SY', nameAr: 'سوريا', nameEn: 'Syria', dial: '+963', placeholder: '0941234567' },
+      { code: 'LB', nameAr: 'لبنان', nameEn: 'Lebanon', dial: '+961', placeholder: '70123456' },
+      // Popular International Countries
+      { code: 'TR', nameAr: 'تركيا', nameEn: 'Turkey', dial: '+90', placeholder: '5321234567' },
+      { code: 'US', nameAr: 'الولايات المتحدة', nameEn: 'United States', dial: '+1', placeholder: '2025550123' },
+      { code: 'GB', nameAr: 'المملكة المتحدة', nameEn: 'United Kingdom', dial: '+44', placeholder: '7911123456' },
+      { code: 'DE', nameAr: 'ألمانيا', nameEn: 'Germany', dial: '+49', placeholder: '15112345678' },
+      { code: 'FR', nameAr: 'فرنسا', nameEn: 'France', dial: '+33', placeholder: '0612345678' },
+      { code: 'CA', nameAr: 'كندا', nameEn: 'Canada', dial: '+1', placeholder: '4165550123' },
+      { code: 'IT', nameAr: 'إيطاليا', nameEn: 'Italy', dial: '+39', placeholder: '3201234567' },
+      { code: 'ES', nameAr: 'إسبانيا', nameEn: 'Spain', dial: '+34', placeholder: '612345678' },
+      { code: 'NL', nameAr: 'هولندا', nameEn: 'Netherlands', dial: '+31', placeholder: '0612345678' },
+      { code: 'SE', nameAr: 'السويد', nameEn: 'Sweden', dial: '+46', placeholder: '0701234567' },
+      { code: 'CH', nameAr: 'سويسرا', nameEn: 'Switzerland', dial: '+41', placeholder: '0791234567' },
+      { code: 'RU', nameAr: 'روسيا', nameEn: 'Russia', dial: '+7', placeholder: '9123456789' },
+      { code: 'IN', nameAr: 'الهند', nameEn: 'India', dial: '+91', placeholder: '9876543210' },
+      { code: 'PK', nameAr: 'باكستان', nameEn: 'Pakistan', dial: '+92', placeholder: '3001234567' },
+      { code: 'MY', nameAr: 'ماليزيا', nameEn: 'Malaysia', dial: '+60', placeholder: '123456789' },
+      { code: 'ID', nameAr: 'إندونيسيا', nameEn: 'Indonesia', dial: '+62', placeholder: '8123456789' },
+      { code: 'AU', nameAr: 'أستراليا', nameEn: 'Australia', dial: '+61', placeholder: '0412345678' },
+      { code: 'BR', nameAr: 'البرازيل', nameEn: 'Brazil', dial: '+55', placeholder: '11987654321' }
+    ];
+
+    let currentSelectedCountry = ZEUS_COUNTRIES[0];
+
+    function normalizeSearchText(str) {
+      return (str || '')
+        .toString()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\s\-_+]/g, '');
+    }
+
+    function initCountryPicker() {
+      const pickerWrap = document.getElementById('zeus-country-picker-wrap');
+      const pickerBtn = document.getElementById('zeus-country-picker-btn');
+      const dropdown = document.getElementById('zeus-country-dropdown');
+      const searchInput = document.getElementById('zeus-country-search-input');
+      const listEl = document.getElementById('zeus-country-list');
+      const flagImg = document.getElementById('zeus-country-flag-img');
+      const dialCodeEl = document.getElementById('zeus-country-dial-code');
+      const phoneInput = document.getElementById('zeus-customer-phone-input') || document.querySelector('input[type="tel"]');
+
+      if (!pickerBtn || !dropdown || !listEl) return;
+
+      function renderCountryList(filterQuery = '') {
+        const query = normalizeSearchText(filterQuery);
+        const filtered = ZEUS_COUNTRIES.filter(c => {
+          if (!query) return true;
+          const nameArNorm = normalizeSearchText(c.nameAr);
+          const nameEnNorm = normalizeSearchText(c.nameEn);
+          const dialNorm = normalizeSearchText(c.dial);
+          const codeNorm = normalizeSearchText(c.code);
+          return nameArNorm.includes(query) || nameEnNorm.includes(query) || dialNorm.includes(query) || codeNorm.includes(query);
+        });
+
+        if (filtered.length === 0) {
+          listEl.innerHTML = '<div class="zeus-country-empty">لا توجد نتائج مطابقة لبحثك</div>';
+          return;
+        }
+
+        listEl.innerHTML = filtered.map(c => {
+          const isActive = currentSelectedCountry && currentSelectedCountry.code === c.code;
+          return `
+            <div class="zeus-country-item ${isActive ? 'active' : ''}" data-code="${c.code}" tabindex="0">
+              <div class="zeus-country-info-start">
+                <img class="zeus-country-flag" src="https://flagcdn.com/w40/${c.code.toLowerCase()}.png" alt="${c.code}" loading="lazy" width="22" height="15" />
+                <span class="zeus-country-name">${c.nameAr}</span>
+              </div>
+              <span class="zeus-country-dial">${c.dial}</span>
+            </div>
+          `;
+        }).join('');
+
+        // Attach click listeners to items
+        listEl.querySelectorAll('.zeus-country-item').forEach(item => {
+          item.onclick = function(e) {
+            e.stopPropagation();
+            const code = this.dataset.code;
+            const targetCountry = ZEUS_COUNTRIES.find(c => c.code === code);
+            if (targetCountry) {
+              selectCountry(targetCountry, true);
+              closeDropdown();
+              if (phoneInput) phoneInput.focus();
+            }
+          };
+          item.onkeydown = function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.click();
+            }
+          };
+        });
+      }
+
+      function selectCountry(country, userInitiated = true) {
+        if (!country) return;
+        currentSelectedCountry = country;
+
+        if (flagImg) {
+          flagImg.src = `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`;
+          flagImg.alt = country.code;
+        }
+        if (dialCodeEl) {
+          dialCodeEl.textContent = country.dial;
+        }
+        if (phoneInput && country.placeholder) {
+          phoneInput.placeholder = country.placeholder;
+        }
+
+        if (userInitiated) {
+          try {
+            localStorage.setItem('zeus_selected_country', country.code);
+          } catch(e) {}
+        }
+
+        // Update active class in rendered list
+        listEl.querySelectorAll('.zeus-country-item').forEach(el => {
+          if (el.dataset.code === country.code) {
+            el.classList.add('active');
+          } else {
+            el.classList.remove('active');
+          }
+        });
+      }
+
+      function openDropdown() {
+        dropdown.style.display = 'flex';
+        pickerWrap.classList.add('is-open');
+        if (searchInput) {
+          searchInput.value = '';
+          renderCountryList('');
+          setTimeout(() => searchInput.focus(), 60);
+        }
+      }
+
+      function closeDropdown() {
+        dropdown.style.display = 'none';
+        pickerWrap.classList.remove('is-open');
+      }
+
+      function toggleDropdown() {
+        if (dropdown.style.display === 'none' || !dropdown.style.display) {
+          openDropdown();
+        } else {
+          closeDropdown();
+        }
+      }
+
+      pickerBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDropdown();
+      };
+
+      if (searchInput) {
+        searchInput.oninput = function() {
+          renderCountryList(this.value);
+        };
+        searchInput.onclick = function(e) {
+          e.stopPropagation();
+        };
+      }
+
+      // Close on click outside
+      document.addEventListener('click', function(e) {
+        if (pickerWrap && !pickerWrap.contains(e.target)) {
+          closeDropdown();
+        }
+      });
+
+      // Close on Escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && dropdown.style.display !== 'none') {
+          closeDropdown();
+        }
+      });
+
+      // Initial list render
+      renderCountryList('');
+
+      // Auto-detect Geo-IP or load cached preference
+      resolveVisitorCountry(selectCountry);
+    }
+
+    async function resolveVisitorCountry(applyCountryCallback) {
+      // 1. If user previously chose a country, respect their explicit preference!
+      try {
+        const savedCode = localStorage.getItem('zeus_selected_country');
+        if (savedCode) {
+          const matched = ZEUS_COUNTRIES.find(c => c.code === savedCode.toUpperCase());
+          if (matched) {
+            applyCountryCallback(matched, false);
+            return;
+          }
+        }
+      } catch(e) {}
+
+      // 2. Query our internal FastAPI endpoint /api/v1/geo-ip
+      let detectedCode = null;
+      try {
+        const res = await fetch('/api/v1/geo-ip');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.country_code && data.country_code !== 'XX') {
+            detectedCode = data.country_code.toUpperCase();
+          }
+        }
+      } catch(e) {}
+
+      // 3. Fallback client-side lookup if server returned default EG or local IP
+      if (!detectedCode || detectedCode === 'EG') {
+        try {
+          const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const to = ctrl ? setTimeout(() => ctrl.abort(), 2000) : null;
+          const extRes = await fetch('https://api.country.is/', {
+            signal: ctrl ? ctrl.signal : undefined,
+            cache: 'no-store'
+          });
+          if (to) clearTimeout(to);
+          if (extRes.ok) {
+            const extData = await extRes.json();
+            if (extData && extData.country && extData.country.length === 2) {
+              detectedCode = extData.country.toUpperCase();
+            }
+          }
+        } catch(e) {}
+      }
+
+      if (detectedCode) {
+        const match = ZEUS_COUNTRIES.find(c => c.code === detectedCode);
+        if (match) {
+          applyCountryCallback(match, false);
+        }
+      }
+    }
+
+    // Initialize country phone picker immediately
+    initCountryPicker();
 
     const { totalEgp, totalUsdt } = updateCheckoutAmounts();
 
@@ -1255,7 +1518,7 @@
       payBtn.onclick = async function(e) {
         e.preventDefault();
         const emailInp = document.querySelector('input[type="email"]');
-        const phoneInp = document.querySelector('input[type="tel"]');
+        const phoneInp = document.getElementById('zeus-customer-phone-input') || document.querySelector('input[type="tel"]');
 
         const email = emailInp ? emailInp.value.trim() : '';
         const phone = phoneInp ? phoneInp.value.trim() : '';
@@ -1288,6 +1551,24 @@
 
         if (!phone) {
           showToast('يجب إدخال رقم الهاتف للتواصل وتأكيد الطلب', 'error');
+          if (phoneInp) {
+            phoneInp.classList.add('input-error');
+            phoneInp.focus();
+            phoneInp.addEventListener('input', () => phoneInp.classList.remove('input-error'), { once: true });
+          }
+          return;
+        }
+
+        // Format phone with selected country dial code
+        const selectedDial = (document.getElementById('zeus-country-dial-code')?.textContent || '+20').trim();
+        let formattedPhone = phone.replace(/[^\d+]/g, '');
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = formattedPhone.replace(/^0+/, '');
+          formattedPhone = selectedDial + formattedPhone;
+        }
+
+        if (formattedPhone.replace(/\D/g, '').length < 7) {
+          showToast('يرجى التأكد من كتابة رقم هاتف صحيح للتواصل', 'error');
           if (phoneInp) {
             phoneInp.classList.add('input-error');
             phoneInp.focus();
@@ -1355,7 +1636,7 @@
                   currency: 'USD',
                   title: orderTitle,
                   customer_name: customerName,
-                  customer_phone: phone,
+                  customer_phone: formattedPhone,
                   customer_email: email,
                   order_id: orderId,
                   callback_url: callbackUrl
@@ -1396,7 +1677,7 @@
               method: 'kashier',
               paymentUrl,
               email,
-              phone,
+              phone: formattedPhone,
               timestamp: Date.now()
             }));
 

@@ -582,3 +582,189 @@ input:user-invalid,
   }
 }
 
+/* ==========================================================================
+   ZEUS STORE - LUXURY COUNTRY & PHONE PICKER
+   ========================================================================== */
+.co-sec-customer {
+  position: relative !important;
+  z-index: 40 !important;
+}
+
+#zeus-country-picker-wrap {
+  position: relative;
+  z-index: 50;
+}
+
+#zeus-country-picker-wrap.is-open {
+  z-index: 99999 !important;
+}
+
+#zeus-country-picker-btn {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#zeus-country-picker-btn:hover {
+  background-color: var(--secondary, #F5EFEB) !important;
+  border-color: var(--ring, #D97706) !important;
+}
+
+#zeus-country-chevron {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#zeus-country-picker-wrap.is-open #zeus-country-chevron {
+  transform: rotate(180deg);
+}
+
+.zeus-country-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 310px;
+  max-width: 92vw;
+  background: var(--card, #FFFFFF) !important;
+  border: 1px solid var(--border, #E8E0D2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 10px 25px -5px rgba(15, 23, 42, 0.2) !important;
+  z-index: 999999 !important;
+  overflow: hidden;
+  animation: zeusPopFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes zeusPopFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.zeus-country-dropdown-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #E8E0D2);
+  background: var(--background, #FAF7F2);
+}
+
+.zeus-country-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.zeus-country-search-icon {
+  position: absolute;
+  right: 12px;
+  color: var(--muted-foreground, #64748B);
+  pointer-events: none;
+}
+
+#zeus-country-search-input {
+  width: 100%;
+  height: 38px;
+  padding: 6px 36px 6px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #E8E0D2);
+  background: var(--card, #FFFFFF);
+  color: var(--foreground, #0F172A);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  direction: rtl;
+  font-family: inherit;
+}
+
+#zeus-country-search-input:focus {
+  border-color: var(--ring, #D97706);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.zeus-country-list-scroll {
+  max-height: 250px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0;
+}
+
+.zeus-country-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.zeus-country-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.zeus-country-list-scroll::-webkit-scrollbar-thumb {
+  background: var(--border, #E8E0D2);
+  border-radius: 3px;
+}
+
+.zeus-country-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+  font-size: 13px;
+  color: var(--foreground, #0F172A);
+}
+
+.zeus-country-item:hover,
+.zeus-country-item:focus {
+  background: var(--secondary, #F5EFEB);
+}
+
+.zeus-country-item.active {
+  background: color-mix(in srgb, var(--primary, #D97706) 12%, transparent);
+  font-weight: 700;
+  color: var(--primary, #D97706);
+}
+
+.zeus-country-info-start {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.zeus-country-flag {
+  width: 22px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.zeus-country-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.zeus-country-dial {
+  direction: ltr;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground, #64748B);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.zeus-country-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted-foreground, #64748B);
+}
+
+

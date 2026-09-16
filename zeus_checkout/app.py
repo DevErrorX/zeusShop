@@ -876,6 +876,74 @@ def create_app() -> FastAPI:
             "kashier_active": bool(kashier.get("is_active", True))
         }
 
+    _GEO_DIAL_CODES = {
+        "EG": "+20", "SA": "+966", "IQ": "+964", "AE": "+971", "KW": "+965",
+        "QA": "+974", "BH": "+973", "OM": "+968", "JO": "+962", "PS": "+970",
+        "YE": "+967", "LY": "+218", "DZ": "+213", "MA": "+212", "TN": "+216",
+        "SD": "+249", "SY": "+963", "LB": "+961", "TR": "+90", "US": "+1",
+        "GB": "+44", "DE": "+49", "FR": "+33", "IT": "+39", "ES": "+34",
+        "CA": "+1", "RU": "+7", "IN": "+91", "PK": "+92", "NL": "+31"
+    }
+    _GEO_CACHE: dict[str, str] = {}
+
+    @app.get("/api/v1/geo-ip")
+    async def get_client_geo(request: Request):
+        cf_country = (
+            request.headers.get("CF-IPCountry")
+            or request.headers.get("cf-ipcountry")
+            or request.headers.get("X-Country-Code")
+        )
+        if cf_country and len(cf_country) == 2 and cf_country.upper() != "XX":
+            code = cf_country.upper()
+            return {
+                "country_code": code,
+                "dial_code": _GEO_DIAL_CODES.get(code, "+20"),
+                "source": "header"
+            }
+
+        forwarded = request.headers.get("X-Forwarded-For") or request.headers.get("x-forwarded-for")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else ""
+
+        if not client_ip or client_ip in ("127.0.0.1", "::1", "localhost") or client_ip.startswith(("192.168.", "10.", "172.16.")):
+            return {
+                "country_code": "EG",
+                "dial_code": "+20",
+                "source": "default_local"
+            }
+
+        if client_ip in _GEO_CACHE:
+            cached_code = _GEO_CACHE[client_ip]
+            return {
+                "country_code": cached_code,
+                "dial_code": _GEO_DIAL_CODES.get(cached_code, "+20"),
+                "source": "cache"
+            }
+
+        code = "EG"
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"https://api.country.is/{client_ip}",
+                headers={"User-Agent": "ZeusStore/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
+                data = json.loads(resp.read().decode())
+                c_val = str(data.get("country", "")).upper()
+                if len(c_val) == 2:
+                    code = c_val
+                    _GEO_CACHE[client_ip] = code
+        except Exception:
+            pass
+
+        return {
+            "country_code": code,
+            "dial_code": _GEO_DIAL_CODES.get(code, "+20"),
+            "source": "lookup"
+        }
+
     return app
 
 app = create_app()
