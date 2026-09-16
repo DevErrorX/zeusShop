@@ -767,4 +767,30 @@ input:user-invalid,
   color: var(--muted-foreground, #64748B);
 }
 
+/* Zeus VIP Telegram Support Button */
+.zeus-telegram-btn {
+  background: linear-gradient(135deg, #2AABEE 0%, #229ED9 50%, #1681B8 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 8px 24px -4px rgba(34, 158, 217, 0.45), 0 4px 12px -2px rgba(34, 158, 217, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
 
+.zeus-telegram-btn:hover {
+  background: linear-gradient(135deg, #38B5F5 0%, #26A5E4 50%, #1A8BC4 100%) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 12px 28px -4px rgba(34, 158, 217, 0.55), 0 6px 16px -2px rgba(34, 158, 217, 0.35) !important;
+}
+
+.zeus-telegram-btn:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+.zeus-telegram-btn svg {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15)) !important;
+}
