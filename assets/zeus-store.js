@@ -1684,7 +1684,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   items: itemsPayload,
-                  currency: 'USD',
+                  currency: 'EGP',
                   title: orderTitle,
                   customer_name: customerName,
                   customer_phone: formattedPhone,
@@ -1698,7 +1698,7 @@
                 if (resData.session_url || resData.payment_url) {
                   paymentUrl = resData.session_url || resData.payment_url;
                   if (pendingAmountEl && resData.amount) {
-                    pendingAmountEl.textContent = `${resData.amount} ${resData.currency || 'USD'}`;
+                    pendingAmountEl.textContent = `${resData.amount} ${resData.currency === 'EGP' ? 'ج.م' : (resData.currency || 'EGP')}`;
                   }
                 }
               } else {

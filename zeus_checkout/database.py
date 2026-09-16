@@ -312,26 +312,40 @@ def apply_webhook(
         # Step 3: Hardened status processing
         if normalized_status == "paid":
             # Mandatory amount and currency check
-            if supplied_amount is None or not supplied_currency or not order.get("expected_usdt"):
+            if supplied_amount is None or not supplied_currency:
                 conn.commit()
                 return "amount_mismatch"
 
+            curr = str(supplied_currency).strip().upper()
+            order_curr = str(order.get("currency") or "USD").strip().upper()
+
+            # Strict currency matching: EGP, USD, or USDT
+            if curr not in {"USD", "USDT", "EGP"}:
+                conn.commit()
+                return "currency_mismatch"
+            if order_curr and curr != order_curr and not (curr in {"USD", "USDT"} and order_curr in {"USD", "USDT"}):
+                conn.commit()
+                return "currency_mismatch"
+
             try:
-                exp = Decimal(str(order["expected_usdt"]))
+                if curr == "EGP":
+                    exp_val = order.get("amount_egp") or order.get("total_amount")
+                else:
+                    exp_val = order.get("expected_usdt") or order.get("total_amount")
+
+                if not exp_val:
+                    conn.commit()
+                    return "amount_mismatch"
+
+                exp = Decimal(str(exp_val))
                 act = Decimal(str(supplied_amount))
-                # Strict amount matching: positive amount and tolerance <= 0.01
-                if act <= 0 or abs(exp - act) > Decimal("0.01"):
+                # Strict amount matching: positive amount and tolerance <= 0.05
+                if act <= 0 or abs(exp - act) > Decimal("0.05"):
                     conn.commit()
                     return "amount_mismatch"
             except Exception:
                 conn.commit()
                 return "amount_mismatch"
-
-            # Strict currency matching: USD or USDT
-            curr = str(supplied_currency).strip().upper()
-            if curr not in {"USD", "USDT"}:
-                conn.commit()
-                return "currency_mismatch"
 
             # Assign available digital key
             delivered_key = order.get("delivered_key")

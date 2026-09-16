@@ -61,7 +61,7 @@ class KashierCreatePayload(BaseModel):
     customer_name: str = "عميل زيوس ستور"
     customer_phone: str | None = None
     customer_email: str | None = None
-    currency: str = "USD"
+    currency: str = "EGP"
     order_id: str | None = None
     title: str | None = None
     callback_url: str | None = None
@@ -330,6 +330,7 @@ def create_app() -> FastAPI:
 
         calculated_total_sar = 0.0
         calculated_total_usd = 0.0
+        calculated_total_egp = 0.0
         calculated_items = []
 
         for item in req.items:
@@ -364,21 +365,31 @@ def create_app() -> FastAPI:
 
             price_sar = float(prod.get("price_sar", 0))
             price_usd = float(prod.get("price_usd", 0)) or round(price_sar / settings.usd_to_sar, 2)
+            price_egp = float(prod.get("price_egp", 0))
+            if price_egp <= 0:
+                if price_usd > 0:
+                    price_egp = round(price_usd * 50.0, 2)
+                elif price_sar > 0:
+                    price_egp = round(price_sar / (settings.egp_to_sar or 0.08), 2)
+
             calculated_total_sar += price_sar * qty
             calculated_total_usd += price_usd * qty
+            calculated_total_egp += price_egp * qty
             calculated_items.append({
                 "id": prod.get("id"),
                 "title": prod.get("title"),
                 "price_sar": price_sar,
                 "price_usd": price_usd,
+                "price_egp": price_egp,
                 "quantity": qty
             })
 
-        if calculated_total_sar <= 0 and calculated_total_usd <= 0:
+        if calculated_total_egp <= 0 and calculated_total_sar <= 0 and calculated_total_usd <= 0:
             raise HTTPException(status_code=400, detail="إجمالي قيمة الطلب غير صالح")
 
-        # Locked currency and amount on server (Condition 4: USD/USDT)
-        currency = "USD"
+        # Locked currency and amount on server - always Egyptian Pounds (EGP) as requested by user
+        currency = "EGP"
+        expected_egp = f"{calculated_total_egp:.2f}"
         expected_usdt = f"{calculated_total_usd:.2f}"
         order_id = req.order_id or f"ZEUS_{int(datetime.now().timestamp())}_{random.randint(100, 999)}"
         callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/order.html?order_id={order_id}&kashier_return=1"
@@ -391,11 +402,11 @@ def create_app() -> FastAPI:
             base_url=base_url,
         )
 
-        # Server-to-Server direct session creation with Kashier official API
+        # Server-to-Server direct session creation with Kashier official API in Egyptian Pounds (EGP)
         try:
             payment = await client.create_payment_session(
                 order_id=order_id,
-                amount=expected_usdt,
+                amount=expected_egp,
                 currency=currency,
                 customer_email=req.customer_email or f"customer_{order_id[:8]}@zeus.store",
                 customer_reference=req.customer_phone or f"cust_{order_id[:8]}",
@@ -403,18 +414,19 @@ def create_app() -> FastAPI:
                 description=req.title or f"طلب متجر زيوس #{order_id[:8].upper()}",
             )
 
-            # Store pending order with locked payment_id and expected_usdt
+            # Store pending order with locked payment_id, currency EGP, and expected amount
             StoreRepository.create_order(
                 order_id=order_id,
                 customer_name=req.customer_name,
                 customer_phone=req.customer_phone or "",
                 customer_email=req.customer_email or "",
                 payment_method="kashier",
-                total_amount=calculated_total_sar,
-                currency="SAR",
+                total_amount=calculated_total_egp,
+                currency="EGP",
                 items=calculated_items,
                 payment_id=payment.session_id,
                 expected_usdt=expected_usdt,
+                amount_egp=calculated_total_egp,
                 notes=f"Kashier session: {payment.session_id}"
             )
 
