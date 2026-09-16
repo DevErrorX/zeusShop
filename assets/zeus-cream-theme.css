@@ -794,3 +794,58 @@ input:user-invalid,
   fill: #FFFFFF !important;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15)) !important;
 }
+
+/* ==========================================================================
+   Customer Testimonials / Reviews Infinite Marquee
+   ========================================================================== */
+.rv-marquee-row {
+  overflow: hidden !important;
+  position: relative !important;
+  width: 100% !important;
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+}
+
+.rv-marquee-track {
+  display: flex !important;
+  width: max-content !important;
+  will-change: transform;
+  animation: rvMarqueeScroll var(--rv-dur, 55s) linear infinite !important;
+}
+
+.rv-marquee-track.rv-marquee-track--reverse,
+.rv-marquee-track--reverse {
+  animation: rvMarqueeScrollReverse var(--rv-dur, 55s) linear infinite !important;
+}
+
+.rv-marquee-row:hover .rv-marquee-track,
+.rv-marquee-track:hover {
+  animation-play-state: paused !important;
+}
+
+.rv-marquee-row figure {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rv-marquee-row figure:hover {
+  border-color: var(--primary, #D97706) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+@keyframes rvMarqueeScroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes rvMarqueeScrollReverse {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
