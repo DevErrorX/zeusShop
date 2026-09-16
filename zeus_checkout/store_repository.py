@@ -1,9 +1,19 @@
 """Store repository for orders, products, digital keys, settings, and analytics."""
 
 import os
+import re
 import json
 import uuid
 from .database import get_db_connection, generate_confirmation_code
+
+def _normalize_product_variants(s: str) -> set[str]:
+    if not s:
+        return set()
+    t = re.sub(r'[أإآ]', 'ا', str(s).lower())
+    t = re.sub(r'ة', 'ه', t)
+    t = re.sub(r'ى', 'ي', t)
+    c = re.sub(r'[\s\-_()]+', '', t)
+    return {c, c.lstrip('ا'), 'ا' + c}
 
 class StoreRepository:
     # ------------------ ORDERS ------------------
@@ -185,8 +195,29 @@ class StoreRepository:
 
     @staticmethod
     def get_product(product_id: str) -> dict | None:
+        if not product_id:
+            return None
+        target = str(product_id).strip()
         with get_db_connection() as conn:
-            row = conn.execute("SELECT * FROM products WHERE id = ? OR slug = ?", (product_id, product_id)).fetchone()
+            # 1. Exact match on id or slug
+            row = conn.execute("SELECT * FROM products WHERE id = ? OR slug = ?", (target, target)).fetchone()
+            if not row:
+                # 2. Exact match on title
+                row = conn.execute("SELECT * FROM products WHERE title = ?", (target,)).fetchone()
+            if not row:
+                # 3. Normalized fuzzy match (spaces, hyphens, parentheses, Arabic alef/taa)
+                target_vars = _normalize_product_variants(target)
+                if target_vars:
+                    all_rows = conn.execute("SELECT * FROM products").fetchall()
+                    for r in all_rows:
+                        cand_vars = (
+                            _normalize_product_variants(r["id"]) |
+                            _normalize_product_variants(r["slug"]) |
+                            _normalize_product_variants(r["title"])
+                        )
+                        if target_vars & cand_vars:
+                            row = r
+                            break
             if row:
                 d = dict(row)
                 d["features"] = json.loads(d["features_json"]) if d.get("features_json") else []

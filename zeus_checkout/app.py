@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import os
+import re
 import random
 import hmac
 import hashlib
@@ -332,14 +333,34 @@ def create_app() -> FastAPI:
         calculated_items = []
 
         for item in req.items:
-            prod_id = str(item.get("id") or item.get("product_id") or item.get("slug") or "").strip()
+            prod_id = str(item.get("id") or item.get("product_id") or item.get("slug") or item.get("title") or "").strip()
+            item_title = str(item.get("title") or "").strip()
             qty = max(1, int(item.get("quantity", item.get("qty", 1))))
             prod = StoreRepository.get_product(prod_id) if prod_id else None
+            if not prod and item_title:
+                prod = StoreRepository.get_product(item_title)
             if not prod:
                 cat_items = get_catalog()
-                prod = next((p for p in cat_items if str(p.get("id")) == prod_id or str(p.get("slug")) == prod_id), None)
+                clean_target = re.sub(r'[\s\-_()]+', '', prod_id.lower()) if prod_id else ''
+                clean_title = re.sub(r'[\s\-_()]+', '', item_title.lower()) if item_title else ''
+                for p in cat_items:
+                    cand_id = str(p.get("id", ""))
+                    cand_slug = str(p.get("slug", ""))
+                    cand_title = str(p.get("title", ""))
+                    if prod_id and (prod_id == cand_id or prod_id == cand_slug or prod_id == cand_title):
+                        prod = p
+                        break
+                    cand_clean_id = re.sub(r'[\s\-_()]+', '', cand_id.lower())
+                    cand_clean_slug = re.sub(r'[\s\-_()]+', '', cand_slug.lower())
+                    cand_clean_title = re.sub(r'[\s\-_()]+', '', cand_title.lower())
+                    if clean_target and (clean_target == cand_clean_id or clean_target == cand_clean_slug or clean_target == cand_clean_title):
+                        prod = p
+                        break
+                    if clean_title and clean_title == cand_clean_title:
+                        prod = p
+                        break
             if not prod:
-                raise HTTPException(status_code=400, detail=f"المنتج غير موجود: {prod_id}")
+                raise HTTPException(status_code=400, detail=f"المنتج غير موجود: {prod_id or item_title}")
 
             price_sar = float(prod.get("price_sar", 0))
             price_usd = float(prod.get("price_usd", 0)) or round(price_sar / settings.usd_to_sar, 2)

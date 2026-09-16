@@ -542,14 +542,37 @@
   // 5. ADD TO CART & BUY NOW HANDLERS
   // ==========================================
   function extractProductInfo(element) {
-    // Traverse parentElement first to avoid matching the clicked button itself (which has class pcv-press)
+    // 1. Direct ID check on element or closest ancestor
+    let prodId = element.getAttribute('data-product-id') || 
+                 element.getAttribute('data-id') || 
+                 element.dataset?.productId ||
+                 element.closest('[data-product-id]')?.getAttribute('data-product-id');
+
+    // 2. Traverse parentElement to get card container for title/price/image extraction
     const card = element.parentElement ? (
-      element.parentElement.closest('.product-card-item, .pcv-flash, [data-product-card], [class*="product-card"], .group, [class*="pcv"]') ||
+      element.closest('.product-card-item') ||
+      element.parentElement.closest('.product-card-item, [data-product-card], .pcv-flash, [class*="product-card"], .group, [class*="pcv"]') ||
       element.parentElement
     ) : element;
 
+    if (!prodId && card) {
+      prodId = card.getAttribute('data-product-id') || 
+               card.dataset?.productId ||
+               card.closest('[data-product-id]')?.getAttribute('data-product-id');
+    }
+
     const titleEl = card ? card.querySelector('h1, h2, h3, h4, [class*="title"], [class*="line-clamp"], [class*="font-semibold"], [class*="font-medium"]') : null;
     const title = titleEl ? titleEl.textContent.trim() : 'منتج رقمي';
+
+    // 3. Match against catalogData in memory if prodId is still missing
+    if ((!prodId || prodId.includes(' ')) && typeof catalogData !== 'undefined' && Array.isArray(catalogData)) {
+      const cleanTitle = title.replace(/[\s\-_()]+/g, '').toLowerCase();
+      const matched = catalogData.find(p => 
+        (p.title && p.title.trim() === title) || 
+        (p.title && p.title.replace(/[\s\-_()]+/g, '').toLowerCase() === cleanTitle)
+      );
+      if (matched) prodId = matched.id;
+    }
 
     // Price extraction: prioritize active selling price (exclude strikethrough/old price)
     const priceEl = card ? (
@@ -578,7 +601,6 @@
     const imgEl = card ? card.querySelector('img:not(.cur-switch__btn img):not(.nv-brand__img)') : null;
     const image = imgEl ? (imgEl.src || imgEl.getAttribute('src')) : './assets/logo-ar.webp';
 
-    const prodId = card ? (card.getAttribute('data-product-id') || card.dataset?.productId) : null;
     return { id: prodId || title.replace(/\s+/g, '-').toLowerCase(), title, price, image, quantity: 1 };
   }
 
@@ -816,7 +838,7 @@
               <p class="text-[11px] text-amber-600 font-extrabold mt-0.5 tabular-nums">${formatAmount(converted, curr)} ${currInfo.symbol}</p>
             </div>
           </div>
-          <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition" data-title="${item.title}" data-price="${priceEgp}" data-img="${item.image}">
+          <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition" data-id="${item.id}" data-title="${item.title}" data-price="${priceEgp}" data-img="${item.image}">
             شراء
           </button>
         </div>
@@ -826,7 +848,7 @@
     resultsContainer.querySelectorAll('.zeus-search-buy-btn').forEach(btn => {
       btn.onclick = function() {
         const product = {
-          id: this.dataset.title.replace(/\s+/g, '-').toLowerCase(),
+          id: this.dataset.id || item.id || this.dataset.title.replace(/\s+/g, '-').toLowerCase(),
           title: this.dataset.title,
           price: parseFloat(this.dataset.price),
           image: this.dataset.img,
@@ -1324,6 +1346,34 @@
     // Initialize country phone picker immediately
     initCountryPicker();
 
+    // Auto-heal legacy or title-based IDs in cart
+    try {
+      fetch(`./catalog.json?_t=${Date.now()}`)
+        .then(r => r.json())
+        .then(catalog => {
+          if (Array.isArray(catalog) && catalog.length > 0) {
+            const currentCart = getCart();
+            let changed = false;
+            currentCart.forEach(item => {
+              const cleanItem = (item.id || item.title || '').replace(/[\s\-_()]+/g, '').toLowerCase();
+              const match = catalog.find(p => 
+                p.id === item.id || 
+                (p.title && p.title.replace(/[\s\-_()]+/g, '').toLowerCase() === cleanItem) ||
+                (p.slug && p.slug.replace(/[\s\-_()]+/g, '').toLowerCase() === cleanItem)
+              );
+              if (match && item.id !== match.id) {
+                item.id = match.id;
+                changed = true;
+              }
+            });
+            if (changed) {
+              saveCart(currentCart);
+            }
+          }
+        })
+        .catch(() => {});
+    } catch(e) {}
+
     const { totalEgp, totalUsdt } = updateCheckoutAmounts();
 
     // Payment Gateway Options Selection
@@ -1582,8 +1632,9 @@
           const cart = getCart();
           const itemsPayload = (cart && cart.length > 0) ? cart.map(it => ({
             id: it.id || 'zeus-cod-60',
+            title: it.title || '',
             quantity: it.quantity || 1
-          })) : [{ id: 'zeus-cod-60', quantity: 1 }];
+          })) : [{ id: 'zeus-cod-60', title: 'اشتراك زيوس', quantity: 1 }];
 
           const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
           const orderTitle = `طلب متجر زيوس #${orderId}`;
@@ -1802,7 +1853,7 @@
 
     return `
     <div class="ls-skip group relative h-full product-card-item" data-product-id="${p.id}" data-category="${p.category_slug || ''}">
-      <div class="ls-skip pcv-flash relative h-full flex flex-col overflow-hidden rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-shadow">
+      <div class="ls-skip pcv-flash relative h-full flex flex-col overflow-hidden rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-shadow" data-product-id="${p.id}">
         <div class="ls-skip shrink-0 block relative">
           <div class="ls-skip relative">
             <div class="ls-skip pcv-media relative aspect-square overflow-hidden bg-secondary/25 cursor-pointer">
@@ -1815,7 +1866,7 @@
               </button>
             </div>
             ${!outOfStock ? `
-            <button type="button" aria-label="أضف للسلة" class="ls-skip pcv-press absolute z-30 end-2.5 bottom-0 translate-y-1/2 inline-flex items-center justify-center rounded-full h-[clamp(30px,16cqw,40px)] w-[clamp(30px,16cqw,40px)] text-primary-foreground ring-[3px] ring-card shadow-[0_6px_16px_-4px_color-mix(in_oklab,var(--primary)_70%,transparent)] bg-primary cursor-pointer hover:scale-110 active:scale-95 transition-transform" title="أضف للسلة">
+            <button type="button" aria-label="أضف للسلة" data-product-id="${p.id}" class="ls-skip pcv-press absolute z-30 end-2.5 bottom-0 translate-y-1/2 inline-flex items-center justify-center rounded-full h-[clamp(30px,16cqw,40px)] w-[clamp(30px,16cqw,40px)] text-primary-foreground ring-[3px] ring-card shadow-[0_6px_16px_-4px_color-mix(in_oklab,var(--primary)_70%,transparent)] bg-primary cursor-pointer hover:scale-110 active:scale-95 transition-transform" title="أضف للسلة">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-shopping-cart w-[clamp(14px,7.5cqw,18px)] h-[clamp(14px,7.5cqw,18px)]"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
             </button>` : ''}
           </div>
@@ -1844,7 +1895,7 @@
           </div>
           <div class="mt-2.5">
             ${!outOfStock ? `
-            <button type="button" class="w-full py-2 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98">
+            <button type="button" data-product-id="${p.id}" class="w-full py-2 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
               <span>شراء الآن</span>
             </button>` : `
