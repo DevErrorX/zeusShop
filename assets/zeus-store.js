@@ -1859,8 +1859,8 @@
     const outOfStock = p.in_stock === false || p.in_stock === 0 || p.in_stock === "0";
 
     return `
-    <div class="ls-skip group relative h-full product-card-item" data-product-id="${p.id}" data-category="${p.category_slug || ''}">
-      <div class="ls-skip pcv-flash relative h-full flex flex-col overflow-hidden rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-shadow" data-product-id="${p.id}">
+    <div dir="rtl" class="ls-skip group relative h-full product-card-item" data-product-id="${p.id}" data-category="${p.category_slug || ''}">
+      <div dir="rtl" class="ls-skip pcv-flash relative h-full flex flex-col overflow-hidden rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-shadow" data-product-id="${p.id}">
         <div class="ls-skip shrink-0 block relative">
           <div class="ls-skip relative">
             <div class="ls-skip pcv-media relative aspect-square overflow-hidden bg-secondary/25 cursor-pointer">
@@ -1923,6 +1923,8 @@
                  document.querySelector('.products-page-optimized .grid') ||
                  document.querySelector('.grid.grid-cols-2.lg\\:grid-cols-4');
     if (!grid) return;
+    grid.setAttribute('dir', 'rtl');
+    grid.style.direction = 'rtl';
 
     const urlParams = new URLSearchParams(window.location.search);
     const catFilter = urlParams.get('category') || '';
@@ -2018,11 +2020,13 @@
 
       const sec = document.createElement('section');
       sec.className = 'ls-skip mb-8 zeus-dynamic-category-section';
+      sec.setAttribute('dir', 'rtl');
+      sec.style.direction = 'rtl';
       sec.setAttribute('data-cat', slug);
       sec.innerHTML = `
-        <div class="container mx-auto px-3 sm:px-4 max-w-7xl">
-          <div class="flex items-center justify-between mb-4 border-b border-border/40 pb-3">
-            <div class="flex items-center gap-2.5">
+        <div dir="rtl" class="container mx-auto px-3 sm:px-4 max-w-7xl" style="direction: rtl;">
+          <div dir="rtl" class="flex items-center justify-between mb-4 border-b border-border/40 pb-3" style="direction: rtl;">
+            <div dir="rtl" class="flex items-center gap-2.5" style="direction: rtl;">
               <span class="w-2.5 h-6 rounded-full bg-primary inline-block"></span>
               <h2 class="text-lg sm:text-xl font-black text-foreground">${cData.name}</h2>
               <span class="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold tabular-nums">${cData.products.length}</span>
@@ -2032,7 +2036,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </a>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+          <div dir="rtl" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4" style="direction: rtl;">
             ${cData.products.map(createProductCardHtml).join('')}
           </div>
         </div>
@@ -2045,6 +2049,8 @@
     const grid = document.querySelector('.grid.grid-cols-2.md\\:grid-cols-3') ||
                  document.querySelector('.grid.grid-cols-2.lg\\:grid-cols-4');
     if (!grid || !categories || categories.length === 0) return;
+    grid.setAttribute('dir', 'rtl');
+    grid.style.direction = 'rtl';
 
     grid.innerHTML = categories.map(c => {
       const pCount = (products || []).filter(p => p.category_slug === c.slug && (p.in_stock !== false && p.in_stock !== 0)).length;

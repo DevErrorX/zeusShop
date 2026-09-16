@@ -272,11 +272,41 @@ button[class*="category"].active,
   box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
 }
 
+/* ==========================================================================
+   GLOBAL STRICT RIGHT-TO-LEFT (RTL) ARCHITECTURE
+   ========================================================================== */
+html,
+body,
+.app-scroller,
+main,
+section,
+.page-transition,
+.w-full,
+.product-card-performance,
+.zeus-dynamic-category-section,
+.products-grid-performance,
+.product-card-item,
+.pcv-flash,
+div[class*="pcv-flash"],
+div[class*="ProductCard"],
+footer {
+  direction: rtl !important;
+  text-align: right;
+}
+
+.grid,
+[class*="grid-cols-"],
+.mobile-bleed-rail {
+  direction: rtl !important;
+}
+
 /* 6. PRODUCT CARDS & CATALOG PLINTHS */
 .pcv-flash,
 .product-card-item,
 div[class*="pcv-flash"],
 div[class*="ProductCard"] {
+  direction: rtl !important;
+  text-align: right !important;
   background: #FFFFFF !important;
   border: 1px solid #E8E0D2 !important;
   border-radius: 20px !important;
