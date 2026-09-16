@@ -189,7 +189,7 @@ def init_db():
                     "mode": settings.kashier_mode,
                     "currency": "EGP",
                     "api_url": settings.kashier_api_url,
-                    "callback_url": "https://deverrorx.github.io/zeusShop/checkout.html?kashier_return=1"
+                    "callback_url": "https://zeus-store.site/checkout.html?kashier_return=1"
                 }, ensure_ascii=False)
             ))
             conn.commit()

@@ -14,7 +14,7 @@ from decimal import Decimal
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from datetime import datetime
@@ -216,7 +216,7 @@ def create_app() -> FastAPI:
         merchant_id = megapay_cfg.get("merchant_id") or settings.megapay_merchant_id or os.getenv("MEGAPAY_MERCHANT_ID", "")
         api_key = megapay_cfg.get("api_key") or settings.megapay_secret or os.getenv("MEGAPAY_SECRET", "")
         api_url = megapay_cfg.get("api_url") or settings.megapay_api_url or "https://api.mega-pay.cc/v1/payments"
-        callback_url = req.callback_url or megapay_cfg.get("callback_url") or "https://deverrorx.github.io/zeusShop/checkout.html?payment=megapay&status=success"
+        callback_url = req.callback_url or megapay_cfg.get("callback_url") or "https://zeus-store.site/checkout.html?payment=megapay&status=success"
 
         # Determine IQD total
         if req.amount_iqd and req.amount_iqd > 0:
@@ -297,7 +297,7 @@ def create_app() -> FastAPI:
                 amount="10.00",
                 currency="EGP",
                 customer_email="test@zeus.store",
-                merchant_redirect="https://deverrorx.github.io/zeusShop/checkout.html",
+                merchant_redirect="https://zeus-store.site/checkout.html",
                 description="Test Credentials Validation",
             )
             return {
@@ -392,7 +392,7 @@ def create_app() -> FastAPI:
         expected_egp = f"{calculated_total_egp:.2f}"
         expected_usdt = f"{calculated_total_usd:.2f}"
         order_id = req.order_id or f"ZEUS_{int(datetime.now().timestamp())}_{random.randint(100, 999)}"
-        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://deverrorx.github.io/zeusShop/order.html?order_id={order_id}&kashier_return=1"
+        callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://zeus-store.site/order.html?order_id={order_id}&kashier_return=1"
 
         client = KashierClient(
             merchant_id=merchant_id,
@@ -787,6 +787,8 @@ def create_app() -> FastAPI:
         return FileResponse(os.path.join(BASE_DIR, name))
 
     @app.get("/")
+    @app.get("/index")
+    @app.get("/index.html")
     def serve_home():
         return page_file("index.html")
 
@@ -824,8 +826,9 @@ def create_app() -> FastAPI:
 
     @app.get("/blog")
     @app.get("/blog.html")
-    def serve_blog():
-        return page_file("blog.html")
+    @app.get("/blog/{slug:path}")
+    def serve_blog(slug: str | None = None):
+        return RedirectResponse("/", status_code=301)
 
     @app.get("/checkout")
     @app.get("/checkout.html")
