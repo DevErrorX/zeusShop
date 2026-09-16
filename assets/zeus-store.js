@@ -126,7 +126,7 @@
   // 1.1 STORE SETTINGS SYNC (WHATSAPP, ETC.)
   // ==========================================
   let activeStoreSettings = {
-    whatsapp: '+4447723274122',
+    whatsapp: '',
     telegram: 'https://t.me/+5lDejdeKjEJjNTg0'
   };
 
@@ -1777,7 +1777,7 @@
       const text = btn.textContent.trim();
       if (text.includes('واتساب')) {
         btn.onclick = () => {
-          const cleanDigits = (activeStoreSettings.whatsapp || '+4447723274122').replace(/[^0-9]/g, '');
+          const cleanDigits = (activeStoreSettings.whatsapp || '').replace(/[^0-9]/g, '');
           window.open(`https://wa.me/${cleanDigits}?text=مرحبا+زيوس+ستور+أرغب+في+تأكيد+الطلب`, '_blank');
         };
       } else if (text.includes('تيليجرام')) {

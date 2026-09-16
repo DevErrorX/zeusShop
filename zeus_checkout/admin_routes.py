@@ -261,7 +261,7 @@ def remove_category(category_id: str, admin_user: str = Depends(require_admin)):
 def get_settings(admin_user: str = Depends(require_admin)):
     settings = StoreRepository.get_settings()
     defaults = {
-        "whatsapp": "+4447723274122",
+        "whatsapp": "",
         "telegram": "https://t.me/+5lDejdeKjEJjNTg0",
         "store_name_ar": "زيوس ستور",
         "store_name_en": "ZEUS STORE",

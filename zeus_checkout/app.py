@@ -900,7 +900,7 @@ def create_app() -> FastAPI:
                 pass
 
         return {
-            "whatsapp": settings.get("whatsapp", "+4447723274122"),
+            "whatsapp": settings.get("whatsapp", ""),
             "telegram": settings.get("telegram", "https://t.me/+5lDejdeKjEJjNTg0"),
             "store_name_ar": settings.get("store_name_ar", "زيوس ستور"),
             "store_name_en": settings.get("store_name_en", "ZEUS STORE"),
