@@ -1477,16 +1477,20 @@
                         </div>
                     </div>
 
-                    <!-- PRICING SECTION WITH FIXED USDT + AUTO CONVERSIONS -->
+                    <!-- PRICING SECTION WITH FIXED SAR BASE + AUTO CONVERSIONS -->
                     <div class="form-group" style="grid-column: 1 / -1; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 16px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <label style="color: #fbbf24; font-weight: 800; font-size: 14px; margin: 0;">
-                                <i class="fa-solid fa-coins"></i> تسعير المنتج (السعر بالـ USDT مع احتساب فوري تلقائي)
+                                <i class="fa-solid fa-coins"></i> تسعير المنتج (السعر الأساسي بالريال السعودي مع احتساب فوري تلقائي)
                             </label>
-                            <span style="font-size: 11px; color: var(--text-muted);">يتم تحديث العملات تلقائياً عند إدخال السعر بـ USDT</span>
+                            <span style="font-size: 11px; color: var(--text-muted);">يتم تحديث باقي العملات تلقائياً عند إدخال السعر بالريال السعودي (ر.س) أو USDT</span>
                         </div>
 
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 700; color: #10b981;">بالريال السعودي (ر.س) [الأساسي] *</label>
+                                <input type="number" step="any" id="prod-price-sar" class="form-control font-en" required style="border-color: #10b981; font-weight: 700; font-size: 15px; color: #10b981;" oninput="handleSarPriceChange(this.value)">
+                            </div>
                             <div>
                                 <label style="font-size: 12px; font-weight: 700; color: #fbbf24;">السعر بـ USDT ($) *</label>
                                 <input type="number" step="any" id="prod-price-usdt" class="form-control font-en" required style="border-color: rgba(245, 158, 11, 0.5); font-weight: 700; font-size: 15px; color: #fbbf24;" oninput="handleUsdtPriceChange(this.value)">
@@ -1494,10 +1498,6 @@
                             <div>
                                 <label style="font-size: 12px;">بالدينار العراقي (د.ع) *</label>
                                 <input type="number" step="any" id="prod-price-iqd" class="form-control font-en" required>
-                            </div>
-                            <div>
-                                <label style="font-size: 12px;">بالريال السعودي (ر.س) *</label>
-                                <input type="number" step="any" id="prod-price-sar" class="form-control font-en" required>
                             </div>
                             <div>
                                 <label style="font-size: 12px;">بالجنيه المصري (ج.م) *</label>
@@ -2247,6 +2247,20 @@ ${key}
             if (egpInput) egpInput.value = Math.round(usdt * 51.34);
             if (iqdInput) iqdInput.value = Math.round(usdt * 1310);
             if (usdInput) usdInput.value = usdt.toFixed(2);
+        };
+
+        window.handleSarPriceChange = function(sarVal) {
+            const sar = parseFloat(sarVal) || 0;
+            const usdt = sar / 3.75;
+            const usdtInput = document.getElementById('prod-price-usdt');
+            const egpInput = document.getElementById('prod-price-egp');
+            const iqdInput = document.getElementById('prod-price-iqd');
+            const usdInput = document.getElementById('prod-price-usd');
+
+            if (usdtInput) usdtInput.value = usdt.toFixed(2);
+            if (usdInput) usdInput.value = usdt.toFixed(2);
+            if (egpInput) egpInput.value = Math.round(sar * (51.34 / 3.75));
+            if (iqdInput) iqdInput.value = Math.round(sar * (1310 / 3.75));
         };
 
         // Image Drag & Drop and Upload

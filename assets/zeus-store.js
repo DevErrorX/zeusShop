@@ -8,40 +8,34 @@
   'use strict';
 
   // ==========================================
-  // 1. HIGH-PRECISION EXCHANGE RATES & ENGINE
+  // 1. HIGH-PRECISION EXCHANGE RATES & ENGINE (BASE: SAR)
   // ==========================================
   const CURRENCIES = {
-    EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 1.0, flag: '🇪🇬', decimals: 0, egpPerUnit: 1.0 },
-    SAR: { symbol: 'ر.س', name: 'ريال سعودي', rate: 0.073039, flag: '🇸🇦', decimals: 2, egpPerUnit: 13.691 },
-    USD: { symbol: '$', name: 'دولار أمريكي', rate: 0.019477, flag: '🇺🇸', decimals: 2, egpPerUnit: 51.342 },
-    AED: { symbol: 'د.إ', name: 'درهم إماراتي', rate: 0.071530, flag: '🇦🇪', decimals: 2, egpPerUnit: 13.980 },
-    KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.006003, flag: '🇰🇼', decimals: 3, egpPerUnit: 166.595 },
-    USDT: { symbol: 'USDT', name: 'تيزر رقمي', rate: 0.019477, flag: '💎', decimals: 2, egpPerUnit: 51.342 }
+    SAR: { symbol: 'ر.س', name: 'ريال سعودي', rate: 1.0, flag: '🇸🇦', flagImg: 'https://flagcdn.com/w40/sa.png', decimals: 0 },
+    USD: { symbol: '$', name: 'دولار أمريكي', rate: 1.0 / 3.75, flag: '🇺🇸', flagImg: 'https://flagcdn.com/w40/us.png', decimals: 2 },
+    USDT: { symbol: 'USDT', name: 'تيثر رقمي', rate: 1.0 / 3.75, flag: '💎', flagImg: 'https://flagcdn.com/w40/us.png', decimals: 2 },
+    EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 51.34 / 3.75, flag: '🇪🇬', flagImg: 'https://flagcdn.com/w40/eg.png', decimals: 0 },
+    AED: { symbol: 'د.إ', name: 'درهم إماراتي', rate: 3.6725 / 3.75, flag: '🇦🇪', flagImg: 'https://flagcdn.com/w40/ae.png', decimals: 2 },
+    KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.308184 / 3.75, flag: '🇰🇼', flagImg: 'https://flagcdn.com/w40/kw.png', decimals: 3 }
   };
 
-  const FX_CACHE_KEY = 'zeus_fx_rates_cache';
+  const FX_CACHE_KEY = 'zeus_fx_rates_cache_v2';
   const FX_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
   function updateRatesFromFx(usdToEgp, usdToSar, usdToAed, usdToKwd) {
-    if (!usdToEgp || usdToEgp <= 0) return;
+    const sarPeg = (usdToSar && usdToSar > 0) ? usdToSar : 3.75;
+    CURRENCIES.SAR.rate = 1.0;
+    CURRENCIES.USD.rate = 1.0 / sarPeg;
+    CURRENCIES.USDT.rate = 1.0 / sarPeg;
 
-    CURRENCIES.USD.rate = 1.0 / usdToEgp;
-    CURRENCIES.USD.egpPerUnit = usdToEgp;
-
-    CURRENCIES.USDT.rate = 1.0 / usdToEgp;
-    CURRENCIES.USDT.egpPerUnit = usdToEgp;
-
-    if (usdToSar) {
-      CURRENCIES.SAR.rate = usdToSar / usdToEgp;
-      CURRENCIES.SAR.egpPerUnit = usdToEgp / usdToSar;
+    if (usdToEgp) {
+      CURRENCIES.EGP.rate = usdToEgp / sarPeg;
     }
     if (usdToAed) {
-      CURRENCIES.AED.rate = usdToAed / usdToEgp;
-      CURRENCIES.AED.egpPerUnit = usdToEgp / usdToAed;
+      CURRENCIES.AED.rate = usdToAed / sarPeg;
     }
     if (usdToKwd) {
-      CURRENCIES.KWD.rate = usdToKwd / usdToEgp;
-      CURRENCIES.KWD.egpPerUnit = usdToEgp / usdToKwd;
+      CURRENCIES.KWD.rate = usdToKwd / sarPeg;
     }
   }
 
@@ -93,10 +87,10 @@
   }
 
   function formatAmount(num, curr) {
-    const info = CURRENCIES[curr] || CURRENCIES.EGP;
+    const info = CURRENCIES[curr] || CURRENCIES.SAR;
     const decimals = typeof info.decimals === 'number' ? info.decimals : 2;
 
-    if (curr === 'EGP') {
+    if (curr === 'SAR' || curr === 'EGP') {
       if (Math.abs(num - Math.round(num)) < 0.01) {
         return Math.round(num).toLocaleString('en-US');
       }
@@ -109,7 +103,7 @@
   }
 
   function formatPriceHtml(amount, curr) {
-    const info = CURRENCIES[curr] || CURRENCIES.EGP;
+    const info = CURRENCIES[curr] || CURRENCIES.SAR;
     const formatted = formatAmount(amount, curr);
     return `<span class="tabular-nums font-mono">${formatted}</span> <span class="currency-arabic text-xs font-semibold">${info.symbol}</span>`;
   }
@@ -155,27 +149,13 @@
     }
     if (settings.custom_rates && typeof settings.custom_rates === 'object') {
       const r = settings.custom_rates;
-      const egp = parseFloat(r.EGP || 51.34);
-      if (r.USD && egp > 0) {
-        CURRENCIES.USD.rate = 1.0 / egp;
-        CURRENCIES.USD.egpPerUnit = egp;
-      }
-      if (r.USDT && egp > 0) {
-        CURRENCIES.USDT.rate = 1.0 / egp;
-        CURRENCIES.USDT.egpPerUnit = egp;
-      }
-      if (r.SAR && egp > 0) {
-        CURRENCIES.SAR.rate = parseFloat(r.SAR) / egp;
-        CURRENCIES.SAR.egpPerUnit = egp / parseFloat(r.SAR);
-      }
-      if (r.AED && egp > 0) {
-        CURRENCIES.AED.rate = parseFloat(r.AED) / egp;
-        CURRENCIES.AED.egpPerUnit = egp / parseFloat(r.AED);
-      }
-      if (r.KWD && egp > 0) {
-        CURRENCIES.KWD.rate = parseFloat(r.KWD) / egp;
-        CURRENCIES.KWD.egpPerUnit = egp / parseFloat(r.KWD);
-      }
+      const sarPeg = parseFloat(r.SAR || 3.75);
+      CURRENCIES.SAR.rate = 1.0;
+      if (r.USD) CURRENCIES.USD.rate = parseFloat(r.USD) / sarPeg;
+      if (r.USDT) CURRENCIES.USDT.rate = (parseFloat(r.USDT) || 1.0) / sarPeg;
+      if (r.EGP) CURRENCIES.EGP.rate = parseFloat(r.EGP) / sarPeg;
+      if (r.AED) CURRENCIES.AED.rate = parseFloat(r.AED) / sarPeg;
+      if (r.KWD) CURRENCIES.KWD.rate = parseFloat(r.KWD) / sarPeg;
     }
   }
 
@@ -237,7 +217,13 @@
   }
 
   function getCurrency() {
-    return _storage.getItem('zeus_currency') || 'EGP';
+    // Migration: ensure SAR is the default currency
+    if (!_storage.getItem('zeus_currency_sar_v1')) {
+      _storage.setItem('zeus_currency', 'SAR');
+      _storage.setItem('zeus_currency_sar_v1', '1');
+      return 'SAR';
+    }
+    return _storage.getItem('zeus_currency') || 'SAR';
   }
 
   function setCurrency(curr) {
@@ -582,17 +568,22 @@
       card.querySelector('[class*="product-price"]')
     ) : null;
 
-    let price = 1000; // default fallback
+    let price = 100; // default fallback in SAR
     if (priceEl) {
-      const baseEgpAttr = priceEl.getAttribute('data-egp-price') || (priceEl.querySelector('.price-display') ? priceEl.querySelector('.price-display').getAttribute('data-egp-price') : null);
-      if (baseEgpAttr) {
-        price = parseFloat(baseEgpAttr);
+      const baseSarAttr = priceEl.getAttribute('data-sar-price') || (priceEl.querySelector('.price-display') ? priceEl.querySelector('.price-display').getAttribute('data-sar-price') : null);
+      if (baseSarAttr) {
+        price = parseFloat(baseSarAttr);
       } else {
-        const numMatch = priceEl.textContent.replace(/,/g, '').match(/\d+(?:\.\d+)?/);
-        if (numMatch) {
-          const curr = getCurrency();
-          const currRate = (CURRENCIES[curr] && CURRENCIES[curr].rate) ? CURRENCIES[curr].rate : 1.0;
-          price = parseFloat(numMatch[0]) / currRate;
+        const baseEgpAttr = priceEl.getAttribute('data-egp-price') || (priceEl.querySelector('.price-display') ? priceEl.querySelector('.price-display').getAttribute('data-egp-price') : null);
+        if (baseEgpAttr) {
+          price = parseFloat(baseEgpAttr) / (CURRENCIES.EGP.rate || (51.34 / 3.75));
+        } else {
+          const numMatch = priceEl.textContent.replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+          if (numMatch) {
+            const curr = getCurrency();
+            const currRate = (CURRENCIES[curr] && CURRENCIES[curr].rate) ? CURRENCIES[curr].rate : 1.0;
+            price = parseFloat(numMatch[0]) / currRate;
+          }
         }
       }
     }
@@ -601,7 +592,7 @@
     const imgEl = card ? card.querySelector('img:not(.cur-switch__btn img):not(.nv-brand__img)') : null;
     const image = imgEl ? (imgEl.src || imgEl.getAttribute('src')) : './assets/logo-ar.webp';
 
-    return { id: prodId || title.replace(/\s+/g, '-').toLowerCase(), title, price, image, quantity: 1 };
+    return { id: prodId || title.replace(/\s+/g, '-').toLowerCase(), title, price, price_sar: price, image, quantity: 1 };
   }
 
   function handleAddToCart(e, btn) {
@@ -661,9 +652,9 @@
 
     const current = getCurrency();
     const itemsHtml = Object.entries(CURRENCIES).map(([code, info]) => {
-      const isBase = code === 'EGP';
+      const isBase = code === 'SAR';
       const isSelected = code === current;
-      const rateHint = isBase ? 'العملة الأساسية' : `1 ${info.symbol} ≈ ${info.egpPerUnit.toFixed(2)} ج.م`;
+      const rateHint = isBase ? 'العملة الأساسية (ثابت)' : (code === 'USD' || code === 'USDT' ? '1 $ ≈ 3.75 ر.س' : (code === 'EGP' ? `1 ر.س ≈ ${(info.rate || 13.69).toFixed(1)} ج.م` : `1 ر.س ≈ ${(info.rate).toFixed(code === 'KWD' ? 3 : 2)} ${info.symbol}`));
       return `
         <button type="button" class="cur-switch__item ${isSelected ? 'is-active' : ''} zeus-curr-opt" data-curr="${code}">
           <span class="text-base shrink-0 leading-none">${info.flag}</span>
@@ -711,27 +702,40 @@
   }
 
   function applyCurrency(curr) {
-    const info = CURRENCIES[curr] || CURRENCIES.EGP;
-    // Update button labels
+    const info = CURRENCIES[curr] || CURRENCIES.SAR;
+    // Update button labels and flags
     document.querySelectorAll('.cur-switch__btn, .cur-switch__code').forEach(el => {
-      if (el.classList.contains('cur-switch__code') || el.classList.contains('cur-switch__btn')) {
+      if (el.classList.contains('cur-switch__code')) {
         el.textContent = curr;
+      }
+      if (el.classList.contains('cur-switch__btn')) {
+        const codeEl = el.querySelector('.cur-switch__code');
+        if (codeEl) codeEl.textContent = curr;
+        const imgEl = el.querySelector('img');
+        if (imgEl && info.flagImg) imgEl.src = info.flagImg;
       }
     });
 
-    // Recalculate prices in DOM
+    // Recalculate prices in DOM from fixed SAR base price
     document.querySelectorAll('.price-display').forEach(p => {
-      let baseEgp = p.getAttribute('data-egp-price');
-      if (!baseEgp) {
-        const cleaned = p.textContent.replace(/,/g, '');
-        const match = cleaned.match(/\d+(?:\.\d+)?/);
-        if (match) {
-          baseEgp = match[0];
-          p.setAttribute('data-egp-price', baseEgp);
+      let baseSar = p.getAttribute('data-sar-price');
+      if (!baseSar) {
+        const baseEgp = p.getAttribute('data-egp-price');
+        if (baseEgp) {
+          const egpPerSar = (CURRENCIES.EGP && CURRENCIES.EGP.rate) ? CURRENCIES.EGP.rate : (51.34 / 3.75);
+          baseSar = (parseFloat(baseEgp) / egpPerSar).toFixed(2);
+          p.setAttribute('data-sar-price', baseSar);
+        } else {
+          const cleaned = p.textContent.replace(/,/g, '');
+          const match = cleaned.match(/\d+(?:\.\d+)?/);
+          if (match) {
+            baseSar = match[0];
+            p.setAttribute('data-sar-price', baseSar);
+          }
         }
       }
-      if (baseEgp) {
-        const val = parseFloat(baseEgp);
+      if (baseSar) {
+        const val = parseFloat(baseSar);
         const converted = val * info.rate;
         p.innerHTML = formatPriceHtml(converted, curr);
       }
@@ -823,11 +827,11 @@
     }
 
     const curr = getCurrency();
-    const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
+    const currInfo = CURRENCIES[curr] || CURRENCIES.SAR;
 
     resultsContainer.innerHTML = matches.map(item => {
-      const priceEgp = item.price_egp || (item.price_sar ? item.price_sar * (CURRENCIES.SAR.egpPerUnit || 13.69) : 1000);
-      const converted = priceEgp * currInfo.rate;
+      const priceSar = item.price_sar || (item.price_egp ? item.price_egp / (CURRENCIES.EGP.rate || (51.34 / 3.75)) : 100);
+      const converted = priceSar * currInfo.rate;
 
       return `
         <div class="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 flex items-center justify-between gap-3 transition">
@@ -838,7 +842,7 @@
               <p class="text-[11px] text-amber-600 font-extrabold mt-0.5 tabular-nums">${formatAmount(converted, curr)} ${currInfo.symbol}</p>
             </div>
           </div>
-          <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition" data-id="${item.id}" data-title="${item.title}" data-price="${priceEgp}" data-img="${item.image}">
+          <button class="zeus-search-buy-btn shrink-0 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition" data-id="${item.id}" data-title="${item.title}" data-price="${priceSar}" data-img="${item.image}">
             شراء
           </button>
         </div>
@@ -848,9 +852,10 @@
     resultsContainer.querySelectorAll('.zeus-search-buy-btn').forEach(btn => {
       btn.onclick = function() {
         const product = {
-          id: this.dataset.id || item.id || this.dataset.title.replace(/\s+/g, '-').toLowerCase(),
+          id: this.dataset.id || this.dataset.title.replace(/\s+/g, '-').toLowerCase(),
           title: this.dataset.title,
           price: parseFloat(this.dataset.price),
+          price_sar: parseFloat(this.dataset.price),
           image: this.dataset.img,
           quantity: 1
         };
@@ -966,19 +971,21 @@
 
   function updateCheckoutAmounts() {
     const cart = getCart();
-    let totalEgp = 3664; // default fallback if cart is empty
+    let totalSar = 140; // default fallback if cart is empty
     if (cart.length > 0) {
-      totalEgp = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1), 0);
+      totalSar = cart.reduce((sum, item) => sum + (parseFloat(item.price_sar || item.price) || 0) * (item.quantity || 1), 0);
     }
 
     const curr = getCurrency();
-    const currInfo = CURRENCIES[curr] || CURRENCIES.EGP;
+    const currInfo = CURRENCIES[curr] || CURRENCIES.SAR;
 
-    const usdtInfo = CURRENCIES.USDT || { rate: 1.0 / 51.342, egpPerUnit: 51.342 };
-    const egpPerUsdt = usdtInfo.egpPerUnit || (1.0 / usdtInfo.rate);
-    const totalUsdt = (totalEgp * usdtInfo.rate).toFixed(2);
+    const egpRate = (CURRENCIES.EGP && CURRENCIES.EGP.rate) ? CURRENCIES.EGP.rate : (51.34 / 3.75);
+    const totalEgp = Math.round(totalSar * egpRate);
 
-    // Update amounts in Kashier panel & buttons (100% SAME AS RAES)
+    const usdRate = (CURRENCIES.USDT && CURRENCIES.USDT.rate) ? CURRENCIES.USDT.rate : (1.0 / 3.75);
+    const totalUsdt = (totalSar * usdRate).toFixed(2);
+
+    // Update amounts in Kashier panel & buttons
     const kashierEgpEl = document.getElementById('zeus-kashier-egp-amount');
     if (kashierEgpEl) kashierEgpEl.textContent = `${totalEgp.toLocaleString('en-US')} ج.م`;
     const kashierAmountHint = document.getElementById('zeus-kashier-amount-hint');
@@ -994,10 +1001,10 @@
     const checkoutItemsContainer = document.querySelector('.co-sec-items');
     if (checkoutItemsContainer && cart.length > 0) {
       checkoutItemsContainer.innerHTML = cart.map(item => {
-        const itemPriceVal = parseFloat(item.price) || 0;
+        const itemPriceVal = parseFloat(item.price_sar || item.price) || 0;
         const itemQty = item.quantity || 1;
-        const itemTotalEgp = itemPriceVal * itemQty;
-        const converted = itemTotalEgp * currInfo.rate;
+        const itemTotalSar = itemPriceVal * itemQty;
+        const converted = itemTotalSar * currInfo.rate;
 
         return `
           <div class="ls-skip relative group pt-1">
@@ -1011,7 +1018,7 @@
                   <div class="ls-skip flex items-center justify-between gap-1.5 xs:gap-2">
                     <div class="ls-skip flex items-center gap-1.5">
                       <span class="ls-skip text-foreground font-bold text-xs xs:text-sm sm:text-base product-price" style="color: var(--primary);">
-                        <span class="ls-skip price-display" data-egp-price="${itemTotalEgp}">${formatPriceHtml(converted, curr)}</span>
+                        <span class="ls-skip price-display" data-sar-price="${itemTotalSar}">${formatPriceHtml(converted, curr)}</span>
                       </span>
                     </div>
                     <span class="text-xs text-muted-foreground font-mono">الكمية: ${itemQty}</span>
@@ -1024,30 +1031,30 @@
       }).join('');
     }
 
-    // Update checkout totals elements with mathematically accurate values
-    const originalEgp = Math.round(totalEgp / 0.9); // 10% promo discount
-    const discountEgp = originalEgp - totalEgp;
-    const subtotalEgp = totalEgp;
+    // Update checkout totals elements with mathematically accurate values from SAR base
+    const originalSar = Math.round(totalSar / 0.9);
+    const discountSar = originalSar - totalSar;
+    const subtotalSar = totalSar;
 
     const origEl = document.getElementById('zeus-co-original');
     if (origEl) {
-      origEl.setAttribute('data-egp-price', originalEgp);
-      origEl.innerHTML = formatPriceHtml(originalEgp * currInfo.rate, curr);
+      origEl.setAttribute('data-sar-price', originalSar);
+      origEl.innerHTML = formatPriceHtml(originalSar * currInfo.rate, curr);
     }
     const discEl = document.getElementById('zeus-co-discount');
     if (discEl) {
-      discEl.setAttribute('data-egp-price', discountEgp);
-      discEl.innerHTML = formatPriceHtml(discountEgp * currInfo.rate, curr);
+      discEl.setAttribute('data-sar-price', discountSar);
+      discEl.innerHTML = formatPriceHtml(discountSar * currInfo.rate, curr);
     }
     const subEl = document.getElementById('zeus-co-subtotal');
     if (subEl) {
-      subEl.setAttribute('data-egp-price', subtotalEgp);
-      subEl.innerHTML = formatPriceHtml(subtotalEgp * currInfo.rate, curr);
+      subEl.setAttribute('data-sar-price', subtotalSar);
+      subEl.innerHTML = formatPriceHtml(subtotalSar * currInfo.rate, curr);
     }
     const totEl = document.getElementById('zeus-co-total');
     if (totEl) {
-      totEl.setAttribute('data-egp-price', totalEgp);
-      totEl.innerHTML = formatPriceHtml(totalEgp * currInfo.rate, curr);
+      totEl.setAttribute('data-sar-price', totalSar);
+      totEl.innerHTML = formatPriceHtml(totalSar * currInfo.rate, curr);
     }
 
     // Fallback if elements do not have explicit IDs
@@ -1055,21 +1062,21 @@
     if (totalsContainer && (!origEl || !discEl || !subEl || !totEl)) {
       const priceDisplays = totalsContainer.querySelectorAll('.price-display');
       if (priceDisplays.length >= 4) {
-        priceDisplays[0].setAttribute('data-egp-price', originalEgp);
-        priceDisplays[0].innerHTML = formatPriceHtml(originalEgp * currInfo.rate, curr);
+        priceDisplays[0].setAttribute('data-sar-price', originalSar);
+        priceDisplays[0].innerHTML = formatPriceHtml(originalSar * currInfo.rate, curr);
 
-        priceDisplays[1].setAttribute('data-egp-price', discountEgp);
-        priceDisplays[1].innerHTML = formatPriceHtml(discountEgp * currInfo.rate, curr);
+        priceDisplays[1].setAttribute('data-sar-price', discountSar);
+        priceDisplays[1].innerHTML = formatPriceHtml(discountSar * currInfo.rate, curr);
 
-        priceDisplays[2].setAttribute('data-egp-price', subtotalEgp);
-        priceDisplays[2].innerHTML = formatPriceHtml(subtotalEgp * currInfo.rate, curr);
+        priceDisplays[2].setAttribute('data-sar-price', subtotalSar);
+        priceDisplays[2].innerHTML = formatPriceHtml(subtotalSar * currInfo.rate, curr);
 
-        priceDisplays[3].setAttribute('data-egp-price', totalEgp);
-        priceDisplays[3].innerHTML = formatPriceHtml(totalEgp * currInfo.rate, curr);
+        priceDisplays[3].setAttribute('data-sar-price', totalSar);
+        priceDisplays[3].innerHTML = formatPriceHtml(totalSar * currInfo.rate, curr);
       }
     }
 
-    return { totalEgp, totalUsdt };
+    return { totalSar, totalEgp, totalUsdt };
   }
 
   function initCheckoutPage() {
@@ -1848,8 +1855,8 @@
   // 11.5 STOREFRONT DYNAMIC PRODUCT RENDERING
   // ==========================================
   function createProductCardHtml(p) {
-    const priceEgp = (p.price_egp && p.price_egp > 0) ? p.price_egp : ((p.price_usdt || p.price_usd || 10) * (CURRENCIES.USD.egpPerUnit || 50));
-    const originalEgp = (p.original_price_sar && p.original_price_sar > p.price_sar) ? ((p.original_price_sar / 3.75) * (CURRENCIES.USD.egpPerUnit || 50)) : 0;
+    const priceSar = (p.price_sar && p.price_sar > 0) ? p.price_sar : ((p.price_usdt || p.price_usd || 10) * 3.75);
+    const originalSar = (p.original_price_sar && p.original_price_sar > p.price_sar) ? p.original_price_sar : 0;
     const badgeHtml = p.badge ? `
       <div class="ls-skip absolute top-2 start-2 z-20 flex flex-col items-start gap-1">
         <span class="ls-skip -rotate-2 inline-flex items-center rounded-md bg-red-600 px-2 py-[3px] text-[12px] font-extrabold leading-[1.3] text-white shadow-[0_3px_10px_-2px_rgba(220,38,38,0.55)]">${p.badge}</span>
@@ -1892,11 +1899,11 @@
           <div class="ls-skip mt-auto pt-2">
             <div class="ls-skip flex items-baseline gap-1.5 flex-wrap">
               <span class="ls-skip text-[clamp(16px,8.5cqw,20px)] font-extrabold text-primary product-price tabular-nums leading-[1.3]">
-                <span class="ls-skip price-display" data-egp-price="${priceEgp}"></span>
+                <span class="ls-skip price-display" data-sar-price="${priceSar}"></span>
               </span>
-              ${originalEgp > priceEgp ? `
+              ${originalSar > priceSar ? `
               <span class="ls-skip text-[11px] text-muted-foreground line-through product-price">
-                <span class="ls-skip price-display" data-egp-price="${originalEgp}"></span>
+                <span class="ls-skip price-display" data-sar-price="${originalSar}"></span>
               </span>` : ''}
             </div>
           </div>
