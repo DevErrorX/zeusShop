@@ -336,13 +336,24 @@ def create_app() -> FastAPI:
         calculated_total_egp = 0.0
         calculated_items = []
 
+        LEGACY_PRODUCT_FALLBACKS = {
+            "zeus-cod-60": "zeus-mu39a7sk",
+        }
+
         for item in req.items:
             prod_id = str(item.get("id") or item.get("product_id") or item.get("slug") or item.get("title") or "").strip()
             item_title = str(item.get("title") or "").strip()
             qty = max(1, int(item.get("quantity", item.get("qty", 1))))
-            prod = StoreRepository.get_product(prod_id) if prod_id else None
+
+            prod = None
+            if prod_id in LEGACY_PRODUCT_FALLBACKS:
+                prod_id = LEGACY_PRODUCT_FALLBACKS[prod_id]
+
+            if prod_id:
+                prod = StoreRepository.get_product(prod_id)
             if not prod and item_title:
                 prod = StoreRepository.get_product(item_title)
+
             if not prod:
                 cat_items = get_catalog()
                 clean_target = re.sub(r'[\s\-_()]+', '', prod_id.lower()) if prod_id else ''
@@ -363,8 +374,23 @@ def create_app() -> FastAPI:
                     if clean_title and clean_title == cand_clean_title:
                         prod = p
                         break
+
+                # Fuzzy keyword matching as safety net for cached older carts
+                if not prod and (clean_title or clean_target):
+                    search_str = f"{clean_title} {clean_target}"
+                    for p in cat_items:
+                        p_search = re.sub(r'[\s\-_()]+', '', f"{p.get('id', '')} {p.get('title', '')} {p.get('slug', '')}".lower())
+                        if ("30" in search_str and "30" in p_search) or ("7" in search_str and "7" in p_search):
+                            if ("ايفون" in search_str or "ios" in search_str or "ايباد" in search_str) and ("ايفون" in p_search or "ios" in p_search):
+                                prod = p
+                                break
+                            if ("اندرويد" in search_str or "android" in search_str) and ("اندرويد" in p_search or "android" in p_search):
+                                prod = p
+                                break
+
             if not prod:
-                raise HTTPException(status_code=400, detail=f"المنتج غير موجود: {prod_id or item_title}")
+                logger.warning("api_create_kashier_payment: product not found in catalog or DB: prod_id=%r, item_title=%r, raw=%r", prod_id, item_title, item)
+                raise HTTPException(status_code=400, detail=f"المنتج المطلوب غير موجود أو تم تحديثه: {prod_id or item_title}")
 
             price_sar = float(prod.get("price_sar", 0))
             price_usd = float(prod.get("price_usd", 0)) or round(price_sar / settings.usd_to_sar, 2)
@@ -857,7 +883,7 @@ def create_app() -> FastAPI:
     @app.get("/version.json")
     def get_version():
         version_file = os.path.join(BASE_DIR, "version.json")
-        data = {"version": "20260917-v3", "build_time": "2026-09-17T11:30:00Z"}
+        data = {"version": "20260918-v1", "build_time": "2026-09-18T02:30:00Z"}
         if os.path.exists(version_file):
             try:
                 with open(version_file, "r", encoding="utf-8") as f:

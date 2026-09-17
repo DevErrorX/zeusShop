@@ -1653,110 +1653,121 @@
       // Kashier Flow (Condition 1: Server-Authoritative Price Calculation & Direct S2S Session)
       if (selectedPaymentMethod === 'kashier' || selectedPaymentMethod === 'megapay') {
         const cart = getCart();
-        const itemsPayload = (cart && cart.length > 0) ? cart.map(it => ({
-          id: it.id || 'zeus-cod-60',
+        if (!cart || !Array.isArray(cart) || cart.length === 0) {
+          showToast('سلة المشتريات فارغة، يرجى اختيار المنتج المطلوب أولاً من المتجر ⚠️', 'error');
+          return;
+        }
+
+        const itemsPayload = cart.map(it => ({
+          id: it.id || it.slug || '',
           title: it.title || '',
-          quantity: it.quantity || 1
-        })) : [{ id: 'zeus-cod-60', title: 'اشتراك زيوس', quantity: 1 }];
+          quantity: Math.max(1, parseInt(it.quantity || 1, 10))
+        }));
 
         const orderId = 'ZEUS-' + Math.floor(100000 + Math.random() * 900000);
         const orderTitle = `طلب متجر زيوس #${orderId}`;
         const finalCustomerName = (customerName || email.split('@')[0] || 'عميل زيوس').trim();
 
-          // Open blank payment tab early to prevent browser popup block
-          let paymentWindow = null;
-          try {
-            paymentWindow = window.open('about:blank', 'zeusKashier');
-            if (paymentWindow) {
-              paymentWindow.opener = null;
-              paymentWindow.document.title = 'Kashier — زيوس ستور';
-              paymentWindow.document.body.innerHTML = `
-                <div style="font-family:system-ui,sans-serif; text-align:center; padding:60px 20px; direction:rtl; background:#090d16; color:#f8fafc; min-height:100vh;">
-                  <div style="width:50px; height:50px; border:4px solid rgba(207,65,59,0.2); border-top-color:#cf413b; border-radius:50%; margin:0 auto 20px; animation:spin 1s linear infinite;"></div>
-                  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-                  <h2 style="color:#f1786e; margin-bottom:10px;">جاري الانتقال لبوابة كاشير (Kashier) الآمنة... ⚡</h2>
-                  <p style="color:#94a3b8; font-size:14px;">يرجى الانتظار، يتم توجيهك لصفحة الدفع المباشر الآن.</p>
-                </div>
-              `;
-              paymentWindow.document.body.dir = 'rtl';
-            }
-          } catch(e) {}
+        // Show Pending State on checkout
+        const pendingStateEl = document.getElementById('zeus-payment-pending-state');
+        const pendingAmountEl = document.getElementById('zeus-pending-amount-val');
+        const pendingOrderRef = document.getElementById('zeus-pending-order-ref');
+        const pendingOpenLink = document.getElementById('zeus-pending-open-link');
+        const pendingRefreshBtn = document.getElementById('zeus-pending-refresh-btn');
+        const pendingCancelBtn = document.getElementById('zeus-pending-cancel-btn');
 
-          // Show Pending State on checkout
-          const pendingStateEl = document.getElementById('zeus-payment-pending-state');
-          const pendingAmountEl = document.getElementById('zeus-pending-amount-val');
-          const pendingOrderRef = document.getElementById('zeus-pending-order-ref');
-          const pendingOpenLink = document.getElementById('zeus-pending-open-link');
-          const pendingRefreshBtn = document.getElementById('zeus-pending-refresh-btn');
-          const pendingCancelBtn = document.getElementById('zeus-pending-cancel-btn');
+        if (pendingOrderRef) pendingOrderRef.textContent = `رقم الطلب: #${orderId}`;
+        if (pendingStateEl) {
+          pendingStateEl.classList.remove('hidden');
+          pendingStateEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
-          if (pendingOrderRef) pendingOrderRef.textContent = `رقم الطلب: #${orderId}`;
-          if (pendingStateEl) {
-            pendingStateEl.classList.remove('hidden');
-            pendingStateEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Button loading state & double-submission prevention
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.classList.add('opacity-60', 'pointer-events-none');
+          if (!payBtn.hasAttribute('data-orig-html')) {
+            payBtn.setAttribute('data-orig-html', payBtn.innerHTML);
           }
+          payBtn.innerHTML = `
+            <span class="inline-flex items-center gap-2">
+              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span>جاري تجهيز بوابة الدفع الآمنة... ⚡</span>
+            </span>
+          `;
+        }
 
-          const callbackUrl = window.location.origin + '/order.html?order_id=' + orderId + '&kashier_return=1';
+        function restorePayBtn() {
+          if (payBtn) {
+            payBtn.disabled = false;
+            payBtn.classList.remove('opacity-60', 'pointer-events-none');
+            const orig = payBtn.getAttribute('data-orig-html');
+            if (orig) payBtn.innerHTML = orig;
+          }
+        }
 
-          (async () => {
-            let paymentUrl = '';
-            try {
-              // Server calculates all prices and creates session Server-to-Server
-              const resp = await fetch('/api/v1/payment/kashier/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  items: itemsPayload,
-                  currency: 'EGP',
-                  title: orderTitle,
-                  customer_name: finalCustomerName,
-                  customer_phone: formattedPhone,
-                  customer_email: email,
-                  order_id: orderId,
-                  callback_url: callbackUrl
-                })
-              });
-              if (resp.ok) {
-                const resData = await resp.json();
-                if (resData.session_url || resData.payment_url) {
-                  paymentUrl = resData.session_url || resData.payment_url;
-                  if (pendingAmountEl && resData.amount) {
-                    pendingAmountEl.textContent = `${resData.amount} ${resData.currency === 'EGP' ? 'ج.م' : (resData.currency || 'EGP')}`;
-                  }
+        showToast('جاري تجهيز بوابة الدفع الآمنة... ⚡', 'info');
+
+        const callbackUrl = window.location.origin + '/order.html?order_id=' + orderId + '&kashier_return=1';
+
+        (async () => {
+          let paymentUrl = '';
+          try {
+            // Server calculates all prices and creates session Server-to-Server
+            const resp = await fetch('/api/v1/payment/kashier/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                items: itemsPayload,
+                currency: 'EGP',
+                title: orderTitle,
+                customer_name: finalCustomerName,
+                customer_phone: formattedPhone,
+                customer_email: email,
+                order_id: orderId,
+                callback_url: callbackUrl
+              })
+            });
+            if (resp.ok) {
+              const resData = await resp.json();
+              if (resData.session_url || resData.payment_url) {
+                paymentUrl = resData.session_url || resData.payment_url;
+                if (pendingAmountEl && resData.amount) {
+                  pendingAmountEl.textContent = `${resData.amount} ${resData.currency === 'EGP' ? 'ج.م' : (resData.currency || 'EGP')}`;
                 }
-              } else {
-                const errData = await resp.json().catch(() => ({}));
-                showToast(errData.detail || 'تعذر بدء جلسة الدفع الآمنة، يرجى المحاولة لاحقاً', 'error');
-                if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
-                return;
               }
-            } catch(e) {
-              showToast('خطأ في الاتصال بالسيرفر لإتمام الدفع', 'error');
-              if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+            } else {
+              const errData = await resp.json().catch(() => ({}));
+              showToast(errData.detail || 'تعذر بدء جلسة الدفع الآمنة، يرجى المحاولة لاحقاً', 'error');
+              restorePayBtn();
               return;
             }
+          } catch(e) {
+            showToast('خطأ في الاتصال بالسيرفر لإتمام الدفع', 'error');
+            restorePayBtn();
+            return;
+          }
 
-            if (pendingOpenLink) {
-              pendingOpenLink.href = paymentUrl;
-            }
+          if (pendingOpenLink) {
+            pendingOpenLink.href = paymentUrl;
+          }
 
-            if (paymentWindow && !paymentWindow.closed) {
-              paymentWindow.location.replace(paymentUrl);
-            } else {
-              window.open(paymentUrl, '_blank');
-            }
+          localStorage.setItem('zeus_pending_order', JSON.stringify({
+            orderId,
+            method: 'kashier',
+            paymentUrl,
+            email,
+            phone: formattedPhone,
+            timestamp: Date.now()
+          }));
 
-            localStorage.setItem('zeus_pending_order', JSON.stringify({
-              orderId,
-              method: 'kashier',
-              paymentUrl,
-              email,
-              phone: formattedPhone,
-              timestamp: Date.now()
-            }));
+          showToast('تم تجهيز رابط الدفع! جاري التحويل لبوابة كاشير (Kashier) الآمنة... ⚡', 'success');
 
-            showToast('تم بدء معاملة كاشير (Kashier) الآمنة! يرجى إتمام الدفع في نافذة البوابة ⚡', 'success');
-          })();
+          // Direct top-level navigation — avoids popup blockers and about:blank entirely on iOS/Android/Telegram webviews
+          setTimeout(() => {
+            window.location.href = paymentUrl;
+          }, 350);
+        })();
 
           if (pendingRefreshBtn) {
             pendingRefreshBtn.onclick = () => {
