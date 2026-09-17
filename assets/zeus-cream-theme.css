@@ -107,6 +107,31 @@ div[class*="LoadingScreen"] {
   box-shadow: 0 6px 24px -2px rgba(120, 90, 50, 0.1) !important;
 }
 
+.nv-brand__logo {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.nv-brand__img {
+  width: 36px !important;
+  height: 36px !important;
+  max-width: none !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.22)) !important;
+  transition: transform 0.25s ease !important;
+}
+
+.nv-brand:hover .nv-brand__img {
+  transform: scale(1.08) rotate(3deg) !important;
+}
+
 .nv-brand__name {
   background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
   -webkit-background-clip: text !important;
@@ -456,6 +481,19 @@ footer .footer-site-name {
   background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
+}
+
+footer div[class*="bg-linear-to-br from-card to-secondary"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+footer img[src*="logo-ar.webp"] {
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.2)) !important;
+  width: 48px !important;
+  height: 48px !important;
 }
 
 footer a {
