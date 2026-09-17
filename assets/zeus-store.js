@@ -109,11 +109,18 @@
   }
 
   let catalogData = [];
+  try {
+    const cachedEarly = localStorage.getItem('zeus_catalog_cache_v2');
+    if (cachedEarly) catalogData = JSON.parse(cachedEarly);
+  } catch(e) {}
 
   // Load catalog.json
   fetch('./catalog.json')
     .then(r => r.json())
-    .then(data => { catalogData = data; })
+    .then(data => {
+      catalogData = data;
+      try { localStorage.setItem('zeus_catalog_cache_v2', JSON.stringify(data)); } catch(e) {}
+    })
     .catch(() => {});
 
   // ==========================================
@@ -1948,6 +1955,13 @@
       );
     }
 
+    // If grid already contains exactly the filtered products, skip DOM re-render
+    const currentPids = Array.from(grid.querySelectorAll('.product-card-item')).map(el => el.getAttribute('data-product-id'));
+    const expectedPids = filtered.map(p => p.id);
+    if (currentPids.length > 0 && JSON.stringify(currentPids) === JSON.stringify(expectedPids)) {
+      return;
+    }
+
     if (filtered.length === 0) {
       grid.innerHTML = `
         <div class="col-span-full py-16 text-center">
@@ -1975,33 +1989,16 @@
     const mainEl = document.querySelector('main');
     if (!mainEl) return;
 
-    // 1. Hide legacy hardcoded sections in main (except hero / banner at top)
-    const oldSections = mainEl.querySelectorAll('section');
-    oldSections.forEach((sec, idx) => {
-      if (idx > 0 && (sec.querySelector('.product-card-item') || sec.querySelector('h2'))) {
-        sec.style.display = 'none';
-        sec.setAttribute('data-legacy-hidden', 'true');
+    // 1. Remove legacy non-dynamic product sections if any exist
+    mainEl.querySelectorAll('section:not(.zeus-dynamic-category-section)').forEach((sec, idx) => {
+      if (idx > 0 && (sec.classList.contains('product-card-performance') || sec.querySelector('.product-card-performance') || sec.hasAttribute('data-legacy-hidden'))) {
+        sec.remove();
       }
     });
 
-    // 2. Remove previously injected dynamic sections
-    mainEl.querySelectorAll('.zeus-dynamic-category-section').forEach(el => el.remove());
+    if (!products || products.length === 0) return;
 
-    if (!products || products.length === 0) {
-      const emptyDiv = document.createElement('div');
-      emptyDiv.className = 'zeus-dynamic-category-section container mx-auto px-4 py-16 text-center max-w-2xl';
-      emptyDiv.innerHTML = `
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary/80 text-primary mb-3 border border-border/50 shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-        </div>
-        <h3 class="text-base sm:text-lg font-bold text-foreground">المتجر قيد تحديث المنتجات</h3>
-        <p class="text-xs sm:text-sm text-muted-foreground mt-1">يتم تحديث قائمة الاشتراكات حالياً من لوحة الإدارة ⚡</p>
-      `;
-      mainEl.appendChild(emptyDiv);
-      return;
-    }
-
-    // 3. Group products by category
+    // 2. Group products by category
     const catMap = {};
     if (categories && Array.isArray(categories)) {
       categories.forEach(c => {
@@ -2021,7 +2018,29 @@
       }
     });
 
-    // 4. Render sections for categories that have products
+    // 3. If DOM already has matching pre-rendered sections, do not touch DOM
+    const existingSections = mainEl.querySelectorAll('.zeus-dynamic-category-section');
+    const activeCats = Object.entries(catMap).filter(([_, c]) => c.products && c.products.length > 0);
+    if (existingSections.length === activeCats.length && existingSections.length > 0) {
+      let allMatch = true;
+      existingSections.forEach(sec => {
+        const catSlug = sec.getAttribute('data-cat');
+        const cData = catMap[catSlug];
+        if (!cData) { allMatch = false; return; }
+        const currentPids = Array.from(sec.querySelectorAll('.product-card-item')).map(el => el.getAttribute('data-product-id'));
+        const expectedPids = cData.products.map(p => p.id);
+        if (JSON.stringify(currentPids) !== JSON.stringify(expectedPids)) {
+          allMatch = false;
+        }
+      });
+      if (allMatch) {
+        return; // Exact match! No flicker, no DOM recreation!
+      }
+    }
+
+    // 4. Otherwise re-render dynamic sections
+    mainEl.querySelectorAll('.zeus-dynamic-category-section').forEach(el => el.remove());
+
     Object.entries(catMap).forEach(([slug, cData]) => {
       if (!cData.products || cData.products.length === 0) return;
 
@@ -2088,6 +2107,25 @@
 
   async function syncStorefrontProducts() {
     try {
+      const path = (window.location.pathname || '').toLowerCase();
+      const isProductsPage = path.includes('products');
+      const isCategoriesPage = path.includes('categories');
+      const isHomePage = !isProductsPage && !isCategoriesPage && (
+        path === '/' || path.endsWith('index.html') || path === ''
+      );
+
+      // Fast-path: read cache first
+      try {
+        const cachedProds = localStorage.getItem('zeus_catalog_cache_v2');
+        const cachedCats = localStorage.getItem('zeus_cats_cache_v2');
+        if (cachedProds && (!catalogData || catalogData.length === 0)) {
+          catalogData = JSON.parse(cachedProds);
+        }
+        if (cachedCats && (!categoriesData || categoriesData.length === 0)) {
+          categoriesData = JSON.parse(cachedCats);
+        }
+      } catch(e) {}
+
       const [prodsRes, catsRes] = await Promise.allSettled([
         fetch(`./catalog.json?_t=${Date.now()}`),
         fetch(`./categories.json?_t=${Date.now()}`)
@@ -2095,17 +2133,12 @@
 
       if (prodsRes.status === 'fulfilled' && prodsRes.value.ok) {
         catalogData = await prodsRes.value.json();
+        try { localStorage.setItem('zeus_catalog_cache_v2', JSON.stringify(catalogData)); } catch(e) {}
       }
       if (catsRes.status === 'fulfilled' && catsRes.value.ok) {
         categoriesData = await catsRes.value.json();
+        try { localStorage.setItem('zeus_cats_cache_v2', JSON.stringify(categoriesData)); } catch(e) {}
       }
-
-      const path = (window.location.pathname || '').toLowerCase();
-      const isProductsPage = path.includes('products');
-      const isCategoriesPage = path.includes('categories');
-      const isHomePage = !isProductsPage && !isCategoriesPage && (
-        path === '/' || path.endsWith('index.html') || path === ''
-      );
 
       if (isProductsPage) {
         renderStorefrontProductsPage(catalogData, categoriesData);
