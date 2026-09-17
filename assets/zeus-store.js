@@ -1760,18 +1760,37 @@
 
           if (pendingRefreshBtn) {
             pendingRefreshBtn.onclick = () => {
-              showToast('جاري التحقق من السيرفر... ', 'info');
+              showToast('جاري التحقق الفوري من بوابة كاشير والسيرفر... ⚡', 'info');
+              pendingRefreshBtn.disabled = true;
+              pendingRefreshBtn.classList.add('opacity-50', 'pointer-events-none');
               fetch(`/api/v1/order/${encodeURIComponent(orderId)}/status`)
                 .then(r => r.json())
                 .then(st => {
-                  if (st && st.is_paid) {
-                    window.location.href = `/order.html?order_id=${encodeURIComponent(orderId)}`;
+                  if (st && (st.is_paid || (st.order_status || '').toLowerCase() === 'paid')) {
+                    showToast('تم تأكيد الدفع بنجاح! ✅ جاري تحويلك للإيصال...', 'success');
+                    try {
+                      localStorage.removeItem('zeus_pending_order');
+                      saveCart([]);
+                    } catch(e) {}
+                    setTimeout(() => {
+                      window.location.href = `/order.html?order_id=${encodeURIComponent(orderId)}`;
+                    }, 500);
+                  } else if (st && (st.order_status === 'failed' || st.order_status === 'cancelled')) {
+                    showToast('⚠️ فشلت عملية الدفع أو تم إلغاؤها من البنك (لم يتم الخصم). يمكنك إعادة المحاولة', 'error');
+                    if (pendingStateEl) pendingStateEl.classList.add('hidden');
+                    localStorage.removeItem('zeus_pending_order');
                   } else {
-                    showToast('بانتظار تأكيد الدفع من كاشير... إذا أتممت العملية اضغط فتح صفحة الدفع للتأكد', 'info');
+                    showToast('بانتظار إتمام الدفع من كاشير... إذا دفعت اضغط فتح صفحة الدفع للتأكد', 'info');
                   }
                 })
                 .catch(() => {
                   showToast('بانتظار تأكيد الدفع من كاشير...', 'info');
+                })
+                .finally(() => {
+                  setTimeout(() => {
+                    pendingRefreshBtn.disabled = false;
+                    pendingRefreshBtn.classList.remove('opacity-50', 'pointer-events-none');
+                  }, 1200);
                 });
             };
           }

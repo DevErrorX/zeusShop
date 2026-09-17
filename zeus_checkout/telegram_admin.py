@@ -95,9 +95,11 @@ class TelegramAdminBot:
                             await asyncio.to_thread(set_offset, self._offset)
                 except asyncio.CancelledError:
                     raise
-                except (RuntimeError, httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
                     failures += 1
-                    LOGGER.warning("Telegram admin polling failed: %s - %s", type(exc).__name__, exc)
+                    if failures <= 3:
+                        LOGGER.warning("Telegram admin polling failed: %s - %s", type(exc).__name__, exc)
+                    else:
+                        LOGGER.debug("Telegram admin polling failed: %s - %s", type(exc).__name__, exc)
                     try:
                         await asyncio.wait_for(
                             stop_event.wait(),

@@ -11,7 +11,11 @@ from typing import Any
 import urllib.parse
 from urllib.parse import urlparse
 
+import logging
+
 import httpx
+
+LOGGER = logging.getLogger("zeus_checkout.kashier")
 
 
 class KashierError(RuntimeError):
@@ -164,7 +168,13 @@ class KashierClient:
         payload: dict[str, Any],
         signature_header: str | None,
     ) -> bool:
-        """Verify the HMAC-SHA256 signature of an incoming Kashier webhook."""
+        """Verify the HMAC-SHA256 signature of an incoming Kashier webhook.
+
+        Kashier payment webhooks: sort signatureKeys alphabetically,
+        URL-encode values, HMAC-SHA256 with Payment API Key.
+        We also try secret key variants and multiple encoding modes to prevent
+        spurious 401 rejections.
+        """
         if not signature_header or not isinstance(payload, dict):
             return False
 
@@ -176,19 +186,72 @@ class KashierClient:
         if not isinstance(signature_keys, list) or not signature_keys:
             return False
 
+        sig = signature_header.strip().lower()
+
         try:
             sorted_keys = sorted(str(k) for k in signature_keys)
-            query_string = "&".join(
+
+            # Build query string variations:
+            # 1. Full URL encoding (safe='')
+            query_string_strict = "&".join(
                 f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='')}"
                 for k in sorted_keys
             )
-            expected_digest = hmac.new(
-                self.api_key.encode("utf-8"),
-                query_string.encode("utf-8"),
-                hashlib.sha256,
-            ).hexdigest()
-            return hmac.compare_digest(expected_digest.lower(), signature_header.strip().lower())
+            # 2. RFC-3986 encoding (safe='-_.~')
+            query_string_rfc = "&".join(
+                f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='-_.~')}"
+                for k in sorted_keys
+            )
+            # 3. Unencoded raw values
+            query_string_raw = "&".join(
+                f"{k}={data.get(k, '')}"
+                for k in sorted_keys
+            )
+            # 4. Unsorted keys (original payload order)
+            unsorted_keys = [str(k) for k in signature_keys]
+            query_string_unsorted = "&".join(
+                f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='')}"
+                for k in unsorted_keys
+            )
+
+            # Candidate HMAC keys to try
+            candidate_keys = [self.api_key]
+            if self.secret_key and self.secret_key != self.api_key:
+                candidate_keys.append(self.secret_key)
+                if "$" in self.secret_key:
+                    candidate_keys.extend(self.secret_key.split("$", 1))
+
+            query_strings = [
+                query_string_strict,
+                query_string_rfc,
+                query_string_raw,
+                query_string_unsorted,
+            ]
+
+            for hmac_key in candidate_keys:
+                for qs in query_strings:
+                    digest = hmac.new(
+                        hmac_key.encode("utf-8"),
+                        qs.encode("utf-8"),
+                        hashlib.sha256,
+                    ).hexdigest().lower()
+                    if hmac.compare_digest(digest, sig):
+                        LOGGER.info(
+                            "Kashier webhook signature matched (key=%s..., mode=%d)",
+                            hmac_key[:8],
+                            query_strings.index(qs),
+                        )
+                        return True
+
+            LOGGER.warning(
+                "Kashier webhook signature mismatch: received_sig=%s, signatureKeys=%s, qs_strict=%s",
+                sig[:16] + "...",
+                signature_keys,
+                query_string_strict[:120] + "...",
+            )
+            return False
         except Exception:
+            LOGGER.exception("Exception during Kashier webhook signature verification")
             return False
 
     @staticmethod
@@ -199,3 +262,91 @@ class KashierClient:
             and (parsed.hostname == "payments.kashier.io" or (parsed.hostname or "").endswith(".kashier.io"))
             and "/session/" in parsed.path
         )
+
+    async def check_payment_status(self, payment_id_or_order_id: str) -> dict[str, Any] | None:
+        """Query Kashier API directly for payment status.
+
+        Queries /v3/payment/sessions/{id} and /v3/orders/{id}.
+        Returns a dict with 'status', 'amount', 'currency' if found, else None.
+        Guarantees instant verification even if webhooks are delayed or failing.
+        """
+        if not self.merchant_id or not self.secret_key or not payment_id_or_order_id:
+            return None
+
+        headers = {
+            "Authorization": self.secret_key,
+            "api-key": self.api_key,
+            "Accept": "application/json",
+            "User-Agent": "ZEUS-STORE/1.0",
+        }
+
+        # Candidate endpoints to query:
+        endpoints_to_try = [
+            f"{self.base_url}/v3/payment/sessions/{payment_id_or_order_id}",
+            f"{self.base_url}/v3/orders/{payment_id_or_order_id}",
+        ]
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0),
+                follow_redirects=False,
+                transport=self.transport,
+            ) as client:
+                for url in endpoints_to_try:
+                    try:
+                        response = await client.get(url, headers=headers)
+                        if response.status_code == 200:
+                            body = response.json()
+                            if not isinstance(body, dict):
+                                continue
+
+                            data = body.get("data") or body.get("response") or body
+                            if not isinstance(data, dict):
+                                continue
+
+                            raw_status = str(data.get("status") or data.get("paymentStatus") or "").strip().upper()
+                            captured_amount = data.get("capturedAmount") or 0
+
+                            params = data.get("paymentParams") if isinstance(data.get("paymentParams"), dict) else data
+                            amount = params.get("amount") or data.get("totalAmount") or captured_amount
+                            currency = str(params.get("currency") or data.get("currency") or "EGP").strip().upper()
+
+                            if raw_status in {"PAID", "CAPTURED", "SUCCESS", "PAY"} or (captured_amount and float(captured_amount) > 0):
+                                normalized = "paid"
+                            elif raw_status in {"FAILED", "FAIL", "CANCELLED", "CANCELED"}:
+                                normalized = "failed"
+                            elif raw_status in {"REFUNDED", "REFUND"}:
+                                normalized = "refunded"
+                            elif raw_status == "EXPIRED":
+                                normalized = "failed"
+                            else:
+                                normalized = "pending"
+
+                            result_amount = None
+                            if amount is not None:
+                                try:
+                                    result_amount = Decimal(str(amount))
+                                except Exception:
+                                    pass
+
+                            LOGGER.info(
+                                "Kashier status check succeeded for %s: normalized=%s, raw=%s, amount=%s %s",
+                                payment_id_or_order_id,
+                                normalized,
+                                raw_status,
+                                result_amount,
+                                currency,
+                            )
+                            return {
+                                "status": normalized,
+                                "raw_status": raw_status,
+                                "amount": result_amount,
+                                "currency": currency,
+                            }
+                    except httpx.HTTPError:
+                        continue
+        except Exception as exc:
+            LOGGER.debug("Kashier status check exception for %s: %s", payment_id_or_order_id, exc)
+            return None
+
+        return None

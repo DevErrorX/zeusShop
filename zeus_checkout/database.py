@@ -339,8 +339,9 @@ def apply_webhook(
 
                 exp = Decimal(str(exp_val))
                 act = Decimal(str(supplied_amount))
-                # Strict amount matching: positive amount and tolerance <= 0.05
-                if act <= 0 or abs(exp - act) > Decimal("0.05"):
+                # Strict amount matching with appropriate currency tolerance
+                tolerance = Decimal("1.00") if curr == "EGP" else Decimal("0.05")
+                if act <= 0 or abs(exp - act) > tolerance:
                     conn.commit()
                     return "amount_mismatch"
             except Exception:

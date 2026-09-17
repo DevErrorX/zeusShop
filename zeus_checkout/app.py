@@ -11,6 +11,9 @@ import asyncio
 import urllib.parse
 from contextlib import asynccontextmanager
 from decimal import Decimal
+import logging
+
+logger = logging.getLogger("zeus_checkout.app")
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -519,10 +522,65 @@ def create_app() -> FastAPI:
         return {"status": "ok", "received": True, "result": result}
 
     @app.get("/api/v1/order/{order_id}/status")
-    def api_get_order_status(order_id: str):
+    async def api_get_order_status(order_id: str):
         order = StoreRepository.get_order(order_id)
         if not order:
             raise HTTPException(status_code=404, detail="الطلب غير موجود")
+
+        # Active Kashier API check fallback:
+        # If order is pending with kashier, actively poll Kashier to verify
+        # if payment was completed. Guarantees immediate confirmation even if webhooks fail/delay.
+        if (
+            order.get("status") == "pending"
+            and str(order.get("payment_method", "")).lower() == "kashier"
+        ):
+            session_id = order.get("payment_id")
+            lookup_keys = [k for k in [session_id, order["id"]] if k]
+            try:
+                gateways = StoreRepository.get_payment_gateways()
+                kashier_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "kashier"), {})
+                client = KashierClient(
+                    merchant_id=kashier_cfg.get("merchant_id") or settings.kashier_merchant_id,
+                    api_key=kashier_cfg.get("api_key") or settings.kashier_api_key,
+                    secret_key=kashier_cfg.get("secret_key") or settings.kashier_secret_key,
+                    mode=kashier_cfg.get("mode") or settings.kashier_mode,
+                    base_url=kashier_cfg.get("api_url") or settings.kashier_api_url,
+                )
+                kashier_status = None
+                for lk in lookup_keys:
+                    kashier_status = await client.check_payment_status(lk)
+                    if kashier_status:
+                        break
+
+                if kashier_status and kashier_status.get("status") == "paid":
+                    primary_key = session_id or order["id"]
+                    event_hash = hashlib.sha256(
+                        f"active_kashier_check:{primary_key}:{order['id']}".encode("utf-8")
+                    ).hexdigest()
+                    apply_result = StoreRepository.apply_webhook(
+                        event_hash=event_hash,
+                        payment_id=primary_key,
+                        normalized_status="paid",
+                        supplied_amount=kashier_status.get("amount"),
+                        supplied_currency=kashier_status.get("currency") or "EGP",
+                    )
+                    if apply_result == "unknown_payment" and primary_key != order["id"]:
+                        apply_result = StoreRepository.apply_webhook(
+                            event_hash=event_hash + "_ord",
+                            payment_id=order["id"],
+                            normalized_status="paid",
+                            supplied_amount=kashier_status.get("amount"),
+                            supplied_currency=kashier_status.get("currency") or "EGP",
+                        )
+                    if apply_result in {"updated", "duplicate"}:
+                        logger.info("Active Kashier check successfully confirmed payment for order %s", order["id"])
+                    # Re-read order after potential update
+                    updated = StoreRepository.get_order(order_id)
+                    if updated:
+                        order = updated
+            except Exception as exc:
+                logger.debug("Active Kashier status check exception for order %s: %s", order_id, exc)
+
         is_paid = order["status"] == "paid"
         conf_code = order.get("confirmation_code") or order["id"]
         telegram_url = None
