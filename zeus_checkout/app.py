@@ -783,8 +783,30 @@ def create_app() -> FastAPI:
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
+    NO_CACHE_HEADERS = {
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+
     def page_file(name: str):
-        return FileResponse(os.path.join(BASE_DIR, name))
+        target = os.path.join(BASE_DIR, name)
+        if not os.path.exists(target):
+            raise HTTPException(status_code=404, detail="Page not found")
+        return FileResponse(target, headers=NO_CACHE_HEADERS)
+
+    @app.get("/api/v1/version")
+    @app.get("/version.json")
+    def get_version():
+        version_file = os.path.join(BASE_DIR, "version.json")
+        data = {"version": "20260917-v3", "build_time": "2026-09-17T11:30:00Z"}
+        if os.path.exists(version_file):
+            try:
+                with open(version_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        return JSONResponse(data, headers=NO_CACHE_HEADERS)
 
     @app.get("/")
     @app.get("/index")

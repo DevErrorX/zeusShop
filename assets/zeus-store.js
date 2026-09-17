@@ -2178,7 +2178,32 @@
       _storage
     };
 
-    console.log(' ZEUS STORE Engine loaded and fully active.');
+    // Background auto-update check without requiring hard refresh
+    function checkLiveVersion() {
+      try {
+        fetch('/api/v1/version?_=' + Date.now(), { cache: 'no-store' })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.version) {
+              var current = localStorage.getItem('zeus_build_ver');
+              if (current && current !== data.version) {
+                localStorage.setItem('zeus_build_ver', data.version);
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) { keys.forEach(function(k) { caches.delete(k); }); });
+                }
+                window.location.reload(true);
+              }
+            }
+          })
+          .catch(function() {});
+      } catch (e) {}
+    }
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') checkLiveVersion();
+    });
+    setInterval(checkLiveVersion, 90000);
+
+    console.log('⚡ ZEUS STORE Engine loaded and fully active.');
   }
 
   if (document.readyState === 'loading') {
