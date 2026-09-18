@@ -16,13 +16,15 @@
     USDT: { symbol: 'USDT', name: 'تيثر رقمي', rate: 1.0 / 3.75, flag: '💎', flagImg: 'https://flagcdn.com/w40/us.png', decimals: 2 },
     EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 51.34 / 3.75, flag: '🇪🇬', flagImg: 'https://flagcdn.com/w40/eg.png', decimals: 0 },
     AED: { symbol: 'د.إ', name: 'درهم إماراتي', rate: 3.6725 / 3.75, flag: '🇦🇪', flagImg: 'https://flagcdn.com/w40/ae.png', decimals: 2 },
-    KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.308184 / 3.75, flag: '🇰🇼', flagImg: 'https://flagcdn.com/w40/kw.png', decimals: 3 }
+    KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.308184 / 3.75, flag: '🇰🇼', flagImg: 'https://flagcdn.com/w40/kw.png', decimals: 3 },
+    SYP: { symbol: 'ل.س', name: 'ليرة سورية', rate: 14000.0 / 3.75, flag: '🇸🇾', flagImg: 'https://flagcdn.com/w40/sy.png', decimals: 0 },
+    LBP: { symbol: 'ل.ل', name: 'ليرة لبنانية', rate: 89500.0 / 3.75, flag: '🇱🇧', flagImg: 'https://flagcdn.com/w40/lb.png', decimals: 0 }
   };
 
   const FX_CACHE_KEY = 'zeus_fx_rates_cache_v2';
   const FX_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
-  function updateRatesFromFx(usdToEgp, usdToSar, usdToAed, usdToKwd) {
+  function updateRatesFromFx(usdToEgp, usdToSar, usdToAed, usdToKwd, usdToLbp, usdToSyp) {
     const sarPeg = (usdToSar && usdToSar > 0) ? usdToSar : 3.75;
     CURRENCIES.SAR.rate = 1.0;
     CURRENCIES.USD.rate = 1.0 / sarPeg;
@@ -37,6 +39,12 @@
     if (usdToKwd) {
       CURRENCIES.KWD.rate = usdToKwd / sarPeg;
     }
+    if (usdToLbp) {
+      CURRENCIES.LBP.rate = usdToLbp / sarPeg;
+    }
+    if (usdToSyp && usdToSyp > 1000) {
+      CURRENCIES.SYP.rate = usdToSyp / sarPeg;
+    }
   }
 
   function syncExchangeRates(onComplete) {
@@ -44,7 +52,7 @@
     try {
       const cached = JSON.parse(localStorage.getItem(FX_CACHE_KEY) || 'null');
       if (cached && (Date.now() - cached.timestamp < FX_CACHE_DURATION)) {
-        updateRatesFromFx(cached.usdToEgp, cached.usdToSar, cached.usdToAed, cached.usdToKwd);
+        updateRatesFromFx(cached.usdToEgp, cached.usdToSar, cached.usdToAed, cached.usdToKwd, cached.usdToLbp, cached.usdToSyp);
         if (typeof onComplete === 'function') onComplete();
         return;
       }
@@ -65,8 +73,10 @@
           const sar = parseFloat(data.rates.SAR || 3.75);
           const aed = parseFloat(data.rates.AED || 3.6725);
           const kwd = parseFloat(data.rates.KWD || 0.308184);
+          const lbp = parseFloat(data.rates.LBP || 89500);
+          const syp = (data.rates.SYP && parseFloat(data.rates.SYP) > 1000) ? parseFloat(data.rates.SYP) : 14000;
 
-          updateRatesFromFx(egp, sar, aed, kwd);
+          updateRatesFromFx(egp, sar, aed, kwd, lbp, syp);
 
           try {
             localStorage.setItem(FX_CACHE_KEY, JSON.stringify({
@@ -74,7 +84,9 @@
               usdToEgp: egp,
               usdToSar: sar,
               usdToAed: aed,
-              usdToKwd: kwd
+              usdToKwd: kwd,
+              usdToLbp: lbp,
+              usdToSyp: syp
             }));
           } catch(e) {}
 
@@ -90,8 +102,8 @@
     const info = CURRENCIES[curr] || CURRENCIES.SAR;
     const decimals = typeof info.decimals === 'number' ? info.decimals : 2;
 
-    if (curr === 'SAR' || curr === 'EGP') {
-      if (Math.abs(num - Math.round(num)) < 0.01) {
+    if (curr === 'SAR' || curr === 'EGP' || curr === 'SYP' || curr === 'LBP' || decimals === 0) {
+      if (Math.abs(num - Math.round(num)) < 0.01 || decimals === 0) {
         return Math.round(num).toLocaleString('en-US');
       }
       return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -163,6 +175,8 @@
       if (r.EGP) CURRENCIES.EGP.rate = parseFloat(r.EGP) / sarPeg;
       if (r.AED) CURRENCIES.AED.rate = parseFloat(r.AED) / sarPeg;
       if (r.KWD) CURRENCIES.KWD.rate = parseFloat(r.KWD) / sarPeg;
+      if (r.SYP) CURRENCIES.SYP.rate = parseFloat(r.SYP) / sarPeg;
+      if (r.LBP) CURRENCIES.LBP.rate = parseFloat(r.LBP) / sarPeg;
     }
   }
 
@@ -661,7 +675,12 @@
     const itemsHtml = Object.entries(CURRENCIES).map(([code, info]) => {
       const isBase = code === 'SAR';
       const isSelected = code === current;
-      const rateHint = isBase ? 'العملة الأساسية (ثابت)' : (code === 'USD' || code === 'USDT' ? '1 $ ≈ 3.75 ر.س' : (code === 'EGP' ? `1 ر.س ≈ ${(info.rate || 13.69).toFixed(1)} ج.م` : `1 ر.س ≈ ${(info.rate).toFixed(code === 'KWD' ? 3 : 2)} ${info.symbol}`));
+      const rateHint = isBase ? 'العملة الأساسية (ثابت)' : 
+        (code === 'USD' || code === 'USDT' ? '1 $ ≈ 3.75 ر.س' : 
+        (code === 'EGP' ? `1 ر.س ≈ ${(info.rate || 13.69).toFixed(1)} ج.م` : 
+        (code === 'SYP' ? `1 ر.س ≈ ${Math.round(info.rate || 3733).toLocaleString('en-US')} ل.س` :
+        (code === 'LBP' ? `1 ر.س ≈ ${Math.round(info.rate || 23867).toLocaleString('en-US')} ل.ل` :
+        `1 ر.س ≈ ${(info.rate).toFixed(code === 'KWD' ? 3 : 2)} ${info.symbol}`))));
       return `
         <button type="button" class="cur-switch__item ${isSelected ? 'is-active' : ''} zeus-curr-opt" data-curr="${code}">
           <span class="text-base shrink-0 leading-none">${info.flag}</span>

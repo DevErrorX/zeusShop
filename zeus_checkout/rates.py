@@ -12,6 +12,10 @@ def convert_currency(amount_sar: float, target_currency: str) -> float:
         return round(amount_sar / settings.iqd_to_sar, 0)
     elif target == "EGP":
         return round(amount_sar / settings.egp_to_sar, 0)
+    elif target == "SYP":
+        return round(amount_sar / settings.syp_to_sar, 0)
+    elif target == "LBP":
+        return round(amount_sar / settings.lbp_to_sar, 0)
     return round(amount_sar, 2)
 
 def get_all_rates():
@@ -22,6 +26,8 @@ def get_all_rates():
             "USD": round(1.0 / settings.usd_to_sar, 4),
             "USDT": round(1.0 / settings.usd_to_sar, 4),
             "IQD": round(1.0 / settings.iqd_to_sar, 2),
-            "EGP": round(1.0 / settings.egp_to_sar, 2)
+            "EGP": round(1.0 / settings.egp_to_sar, 2),
+            "SYP": round(1.0 / settings.syp_to_sar, 2),
+            "LBP": round(1.0 / settings.lbp_to_sar, 2)
         }
     }

@@ -28,6 +28,8 @@ class Settings(BaseModel):
     usd_to_sar: float = 3.75
     iqd_to_sar: float = 0.00286
     egp_to_sar: float = 0.08
+    syp_to_sar: float = 3.75 / 14000.0
+    lbp_to_sar: float = 3.75 / 89500.0
     
     # Telegram Bot Alerts
     telegram_bot_token: str | None = Field(default_factory=lambda: os.getenv("TELEGRAM_BOT_TOKEN"))

@@ -1608,7 +1608,9 @@
                 USDT: 1.0,
                 AED: 3.67,
                 KWD: 0.31,
-                IQD: 1310.0
+                IQD: 1310.0,
+                SYP: 14000.0,
+                LBP: 89500.0
             },
             currentFilter: 'all',
             charts: {}
@@ -2750,7 +2752,9 @@ ${key}
                 USDT: 'التيثر الرقمي (Tether USD)',
                 AED: 'الدرهم الإماراتي',
                 KWD: 'الدينار الكويتي',
-                IQD: 'الدينار العراقي'
+                IQD: 'الدينار العراقي',
+                SYP: 'الليرة السورية',
+                LBP: 'الليرة اللبنانية'
             };
 
             tbody.innerHTML = Object.entries(state.rates).map(([code, rate]) => `
@@ -2786,7 +2790,7 @@ ${key}
         };
 
         window.resetDefaultRates = async function() {
-            state.rates = { EGP: 51.34, SAR: 3.75, USD: 1.0, USDT: 1.0, AED: 3.67, KWD: 0.31, IQD: 1310.0 };
+            state.rates = { EGP: 51.34, SAR: 3.75, USD: 1.0, USDT: 1.0, AED: 3.67, KWD: 0.31, IQD: 1310.0, SYP: 14000.0, LBP: 89500.0 };
             localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
             try {
                 await apiFetch('/api/v1/admin/settings', {

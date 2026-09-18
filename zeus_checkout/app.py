@@ -883,7 +883,7 @@ def create_app() -> FastAPI:
     @app.get("/version.json")
     def get_version():
         version_file = os.path.join(BASE_DIR, "version.json")
-        data = {"version": "20260918-v1", "build_time": "2026-09-18T02:30:00Z"}
+        data = {"version": "20260918-v2", "build_time": "2026-09-18T15:00:00Z"}
         if os.path.exists(version_file):
             try:
                 with open(version_file, "r", encoding="utf-8") as f:
