@@ -1488,8 +1488,12 @@
 
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
                             <div>
-                                <label style="font-size: 12px; font-weight: 700; color: #10b981;">بالريال السعودي (ر.س) [الأساسي] *</label>
+                                <label style="font-size: 12px; font-weight: 700; color: #10b981;">بالريال السعودي (ر.س) [سعر ثابت محدد] *</label>
                                 <input type="number" step="any" id="prod-price-sar" class="form-control font-en" required style="border-color: #10b981; font-weight: 700; font-size: 15px; color: #10b981;" oninput="handleSarPriceChange(this.value)">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; font-weight: 700; color: #3b82f6;">بالجنيه المصري (ج.م) [سعر ثابت محدد] *</label>
+                                <input type="number" step="any" id="prod-price-egp" class="form-control font-en" required style="border-color: #3b82f6; font-weight: 700; font-size: 15px; color: #3b82f6;">
                             </div>
                             <div>
                                 <label style="font-size: 12px; font-weight: 700; color: #fbbf24;">السعر بـ USDT ($) *</label>
@@ -1498,10 +1502,6 @@
                             <div>
                                 <label style="font-size: 12px;">بالدينار العراقي (د.ع) *</label>
                                 <input type="number" step="any" id="prod-price-iqd" class="form-control font-en" required>
-                            </div>
-                            <div>
-                                <label style="font-size: 12px;">بالجنيه المصري (ج.م) *</label>
-                                <input type="number" step="any" id="prod-price-egp" class="form-control font-en" required>
                             </div>
                             <div>
                                 <label style="font-size: 12px;">السعر بالدولار ($)</label>
@@ -2245,8 +2245,8 @@ ${key}
             const iqdInput = document.getElementById('prod-price-iqd');
             const usdInput = document.getElementById('prod-price-usd');
 
-            if (sarInput) sarInput.value = (usdt * 3.75).toFixed(2);
-            if (egpInput) egpInput.value = Math.round(usdt * 51.34);
+            if (sarInput && (!sarInput.value || parseFloat(sarInput.value) <= 0)) sarInput.value = (usdt * 3.75).toFixed(2);
+            if (egpInput && (!egpInput.value || parseFloat(egpInput.value) <= 0)) egpInput.value = Math.round(usdt * 51.34);
             if (iqdInput) iqdInput.value = Math.round(usdt * 1310);
             if (usdInput) usdInput.value = usdt.toFixed(2);
         };
@@ -2261,7 +2261,10 @@ ${key}
 
             if (usdtInput) usdtInput.value = usdt.toFixed(2);
             if (usdInput) usdInput.value = usdt.toFixed(2);
-            if (egpInput) egpInput.value = Math.round(sar * (51.34 / 3.75));
+            // EGP price is fixed and independent: do not overwrite if admin already entered a custom EGP value
+            if (egpInput && (!egpInput.value || parseFloat(egpInput.value) <= 0)) {
+                egpInput.value = Math.round(sar * (51.34 / 3.75));
+            }
             if (iqdInput) iqdInput.value = Math.round(sar * (1310 / 3.75));
         };
 
@@ -2757,9 +2760,12 @@ ${key}
                 LBP: 'الليرة اللبنانية'
             };
 
-            tbody.innerHTML = Object.entries(state.rates).map(([code, rate]) => `
+            tbody.innerHTML = Object.entries(state.rates).map(([code, rate]) => {
+                const isFixed = (code === 'SAR' || code === 'EGP');
+                const fixedBadge = isFixed ? '<span class="badge bg-success ms-2" style="font-size:10px;">سعر ثابت محدد من الإدارة</span>' : '';
+                return `
                 <tr>
-                    <td><strong>${names[code] || code}</strong></td>
+                    <td><strong>${names[code] || code}</strong> ${fixedBadge}</td>
                     <td class="font-en text-primary"><strong>${code}</strong></td>
                     <td class="font-en">${parseFloat(rate).toFixed(2)}</td>
                     <td class="font-en">${(rate / 1.0).toFixed(2)} $</td>
@@ -2767,7 +2773,7 @@ ${key}
                         <input type="number" step="any" class="form-control font-en rate-override-input" data-code="${code}" value="${rate}" style="width:120px; padding:6px 10px;">
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         window.saveCustomRates = async function() {
