@@ -474,11 +474,54 @@ def create_app() -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Kashier connection error: {str(exc)}")
 
+    def _extract_kashier_webhook_fields(
+        payload: dict[str, Any],
+    ) -> tuple[str, str, Decimal | None, str | None]:
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+        merchant_order_id = str(data.get("merchantOrderId") or data.get("merchant_order_id") or "").strip()
+        order_id = str(data.get("orderId") or data.get("order") or "").strip()
+        session_id = str(data.get("sessionId") or data.get("session_id") or "").strip()
+        target_id = merchant_order_id or order_id or session_id
+
+        raw_status = str(
+            data.get("status")
+            or data.get("paymentStatus")
+            or payload.get("event")
+            or ""
+        ).strip().upper()
+        if raw_status in {"SUCCESS", "CAPTURED", "PAID", "PAY"}:
+            normalized_status = "paid"
+        elif raw_status in {"FAILED", "FAIL", "CANCELLED", "CANCELED"}:
+            normalized_status = "failed"
+        elif raw_status in {"REFUNDED", "REFUND"}:
+            normalized_status = "refunded"
+        else:
+            normalized_status = "pending"
+
+        raw_amount = (
+            data.get("totalCapturedAmount")
+            or data.get("capturedAmount")
+            or data.get("amount")
+            or (data.get("order") if isinstance(data.get("order"), dict) else {}).get("amount")
+        )
+        amount: Decimal | None = None
+        if raw_amount is not None:
+            try:
+                amount = Decimal(str(raw_amount))
+            except Exception:
+                amount = None
+
+        currency = str(
+            (data.get("order") if isinstance(data.get("order"), dict) else {}).get("currency")
+            or data.get("currency")
+            or "EGP"
+        ).strip().upper() or "EGP"
+
+        return target_id, normalized_status, amount, currency
+
     @app.post("/webhooks/kashier")
     async def kashier_webhook(request: Request):
         sig = request.headers.get("x-kashier-signature") or request.headers.get("X-Kashier-Signature")
-        if not sig:
-            raise HTTPException(status_code=401, detail="Missing signature header")
 
         raw_body = await request.body()
         try:
@@ -489,47 +532,58 @@ def create_app() -> FastAPI:
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Invalid webhook payload")
 
+        if not sig:
+            sig = payload.get("signature") or (payload.get("data") if isinstance(payload.get("data"), dict) else {}).get("signature")
+
         gateways = StoreRepository.get_payment_gateways()
         kashier_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "kashier"), {})
         merchant_id = kashier_cfg.get("merchant_id") or settings.kashier_merchant_id
         api_key = kashier_cfg.get("api_key") or settings.kashier_api_key
         secret_key = kashier_cfg.get("secret_key") or settings.kashier_secret_key
+        mode = kashier_cfg.get("mode") or settings.kashier_mode
+        base_url = kashier_cfg.get("api_url") or settings.kashier_api_url
 
         client = KashierClient(
             merchant_id=merchant_id,
             api_key=api_key,
             secret_key=secret_key,
+            mode=mode,
+            base_url=base_url,
         )
 
-        # Condition 3: Timing-attack resistant HMAC-SHA256 verification
-        if not client.verify_webhook_signature(payload, sig):
+        target_id, normalized_status, amount, currency = _extract_kashier_webhook_fields(payload)
+
+        # Timing-attack resistant HMAC-SHA256 verification (with raw_body fallback)
+        is_valid_sig = False
+        if sig:
+            try:
+                is_valid_sig = client.verify_webhook_signature(payload, sig, raw_body=raw_body)
+            except TypeError:
+                is_valid_sig = client.verify_webhook_signature(payload, sig)
+
+        # Direct server-to-server active verification fallback if signature verification failed
+        if not is_valid_sig and target_id:
+            data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+            session_id = str(data.get("sessionId") or data.get("session_id") or "") or None
+            verified = await client.check_payment_status(order_id=target_id, session_id=session_id)
+            if verified and verified.get("status") == "paid":
+                is_valid_sig = True
+                normalized_status = "paid"
+                amount = amount or verified.get("amount")
+                currency = currency or verified.get("currency")
+                logger.info("Kashier webhook accepted via direct S2S verification for %s", target_id)
+
+        if not is_valid_sig:
+            logger.warning("Rejected Kashier webhook with invalid signature for target %s", target_id)
             raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
-        # Condition 5: Replay attack prevention via SHA256(signature + raw_body)
-        event_hash = hashlib.sha256(sig.encode("utf-8") + b"\n" + raw_body).hexdigest()
+        if not target_id or not normalized_status:
+            return {"status": "ok", "received": True, "result": "ignored"}
 
-        data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
-        target_id = str(data.get("order") or data.get("orderId") or data.get("merchantOrderId") or data.get("sessionId") or "").strip()
-        raw_status = str(data.get("status") or payload.get("event") or "").strip().upper()
+        # Replay attack prevention via SHA256(signature + raw_body)
+        event_hash = hashlib.sha256((sig or "kashier_verified").encode("utf-8") + b"\n" + raw_body).hexdigest()
 
-        if raw_status in {"SUCCESS", "CAPTURED", "PAID", "PAY"}:
-            normalized_status = "paid"
-        elif raw_status in {"FAILED", "FAIL", "CANCELLED", "CANCELED"}:
-            normalized_status = "failed"
-        elif raw_status in {"REFUNDED", "REFUND"}:
-            normalized_status = "refunded"
-        else:
-            normalized_status = "pending"
-
-        raw_amount = data.get("amount")
-        try:
-            amount = Decimal(str(raw_amount)) if raw_amount is not None else None
-        except Exception:
-            amount = None
-
-        currency = str(data.get("currency") or "").strip().upper() or None
-
-        # Condition 4: Amount & currency hardening via apply_webhook
+        # Amount & currency hardening via apply_webhook
         result = StoreRepository.apply_webhook(
             event_hash=event_hash,
             payment_id=target_id,
@@ -537,6 +591,18 @@ def create_app() -> FastAPI:
             supplied_amount=amount,
             supplied_currency=currency,
         )
+
+        if result == "unknown_payment":
+            data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+            alt_id = str(data.get("sessionId") or data.get("merchantOrderId") or data.get("orderId") or "").strip()
+            if alt_id and alt_id != target_id:
+                result = StoreRepository.apply_webhook(
+                    event_hash=event_hash + "_alt",
+                    payment_id=alt_id,
+                    normalized_status=normalized_status,
+                    supplied_amount=amount,
+                    supplied_currency=currency,
+                )
 
         if result == "duplicate":
             return {"status": "ok", "received": True, "result": "duplicate"}
@@ -554,14 +620,13 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail="الطلب غير موجود")
 
         # Active Kashier API check fallback:
-        # If order is pending with kashier, actively poll Kashier to verify
+        # If order is pending or cancelled with kashier, actively poll Kashier to verify
         # if payment was completed. Guarantees immediate confirmation even if webhooks fail/delay.
         if (
-            order.get("status") == "pending"
+            order.get("status") in ("pending", "cancelled")
             and str(order.get("payment_method", "")).lower() == "kashier"
         ):
             session_id = order.get("payment_id")
-            lookup_keys = [k for k in [session_id, order["id"]] if k]
             try:
                 gateways = StoreRepository.get_payment_gateways()
                 kashier_cfg = next((g.get("config", {}) for g in gateways if g.get("id") == "kashier"), {})
@@ -572,31 +637,32 @@ def create_app() -> FastAPI:
                     mode=kashier_cfg.get("mode") or settings.kashier_mode,
                     base_url=kashier_cfg.get("api_url") or settings.kashier_api_url,
                 )
-                kashier_status = None
-                for lk in lookup_keys:
-                    kashier_status = await client.check_payment_status(lk)
-                    if kashier_status:
-                        break
+                kashier_status = await client.check_payment_status(
+                    order_id=order["id"],
+                    session_id=session_id,
+                )
 
                 if kashier_status and kashier_status.get("status") == "paid":
+                    amt = kashier_status.get("amount") or order.get("amount_egp") or order.get("total_amount")
+                    curr = kashier_status.get("currency") or "EGP"
                     primary_key = session_id or order["id"]
                     event_hash = hashlib.sha256(
-                        f"active_kashier_check:{primary_key}:{order['id']}".encode("utf-8")
+                        f"active_kashier_check:{primary_key}:{order['id']}:{amt}".encode("utf-8")
                     ).hexdigest()
                     apply_result = StoreRepository.apply_webhook(
                         event_hash=event_hash,
                         payment_id=primary_key,
                         normalized_status="paid",
-                        supplied_amount=kashier_status.get("amount"),
-                        supplied_currency=kashier_status.get("currency") or "EGP",
+                        supplied_amount=amt,
+                        supplied_currency=curr,
                     )
                     if apply_result == "unknown_payment" and primary_key != order["id"]:
                         apply_result = StoreRepository.apply_webhook(
                             event_hash=event_hash + "_ord",
                             payment_id=order["id"],
                             normalized_status="paid",
-                            supplied_amount=kashier_status.get("amount"),
-                            supplied_currency=kashier_status.get("currency") or "EGP",
+                            supplied_amount=amt,
+                            supplied_currency=curr,
                         )
                     if apply_result in {"updated", "duplicate"}:
                         logger.info("Active Kashier check successfully confirmed payment for order %s", order["id"])

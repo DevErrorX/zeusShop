@@ -167,92 +167,105 @@ class KashierClient:
         self,
         payload: dict[str, Any],
         signature_header: str | None,
+        raw_body: bytes | None = None,
     ) -> bool:
         """Verify the HMAC-SHA256 signature of an incoming Kashier webhook.
 
-        Kashier payment webhooks: sort signatureKeys alphabetically,
-        URL-encode values, HMAC-SHA256 with Payment API Key.
-        We also try secret key variants and multiple encoding modes to prevent
-        spurious 401 rejections.
+        Supports:
+        1. Raw body HMAC-SHA256 signature.
+        2. signatureKeys query-string HMAC-SHA256 (alphabetically sorted and unsorted,
+           with URL-encoded and raw value variants).
+        3. Tries Payment API Key and Secret Key candidates.
         """
         if not signature_header or not isinstance(payload, dict):
             return False
 
-        data = payload.get("data")
-        if not isinstance(data, dict):
-            return False
-
-        signature_keys = data.get("signatureKeys")
-        if not isinstance(signature_keys, list) or not signature_keys:
-            return False
-
         sig = signature_header.strip().lower()
 
-        try:
-            sorted_keys = sorted(str(k) for k in signature_keys)
+        # Candidate HMAC keys to try
+        candidate_keys = [self.api_key]
+        if self.secret_key and self.secret_key != self.api_key:
+            candidate_keys.append(self.secret_key)
+            if "$" in self.secret_key:
+                parts = self.secret_key.split("$", 1)
+                candidate_keys.extend(parts)
 
-            # Build query string variations:
-            # 1. Full URL encoding (safe='')
-            query_string_strict = "&".join(
-                f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='')}"
-                for k in sorted_keys
-            )
-            # 2. RFC-3986 encoding (safe='-_.~')
-            query_string_rfc = "&".join(
-                f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='-_.~')}"
-                for k in sorted_keys
-            )
-            # 3. Unencoded raw values
-            query_string_raw = "&".join(
-                f"{k}={data.get(k, '')}"
-                for k in sorted_keys
-            )
-            # 4. Unsorted keys (original payload order)
-            unsorted_keys = [str(k) for k in signature_keys]
-            query_string_unsorted = "&".join(
-                f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='')}"
-                for k in unsorted_keys
-            )
-
-            # Candidate HMAC keys to try
-            candidate_keys = [self.api_key]
-            if self.secret_key and self.secret_key != self.api_key:
-                candidate_keys.append(self.secret_key)
-                if "$" in self.secret_key:
-                    candidate_keys.extend(self.secret_key.split("$", 1))
-
-            query_strings = [
-                query_string_strict,
-                query_string_rfc,
-                query_string_raw,
-                query_string_unsorted,
-            ]
-
+        # 1. Try raw_body HMAC-SHA256 if provided
+        if raw_body:
             for hmac_key in candidate_keys:
-                for qs in query_strings:
-                    digest = hmac.new(
-                        hmac_key.encode("utf-8"),
-                        qs.encode("utf-8"),
-                        hashlib.sha256,
-                    ).hexdigest().lower()
-                    if hmac.compare_digest(digest, sig):
-                        LOGGER.info(
-                            "Kashier webhook signature matched (key=%s..., mode=%d)",
-                            hmac_key[:8],
-                            query_strings.index(qs),
-                        )
-                        return True
+                digest = hmac.new(
+                    hmac_key.encode("utf-8"),
+                    raw_body,
+                    hashlib.sha256,
+                ).hexdigest().lower()
+                if hmac.compare_digest(digest, sig):
+                    LOGGER.info("Kashier webhook raw_body signature matched (key=%s...)", hmac_key[:8])
+                    return True
 
-            LOGGER.warning(
-                "Kashier webhook signature mismatch: received_sig=%s, signatureKeys=%s, qs_strict=%s",
-                sig[:16] + "...",
-                signature_keys,
-                query_string_strict[:120] + "...",
-            )
-            return False
-        except Exception:
-            LOGGER.exception("Exception during Kashier webhook signature verification")
-            return False
+        # 2. Try signatureKeys query-string method
+        data = payload.get("data")
+        if isinstance(data, dict):
+            signature_keys = data.get("signatureKeys")
+            if isinstance(signature_keys, list) and signature_keys:
+                try:
+                    sorted_keys = sorted(str(k) for k in signature_keys)
+                    unsorted_keys = [str(k) for k in signature_keys]
+
+                    query_string_strict = "&".join(
+                        f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='')}"
+                        for k in sorted_keys
+                    )
+                    query_string_rfc = "&".join(
+                        f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='-_.~')}"
+                        for k in sorted_keys
+                    )
+                    query_string_raw = "&".join(
+                        f"{k}={data.get(k, '')}"
+                        for k in sorted_keys
+                    )
+                    query_string_unsorted = "&".join(
+                        f"{k}={urllib.parse.quote(str(data.get(k, '')), safe='')}"
+                        for k in unsorted_keys
+                    )
+                    query_string_unsorted_raw = "&".join(
+                        f"{k}={data.get(k, '')}"
+                        for k in unsorted_keys
+                    )
+
+                    query_strings = [
+                        query_string_strict,
+                        query_string_rfc,
+                        query_string_raw,
+                        query_string_unsorted,
+                        query_string_unsorted_raw,
+                    ]
+
+                    for hmac_key in candidate_keys:
+                        for qs in query_strings:
+                            digest = hmac.new(
+                                hmac_key.encode("utf-8"),
+                                qs.encode("utf-8"),
+                                hashlib.sha256,
+                            ).hexdigest().lower()
+                            if hmac.compare_digest(digest, sig):
+                                LOGGER.info(
+                                    "Kashier webhook signature matched (key=%s..., qs_mode=%d)",
+                                    hmac_key[:8],
+                                    query_strings.index(qs),
+                                )
+                                return True
+
+                    LOGGER.warning(
+                        "Kashier webhook signature mismatch: received_sig=%s, signatureKeys=%s, sorted_keys=%s, qs_strict=%s",
+                        sig[:16] + "...",
+                        signature_keys,
+                        sorted_keys,
+                        query_string_strict[:120] + "...",
+                    )
+                except Exception:
+                    LOGGER.exception("Exception during Kashier webhook signature verification")
+
+        return False
 
     @staticmethod
     def _is_allowed_session_url(value: str) -> bool:
@@ -263,14 +276,20 @@ class KashierClient:
             and "/session/" in parsed.path
         )
 
-    async def check_payment_status(self, payment_id_or_order_id: str) -> dict[str, Any] | None:
-        """Query Kashier API directly for payment status.
+    async def check_payment_status(
+        self, order_id: str, session_id: str | None = None
+    ) -> dict[str, Any] | None:
+        """Query Kashier API directly for payment status of an order.
 
-        Queries /v3/payment/sessions/{id} and /v3/orders/{id}.
+        Uses Kashier v3 Order Lookup API:
+        GET /v3/payment/orders?search={order_id}
+        with fallback to Session Lookup API:
+        GET /v3/payment/sessions/{session_id}
+
         Returns a dict with 'status', 'amount', 'currency' if found, else None.
         Guarantees instant verification even if webhooks are delayed or failing.
         """
-        if not self.merchant_id or not self.secret_key or not payment_id_or_order_id:
+        if not self.merchant_id or not self.secret_key or not order_id:
             return None
 
         headers = {
@@ -280,73 +299,156 @@ class KashierClient:
             "User-Agent": "ZEUS-STORE/1.0",
         }
 
-        # Candidate endpoints to query:
-        endpoints_to_try = [
-            f"{self.base_url}/v3/payment/sessions/{payment_id_or_order_id}",
-            f"{self.base_url}/v3/orders/{payment_id_or_order_id}",
-        ]
-
         try:
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(10.0),
                 follow_redirects=False,
                 transport=self.transport,
             ) as client:
-                for url in endpoints_to_try:
+                # 1. Primary: Order Lookup API by merchant order ID
+                clean_id = str(order_id).strip()
+                url = f"{self.base_url}/v3/payment/orders?search={urllib.parse.quote(clean_id)}"
+                response = await client.get(url, headers=headers)
+                if response.status_code == 200:
                     try:
-                        response = await client.get(url, headers=headers)
-                        if response.status_code == 200:
-                            body = response.json()
-                            if not isinstance(body, dict):
-                                continue
+                        body = response.json()
+                    except Exception:
+                        body = {}
+                    items = body.get("data", []) if isinstance(body, dict) else []
+                    if isinstance(items, list) and items:
+                        # Find matching order by merchantOrderId
+                        match = next(
+                            (
+                                it for it in items
+                                if str(it.get("merchantOrderId") or "").lower() == clean_id.lower()
+                            ),
+                            None,
+                        )
+                        if not match and len(items) == 1:
+                            match = items[0]
+                        if match and isinstance(match, dict):
+                            raw_status = str(match.get("status") or "").strip().upper()
+                            captured_amount = match.get("totalCapturedAmount") or 0
 
-                            data = body.get("data") or body.get("response") or body
-                            if not isinstance(data, dict):
-                                continue
-
-                            raw_status = str(data.get("status") or data.get("paymentStatus") or "").strip().upper()
-                            captured_amount = data.get("capturedAmount") or 0
-
-                            params = data.get("paymentParams") if isinstance(data.get("paymentParams"), dict) else data
-                            amount = params.get("amount") or data.get("totalAmount") or captured_amount
-                            currency = str(params.get("currency") or data.get("currency") or "EGP").strip().upper()
-
-                            if raw_status in {"PAID", "CAPTURED", "SUCCESS", "PAY"} or (captured_amount and float(captured_amount) > 0):
+                            if raw_status in {"SUCCESS", "CAPTURED", "PAID", "PAY"} or (captured_amount and float(captured_amount) > 0):
                                 normalized = "paid"
                             elif raw_status in {"FAILED", "FAIL", "CANCELLED", "CANCELED"}:
                                 normalized = "failed"
                             elif raw_status in {"REFUNDED", "REFUND"}:
                                 normalized = "refunded"
-                            elif raw_status == "EXPIRED":
-                                normalized = "failed"
                             else:
                                 normalized = "pending"
 
+                            amt = (
+                                match.get("totalCapturedAmount")
+                                or match.get("totalAuthorizedAmount")
+                                or (match.get("order") if isinstance(match.get("order"), dict) else {}).get("amount")
+                                or match.get("amount")
+                            )
+                            curr = (
+                                (match.get("order") if isinstance(match.get("order"), dict) else {}).get("currency")
+                                or match.get("currency")
+                                or "EGP"
+                            )
                             result_amount = None
-                            if amount is not None:
+                            if amt is not None:
                                 try:
-                                    result_amount = Decimal(str(amount))
+                                    result_amount = Decimal(str(amt))
                                 except Exception:
                                     pass
 
                             LOGGER.info(
-                                "Kashier status check succeeded for %s: normalized=%s, raw=%s, amount=%s %s",
-                                payment_id_or_order_id,
+                                "Kashier order lookup succeeded for %s: normalized=%s, raw=%s, captured=%s %s",
+                                clean_id,
                                 normalized,
                                 raw_status,
                                 result_amount,
-                                currency,
+                                curr,
                             )
                             return {
                                 "status": normalized,
                                 "raw_status": raw_status,
                                 "amount": result_amount,
-                                "currency": currency,
+                                "currency": str(curr).strip().upper(),
                             }
-                    except httpx.HTTPError:
-                        continue
-        except Exception as exc:
-            LOGGER.debug("Kashier status check exception for %s: %s", payment_id_or_order_id, exc)
-            return None
 
-        return None
+                # 2. Fallback: Query Payment Session if session_id is provided or if order_id is a 24-char session ID
+                target_session = (session_id or "").strip()
+                if not target_session and len(clean_id) == 24 and not clean_id.startswith("ZEUS-"):
+                    target_session = clean_id
+
+                if target_session:
+                    s_url = f"{self.base_url}/v3/payment/sessions/{urllib.parse.quote(target_session)}"
+                    s_response = await client.get(s_url, headers=headers)
+                    try:
+                        s_body = s_response.json()
+                    except Exception:
+                        s_body = {}
+
+                    messages = s_body.get("messages", {}) if isinstance(s_body.get("messages"), dict) else {}
+                    en_msg = str(messages.get("en") or "").lower()
+                    ar_msg = str(messages.get("ar") or "")
+
+                    # Check if Kashier explicitly indicates the session is already paid
+                    if "already been paid" in en_msg or "تم دفع الطلب بالفعل" in ar_msg:
+                        LOGGER.info(
+                            "Kashier session lookup confirmed payment for %s (%s): msg=%s",
+                            clean_id,
+                            target_session,
+                            en_msg or ar_msg,
+                        )
+                        return {
+                            "status": "paid",
+                            "raw_status": "PAID_CONFIRMED",
+                            "amount": None,
+                            "currency": "EGP",
+                        }
+
+                    if s_response.status_code == 200:
+                        s_data = s_body.get("data") if isinstance(s_body, dict) else {}
+                        if isinstance(s_data, dict):
+                            s_status = str(s_data.get("status") or "").strip().upper()
+                            s_cap = s_data.get("capturedAmount", 0)
+                            payment_params = s_data.get("paymentParams") if isinstance(s_data.get("paymentParams"), dict) else {}
+                            if s_status in {"SUCCESS", "CAPTURED", "PAID", "PAY"} or (s_cap and float(s_cap) > 0):
+                                normalized = "paid"
+                                amt = s_cap or payment_params.get("amount")
+                            elif s_status in {"FAILED", "CANCELLED", "CANCELED"}:
+                                normalized = "failed"
+                                amt = payment_params.get("amount")
+                            elif s_status == "EXPIRED" and (not s_cap or float(s_cap) == 0):
+                                normalized = "expired"
+                                amt = payment_params.get("amount")
+                            else:
+                                normalized = "pending"
+                                amt = payment_params.get("amount")
+
+                            curr = payment_params.get("currency") or "EGP"
+                            result_amount = None
+                            if amt is not None:
+                                try:
+                                    result_amount = Decimal(str(amt))
+                                except Exception:
+                                    pass
+
+                            LOGGER.info(
+                                "Kashier session lookup succeeded for %s (%s): normalized=%s, raw=%s, captured=%s %s",
+                                clean_id,
+                                target_session,
+                                normalized,
+                                s_status,
+                                result_amount,
+                                curr,
+                            )
+                            return {
+                                "status": normalized,
+                                "raw_status": s_status,
+                                "amount": result_amount,
+                                "currency": str(curr).strip().upper(),
+                            }
+
+                LOGGER.debug("Kashier order status check found no matching record for %s", clean_id)
+                return None
+        except Exception as exc:
+            LOGGER.debug("Kashier order status check failed for %s: %s", order_id, exc)
+            return None
