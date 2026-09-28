@@ -486,7 +486,6 @@
     let total = 0;
     container.innerHTML = cart.map((item, idx) => {
       const itemQty = item.quantity || 1;
-      let convertedUnit = 0;
       const baseUsd = parseFloat(item.price_usd || (item.price_sar ? item.price_sar / 3.75 : item.price / 3.75)) || 0;
       const convertedUnit = baseUsd * currInfo.rate;
       const itemSubtotal = convertedUnit * itemQty;
@@ -586,9 +585,6 @@
       card.querySelector('.price-display') ||
       card.querySelector('[class*="product-price"]')
     ) : null;
-
-    let priceSar = 100; // default fallback in SAR
-    let priceEgp = 0;
 
     // Check if matched in catalogData
     let matched = null;
@@ -700,14 +696,15 @@
 
     const current = getCurrency();
     const itemsHtml = Object.entries(CURRENCIES).map(([code, info]) => {
-      const isBase = code === 'SAR';
+      const isBase = code === 'USD';
       const isSelected = code === current;
       const rateHint = isBase ? 'العملة الأساسية (سعر ثابت)' : 
-        (code === 'EGP' ? 'سعر ثابت محدد من الإدارة' : 
-        (code === 'USD' || code === 'USDT' ? '1 $ ≈ 3.75 ر.س' : 
-        (code === 'SYP' ? `1 ر.س ≈ ${Math.round(info.rate || 3733).toLocaleString('en-US')} ل.س` :
-        (code === 'LBP' ? `1 ر.س ≈ ${Math.round(info.rate || 23867).toLocaleString('en-US')} ل.ل` :
-        `1 ر.س ≈ ${(info.rate).toFixed(code === 'KWD' ? 3 : 2)} ${info.symbol}`))));
+        (code === 'USDT' ? '1 USD = 1 USDT' : 
+        (code === 'SAR' ? '1 $ ≈ 3.75 ر.س' : 
+        (code === 'EGP' ? `1 $ ≈ ${info.rate} ج.م` : 
+        (code === 'SYP' ? `1 $ ≈ ${Math.round(info.rate || 14000).toLocaleString('en-US')} ل.س` :
+        (code === 'LBP' ? `1 $ ≈ ${Math.round(info.rate || 89500).toLocaleString('en-US')} ل.ل` :
+        `1 $ ≈ ${(info.rate).toFixed(code === 'KWD' ? 3 : 2)} ${info.symbol}`)))));
       return `
         <button type="button" class="cur-switch__item ${isSelected ? 'is-active' : ''} zeus-curr-opt" data-curr="${code}">
           <span class="text-base shrink-0 leading-none">${info.flag}</span>
@@ -1295,6 +1292,21 @@
           try {
             localStorage.setItem('zeus_selected_country', country.code);
           } catch(e) {}
+
+          const COUNTRY_TO_CURR = {
+            'EG': 'EGP',
+            'SA': 'SAR',
+            'IQ': 'IQD',
+            'AE': 'AED',
+            'KW': 'KWD',
+            'SY': 'SYP',
+            'LB': 'LBP',
+            'US': 'USD'
+          };
+          const mappedCurr = COUNTRY_TO_CURR[country.code];
+          if (mappedCurr && CURRENCIES[mappedCurr]) {
+            setCurrency(mappedCurr);
+          }
         }
 
         // Update active class in rendered list
