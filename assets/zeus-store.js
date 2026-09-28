@@ -1094,16 +1094,53 @@
     const usdRate = (CURRENCIES.USDT && CURRENCIES.USDT.rate) ? CURRENCIES.USDT.rate : (1.0 / 3.75);
     const totalUsdt = (totalSar * usdRate).toFixed(2);
 
-    // Update amounts in Kashier panel & buttons (Kashier is strictly in EGP)
+    // Update amounts in Kashier panel & buttons based on active store currency
+    const kashierLabelEl = document.getElementById('zeus-kashier-amount-label');
     const kashierEgpEl = document.getElementById('zeus-kashier-egp-amount');
-    if (kashierEgpEl) kashierEgpEl.textContent = `${Math.round(totalEgp).toLocaleString('en-US')} ج.م`;
+    if (kashierLabelEl) {
+      if (curr === 'USD') {
+        kashierLabelEl.textContent = 'المبلغ المطلوب بالدولار (USD):';
+      } else if (curr === 'SAR') {
+        kashierLabelEl.textContent = 'المبلغ المطلوب بالريال السعودي (SAR):';
+      } else if (curr === 'EGP') {
+        kashierLabelEl.textContent = 'المبلغ المطلوب بالجنيه المصري (EGP):';
+      } else if (curr === 'AED') {
+        kashierLabelEl.textContent = 'المبلغ المطلوب بالدرهم الإماراتي (AED):';
+      } else {
+        kashierLabelEl.textContent = 'المبلغ المطلوب بالريال السعودي (SAR):';
+      }
+    }
+    if (kashierEgpEl) {
+      if (curr === 'USD') {
+        kashierEgpEl.textContent = `$ ${parseFloat(totalUsdt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      } else if (curr === 'SAR') {
+        kashierEgpEl.textContent = `${Math.round(totalSar).toLocaleString('en-US')} ر.س`;
+      } else if (curr === 'EGP') {
+        kashierEgpEl.textContent = `${Math.round(totalEgp).toLocaleString('en-US')} ج.م`;
+      } else if (curr === 'AED') {
+        const totalAed = totalSar * (3.6725 / 3.75);
+        kashierEgpEl.textContent = `${totalAed.toFixed(2)} د.إ`;
+      } else {
+        // Unsupported Kashier currency (KWD, SYP, LBP) -> Fallback to SAR
+        kashierEgpEl.textContent = `${Math.round(totalSar).toLocaleString('en-US')} ر.س`;
+      }
+    }
+
     const kashierAmountHint = document.getElementById('zeus-kashier-amount-hint');
     if (kashierAmountHint) {
-      kashierAmountHint.innerHTML = `
-        <div class="text-[10.5px] text-muted-foreground font-mono">
-          معاملة معتمدة ومحمية مباشرة عبر بوابة كاشير (Kashier Payment Gateway) بسعر ثابت
-        </div>
-      `;
+      if (['SAR', 'USD', 'EGP', 'AED'].includes(curr)) {
+        kashierAmountHint.innerHTML = `
+          <div class="text-[10.5px] text-muted-foreground font-mono">
+            معاملة معتمدة ومحمية مباشرة بسعر المتجر الأساسي (${currInfo.symbol || curr}) عبر بوابة كاشير (Kashier)
+          </div>
+        `;
+      } else {
+        kashierAmountHint.innerHTML = `
+          <div class="text-[10.5px] text-amber-500 font-mono">
+            يتم التحصيل بالريال السعودي (العملة الأساسية للمتجر): ${Math.round(totalSar)} ر.س
+          </div>
+        `;
+      }
     }
 
     // Update order summary items on checkout page if cart has items
@@ -1818,12 +1855,13 @@
           let paymentUrl = '';
           try {
             // Server calculates all prices and creates session Server-to-Server
+            const activeCurr = (typeof getCurrency === 'function' ? getCurrency() : null) || 'SAR';
             const resp = await fetch('/api/v1/payment/kashier/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 items: itemsPayload,
-                currency: 'EGP',
+                currency: activeCurr,
                 title: orderTitle,
                 customer_name: finalCustomerName,
                 customer_phone: formattedPhone,
@@ -1837,7 +1875,8 @@
               if (resData.session_url || resData.payment_url) {
                 paymentUrl = resData.session_url || resData.payment_url;
                 if (pendingAmountEl && resData.amount) {
-                  pendingAmountEl.textContent = `${resData.amount} ${resData.currency === 'EGP' ? 'ج.م' : (resData.currency || 'EGP')}`;
+                  const resSym = (CURRENCIES[resData.currency] && CURRENCIES[resData.currency].symbol) || resData.currency || '';
+                  pendingAmountEl.textContent = `${resData.amount} ${resSym}`;
                 }
               }
             } else {

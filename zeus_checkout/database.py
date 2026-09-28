@@ -311,27 +311,31 @@ def apply_webhook(
 
         # Step 3: Hardened status processing
         if normalized_status == "paid":
-            curr = str(supplied_currency or order.get("currency") or "EGP").strip().upper()
-            order_curr = str(order.get("currency") or "USD").strip().upper()
+            order_curr = str(order.get("currency") or "SAR").strip().upper()
+            curr = str(supplied_currency or order_curr).strip().upper()
             order_gateway = str(order.get("payment_method") or order.get("gateway") or "").strip().lower()
 
             # If supplied_amount is None (e.g. from active Kashier check confirming payment), use expected order amount
             if supplied_amount is None:
                 if curr == "EGP":
                     supplied_amount = order.get("amount_egp") or order.get("total_amount")
-                else:
+                elif curr in {"USD", "USDT"}:
                     supplied_amount = order.get("expected_usdt") or order.get("total_amount")
+                else:
+                    supplied_amount = order.get("total_amount")
 
             if supplied_amount is None:
                 conn.commit()
                 return "amount_mismatch"
 
-            # Strict currency matching: EGP, USD, or USDT
-            # Kashier payments are charged in EGP even if base order currency was SAR or USD
-            is_kashier_egp = curr == "EGP" and (order_gateway == "kashier" or bool(order.get("amount_egp")))
-            if curr not in {"USD", "USDT", "EGP"}:
+            # Strict currency matching: SAR, USD, USDT, EGP, AED, EUR, GBP
+            ACCEPTED_CURRENCIES = {"SAR", "USD", "USDT", "EGP", "AED", "EUR", "GBP"}
+            if curr not in ACCEPTED_CURRENCIES:
                 conn.commit()
                 return "currency_mismatch"
+
+            # Allow EGP for Kashier payments if order had amount_egp or was created in EGP
+            is_kashier_egp = curr == "EGP" and (order_gateway == "kashier" or bool(order.get("amount_egp")))
             if not is_kashier_egp:
                 if order_curr and curr != order_curr and not (curr in {"USD", "USDT"} and order_curr in {"USD", "USDT"}):
                     conn.commit()
@@ -340,8 +344,10 @@ def apply_webhook(
             try:
                 if curr == "EGP":
                     exp_val = order.get("amount_egp") or order.get("total_amount")
-                else:
+                elif curr in {"USD", "USDT"}:
                     exp_val = order.get("expected_usdt") or order.get("total_amount")
+                else:
+                    exp_val = order.get("total_amount")
 
                 if not exp_val:
                     conn.commit()
@@ -349,8 +355,14 @@ def apply_webhook(
 
                 exp = Decimal(str(exp_val))
                 act = Decimal(str(supplied_amount))
-                # Strict amount matching with appropriate currency tolerance (5.00 EGP for gateway/exchange tolerance)
-                tolerance = Decimal("5.00") if curr == "EGP" else Decimal("0.05")
+                # Strict amount matching with appropriate currency tolerance
+                if curr == "EGP":
+                    tolerance = Decimal("5.00")
+                elif curr in {"SAR", "AED"}:
+                    tolerance = Decimal("1.00")
+                else:
+                    tolerance = Decimal("0.05")
+
                 if act <= 0 or abs(exp - act) > tolerance:
                     conn.commit()
                     return "amount_mismatch"

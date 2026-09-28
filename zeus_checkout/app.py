@@ -416,8 +416,33 @@ def create_app() -> FastAPI:
         if calculated_total_egp <= 0 and calculated_total_sar <= 0 and calculated_total_usd <= 0:
             raise HTTPException(status_code=400, detail="إجمالي قيمة الطلب غير صالح")
 
-        # Locked currency and amount on server - always Egyptian Pounds (EGP) as requested by user
-        currency = "EGP"
+        # Determine target currency and amount according to the customer's selected store currency
+        requested_curr = str(req.currency or "SAR").strip().upper()
+        KASHIER_SUPPORTED = {"SAR", "USD", "EGP", "AED", "EUR", "GBP"}
+
+        if requested_curr in KASHIER_SUPPORTED:
+            currency = requested_curr
+        else:
+            # Fall back to store's primary base currency: SAR
+            currency = "SAR"
+
+        if currency == "SAR":
+            charge_amount = round(calculated_total_sar, 2)
+        elif currency == "USD":
+            charge_amount = round(calculated_total_usd, 2)
+        elif currency == "EGP":
+            charge_amount = round(calculated_total_egp, 2)
+        elif currency == "AED":
+            charge_amount = round(calculated_total_sar * (3.6725 / 3.75), 2)
+        elif currency == "EUR":
+            charge_amount = round(calculated_total_usd * 0.92, 2)
+        elif currency == "GBP":
+            charge_amount = round(calculated_total_usd * 0.78, 2)
+        else:
+            currency = "SAR"
+            charge_amount = round(calculated_total_sar, 2)
+
+        amount_str = f"{charge_amount:.2f}"
         expected_egp = f"{calculated_total_egp:.2f}"
         expected_usdt = f"{calculated_total_usd:.2f}"
         order_id = req.order_id or f"ZEUS_{int(datetime.now().timestamp())}_{random.randint(100, 999)}"
@@ -431,11 +456,11 @@ def create_app() -> FastAPI:
             base_url=base_url,
         )
 
-        # Server-to-Server direct session creation with Kashier official API in Egyptian Pounds (EGP)
+        # Server-to-Server direct session creation with Kashier official API in the exact store price & currency
         try:
             payment = await client.create_payment_session(
                 order_id=order_id,
-                amount=expected_egp,
+                amount=amount_str,
                 currency=currency,
                 customer_email=req.customer_email or f"customer_{order_id[:8]}@zeus.store",
                 customer_reference=req.customer_phone or f"cust_{order_id[:8]}",
@@ -443,20 +468,20 @@ def create_app() -> FastAPI:
                 description=req.title or f"طلب متجر زيوس #{order_id[:8].upper()}",
             )
 
-            # Store pending order with locked payment_id, currency EGP, and expected amount
+            # Store pending order with locked payment_id, currency, and expected amount
             StoreRepository.create_order(
                 order_id=order_id,
                 customer_name=req.customer_name,
                 customer_phone=req.customer_phone or "",
                 customer_email=req.customer_email or "",
                 payment_method="kashier",
-                total_amount=calculated_total_egp,
-                currency="EGP",
+                total_amount=charge_amount,
+                currency=currency,
                 items=calculated_items,
                 payment_id=payment.session_id,
                 expected_usdt=expected_usdt,
                 amount_egp=calculated_total_egp,
-                notes=f"Kashier session: {payment.session_id}"
+                notes=f"Kashier session: {payment.session_id} ({amount_str} {currency})"
             )
 
             return {
@@ -511,11 +536,11 @@ def create_app() -> FastAPI:
             except Exception:
                 amount = None
 
-        currency = str(
+        raw_curr = (
             (data.get("order") if isinstance(data.get("order"), dict) else {}).get("currency")
             or data.get("currency")
-            or "EGP"
-        ).strip().upper() or "EGP"
+        )
+        currency = str(raw_curr).strip().upper() if raw_curr else None
 
         return target_id, normalized_status, amount, currency
 
@@ -643,8 +668,15 @@ def create_app() -> FastAPI:
                 )
 
                 if kashier_status and kashier_status.get("status") == "paid":
-                    amt = kashier_status.get("amount") or order.get("amount_egp") or order.get("total_amount")
-                    curr = kashier_status.get("currency") or "EGP"
+                    curr = kashier_status.get("currency") or order.get("currency") or "SAR"
+                    amt = kashier_status.get("amount") or order.get("total_amount")
+                    if not amt:
+                        if curr == "EGP":
+                            amt = order.get("amount_egp")
+                        elif curr in {"USD", "USDT"}:
+                            amt = order.get("expected_usdt")
+                        else:
+                            amt = order.get("total_amount")
                     primary_key = session_id or order["id"]
                     event_hash = hashlib.sha256(
                         f"active_kashier_check:{primary_key}:{order['id']}:{amt}".encode("utf-8")
