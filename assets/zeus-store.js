@@ -14,7 +14,7 @@
     SAR: { symbol: 'ر.س', name: 'ريال سعودي', rate: 1.0, flag: '🇸🇦', flagImg: 'https://flagcdn.com/w40/sa.png', decimals: 0, isFixed: true },
     USD: { symbol: '$', name: 'دولار أمريكي', rate: 1.0 / 3.75, flag: '🇺🇸', flagImg: 'https://flagcdn.com/w40/us.png', decimals: 2 },
     USDT: { symbol: 'USDT', name: 'تيثر رقمي', rate: 1.0 / 3.75, flag: '💎', flagImg: 'https://flagcdn.com/w40/us.png', decimals: 2 },
-    EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 51.34 / 3.75, flag: '🇪🇬', flagImg: 'https://flagcdn.com/w40/eg.png', decimals: 0, isFixed: true },
+    EGP: { symbol: 'ج.م', name: 'جنيه مصري', rate: 51.55 / 3.75, flag: '🇪🇬', flagImg: 'https://flagcdn.com/w40/eg.png', decimals: 0, isFixed: true },
     AED: { symbol: 'د.إ', name: 'درهم إماراتي', rate: 3.6725 / 3.75, flag: '🇦🇪', flagImg: 'https://flagcdn.com/w40/ae.png', decimals: 2 },
     KWD: { symbol: 'د.ك', name: 'دينار كويتي', rate: 0.308184 / 3.75, flag: '🇰🇼', flagImg: 'https://flagcdn.com/w40/kw.png', decimals: 3 },
     SYP: { symbol: 'ل.س', name: 'ليرة سورية', rate: 14000.0 / 3.75, flag: '🇸🇾', flagImg: 'https://flagcdn.com/w40/sy.png', decimals: 0 },
@@ -1094,50 +1094,39 @@
     const usdRate = (CURRENCIES.USDT && CURRENCIES.USDT.rate) ? CURRENCIES.USDT.rate : (1.0 / 3.75);
     const totalUsdt = (totalSar * usdRate).toFixed(2);
 
-    // Update amounts in Kashier panel & buttons based on active store currency
+    // Update amounts in Kashier panel & buttons
+    // Note: Kashier gateway strictly charges in Egyptian Pounds (EGP).
     const kashierLabelEl = document.getElementById('zeus-kashier-amount-label');
     const kashierEgpEl = document.getElementById('zeus-kashier-egp-amount');
-    if (kashierLabelEl) {
-      if (curr === 'USD') {
-        kashierLabelEl.textContent = 'المبلغ المطلوب بالدولار (USD):';
-      } else if (curr === 'SAR') {
-        kashierLabelEl.textContent = 'المبلغ المطلوب بالريال السعودي (SAR):';
-      } else if (curr === 'EGP') {
-        kashierLabelEl.textContent = 'المبلغ المطلوب بالجنيه المصري (EGP):';
-      } else if (curr === 'AED') {
-        kashierLabelEl.textContent = 'المبلغ المطلوب بالدرهم الإماراتي (AED):';
-      } else {
-        kashierLabelEl.textContent = 'المبلغ المطلوب بالريال السعودي (SAR):';
-      }
-    }
-    if (kashierEgpEl) {
-      if (curr === 'USD') {
-        kashierEgpEl.textContent = `$ ${parseFloat(totalUsdt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      } else if (curr === 'SAR') {
-        kashierEgpEl.textContent = `${Math.round(totalSar).toLocaleString('en-US')} ر.س`;
-      } else if (curr === 'EGP') {
-        kashierEgpEl.textContent = `${Math.round(totalEgp).toLocaleString('en-US')} ج.م`;
-      } else if (curr === 'AED') {
-        const totalAed = totalSar * (3.6725 / 3.75);
-        kashierEgpEl.textContent = `${totalAed.toFixed(2)} د.إ`;
-      } else {
-        // Unsupported Kashier currency (KWD, SYP, LBP) -> Fallback to SAR
-        kashierEgpEl.textContent = `${Math.round(totalSar).toLocaleString('en-US')} ر.س`;
-      }
-    }
-
     const kashierAmountHint = document.getElementById('zeus-kashier-amount-hint');
-    if (kashierAmountHint) {
-      if (['SAR', 'USD', 'EGP', 'AED'].includes(curr)) {
+
+    const egpPerUsd = (CURRENCIES.EGP && CURRENCIES.EGP.rate) ? (CURRENCIES.EGP.rate / (CURRENCIES.USD ? CURRENCIES.USD.rate : (1.0 / 3.75))) : 51.55;
+
+    if (curr === 'EGP') {
+      if (kashierLabelEl) kashierLabelEl.textContent = 'المبلغ المطلوب بالجنيه المصري (EGP):';
+      if (kashierEgpEl) kashierEgpEl.textContent = `${Math.round(totalEgp).toLocaleString('en-US')} ج.م`;
+      if (kashierAmountHint) {
         kashierAmountHint.innerHTML = `
           <div class="text-[10.5px] text-muted-foreground font-mono">
-            معاملة معتمدة ومحمية مباشرة بسعر المتجر الأساسي (${currInfo.symbol || curr}) عبر بوابة كاشير (Kashier)
+            معاملة معتمدة ومحمية مباشرة بالسعر الثابت للمتجر بالجنيه المصري عبر بوابة كاشير (Kashier)
           </div>
         `;
-      } else {
+      }
+    } else {
+      // Customer is browsing in USD, SAR, AED, etc.
+      // Kashier charges in EGP, so we charge the exact equivalent of the store's basic price in EGP
+      const targetUsd = parseFloat(totalUsdt) || (totalSar / 3.75);
+      const equivalentEgp = Math.round(targetUsd * egpPerUsd);
+      const storePriceFormatted = (curr === 'USD') ? `$ ${parseFloat(totalUsdt).toFixed(2)}` : (curr === 'SAR' ? `${Math.round(totalSar)} ر.س` : `${formatAmount(convertFromSar(totalSar, curr), curr)} ${currInfo.symbol || curr}`);
+
+      if (kashierLabelEl) kashierLabelEl.textContent = 'المبلغ المطلوب عبر كاشير (EGP):';
+      if (kashierEgpEl) {
+        kashierEgpEl.textContent = `${equivalentEgp.toLocaleString('en-US')} ج.م`;
+      }
+      if (kashierAmountHint) {
         kashierAmountHint.innerHTML = `
-          <div class="text-[10.5px] text-amber-500 font-mono">
-            يتم التحصيل بالريال السعودي (العملة الأساسية للمتجر): ${Math.round(totalSar)} ر.س
+          <div class="text-[10.5px] text-muted-foreground font-mono">
+            بوابة كاشير تحصّل بالجنيه المصري فقط — يتم تحصيل ما يعادل سعر طلبك الأساسي (${storePriceFormatted}) بالجنيه المصري (~${equivalentEgp.toLocaleString('en-US')} ج.م) بالضبط دون أي فارق
           </div>
         `;
       }

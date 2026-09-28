@@ -416,34 +416,41 @@ def create_app() -> FastAPI:
         if calculated_total_egp <= 0 and calculated_total_sar <= 0 and calculated_total_usd <= 0:
             raise HTTPException(status_code=400, detail="إجمالي قيمة الطلب غير صالح")
 
-        # Determine target currency and amount according to the customer's selected store currency
+        # Kashier strictly processes payments in Egyptian Pounds (EGP).
+        # We determine the exact EGP charge amount:
+        # 1) If customer is paying in EGP: use product's fixed Egyptian price (calculated_total_egp)
+        # 2) If customer is paying in USD/SAR/other: charge the exact equivalent of the store's basic USD/SAR price in EGP,
+        #    so when Kashier processes or converts it, it matches the store price (~$37 USD / 140 SAR) exactly without discrepancy.
         requested_curr = str(req.currency or "SAR").strip().upper()
-        KASHIER_SUPPORTED = {"SAR", "USD", "EGP", "AED", "EUR", "GBP"}
 
-        if requested_curr in KASHIER_SUPPORTED:
-            currency = requested_curr
-        else:
-            # Fall back to store's primary base currency: SAR
-            currency = "SAR"
+        settings_dict = StoreRepository.get_settings()
+        custom_rates_raw = settings_dict.get("custom_rates", "{}")
+        custom_rates = {}
+        try:
+            custom_rates = json.loads(custom_rates_raw) if custom_rates_raw else {}
+        except Exception:
+            custom_rates = {}
 
-        if currency == "SAR":
-            charge_amount = round(calculated_total_sar, 2)
-        elif currency == "USD":
-            charge_amount = round(calculated_total_usd, 2)
-        elif currency == "EGP":
+        # USD to EGP conversion rate:
+        # Default is 51.55 (matches Kashier's official CBE exchange rate: 1,500 EGP = $29.10 USD -> 51.546 EGP/USD)
+        usd_to_egp_rate = float(
+            settings_dict.get("kashier_usd_to_egp_rate")
+            or custom_rates.get("EGP")
+            or 51.55
+        )
+        if usd_to_egp_rate <= 0:
+            usd_to_egp_rate = 51.55
+
+        currency = "EGP"
+
+        if requested_curr == "EGP":
             charge_amount = round(calculated_total_egp, 2)
-        elif currency == "AED":
-            charge_amount = round(calculated_total_sar * (3.6725 / 3.75), 2)
-        elif currency == "EUR":
-            charge_amount = round(calculated_total_usd * 0.92, 2)
-        elif currency == "GBP":
-            charge_amount = round(calculated_total_usd * 0.78, 2)
         else:
-            currency = "SAR"
-            charge_amount = round(calculated_total_sar, 2)
+            base_usd = calculated_total_usd if calculated_total_usd > 0 else (calculated_total_sar / 3.75)
+            charge_amount = round(base_usd * usd_to_egp_rate, 2)
 
         amount_str = f"{charge_amount:.2f}"
-        expected_egp = f"{calculated_total_egp:.2f}"
+        expected_egp = amount_str
         expected_usdt = f"{calculated_total_usd:.2f}"
         order_id = req.order_id or f"ZEUS_{int(datetime.now().timestamp())}_{random.randint(100, 999)}"
         callback_url = req.callback_url or kashier_cfg.get("callback_url") or f"https://zeus-store.site/order.html?order_id={order_id}&kashier_return=1"
@@ -456,7 +463,7 @@ def create_app() -> FastAPI:
             base_url=base_url,
         )
 
-        # Server-to-Server direct session creation with Kashier official API in the exact store price & currency
+        # Server-to-Server direct session creation with Kashier official API in EGP
         try:
             payment = await client.create_payment_session(
                 order_id=order_id,
@@ -468,7 +475,7 @@ def create_app() -> FastAPI:
                 description=req.title or f"طلب متجر زيوس #{order_id[:8].upper()}",
             )
 
-            # Store pending order with locked payment_id, currency, and expected amount
+            # Store pending order with locked payment_id, currency EGP, and expected amount
             StoreRepository.create_order(
                 order_id=order_id,
                 customer_name=req.customer_name,
@@ -480,8 +487,8 @@ def create_app() -> FastAPI:
                 items=calculated_items,
                 payment_id=payment.session_id,
                 expected_usdt=expected_usdt,
-                amount_egp=calculated_total_egp,
-                notes=f"Kashier session: {payment.session_id} ({amount_str} {currency})"
+                amount_egp=charge_amount,
+                notes=f"Kashier session: {payment.session_id} ({amount_str} EGP for {calculated_total_usd:.2f} USD / {calculated_total_sar:.2f} SAR)"
             )
 
             return {
@@ -668,8 +675,8 @@ def create_app() -> FastAPI:
                 )
 
                 if kashier_status and kashier_status.get("status") == "paid":
-                    curr = kashier_status.get("currency") or order.get("currency") or "SAR"
-                    amt = kashier_status.get("amount") or order.get("total_amount")
+                    curr = kashier_status.get("currency") or order.get("currency") or "EGP"
+                    amt = kashier_status.get("amount") or order.get("amount_egp") or order.get("total_amount")
                     if not amt:
                         if curr == "EGP":
                             amt = order.get("amount_egp")

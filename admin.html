@@ -2796,7 +2796,7 @@ ${key}
         };
 
         window.resetDefaultRates = async function() {
-            state.rates = { EGP: 51.34, SAR: 3.75, USD: 1.0, USDT: 1.0, AED: 3.67, KWD: 0.31, IQD: 1310.0, SYP: 14000.0, LBP: 89500.0 };
+            state.rates = { EGP: 51.55, SAR: 3.75, USD: 1.0, USDT: 1.0, AED: 3.67, KWD: 0.31, IQD: 1310.0, SYP: 14000.0, LBP: 89500.0 };
             localStorage.setItem('zeus_rates', JSON.stringify(state.rates));
             try {
                 await apiFetch('/api/v1/admin/settings', {
