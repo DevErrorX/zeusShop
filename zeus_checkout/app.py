@@ -392,14 +392,16 @@ def create_app() -> FastAPI:
                 logger.warning("api_create_kashier_payment: product not found in catalog or DB: prod_id=%r, item_title=%r, raw=%r", prod_id, item_title, item)
                 raise HTTPException(status_code=400, detail=f"المنتج المطلوب غير موجود أو تم تحديثه: {prod_id or item_title}")
 
-            price_sar = float(prod.get("price_sar", 0))
-            price_usd = float(prod.get("price_usd", 0)) or round(price_sar / settings.usd_to_sar, 2)
-            price_egp = float(prod.get("price_egp", 0))
-            if price_egp <= 0:
-                if price_usd > 0:
-                    price_egp = round(price_usd * 50.0, 2)
-                elif price_sar > 0:
-                    price_egp = round(price_sar / (settings.egp_to_sar or 0.08), 2)
+            price_usd = float(prod.get("price_usd", 0))
+            if price_usd <= 0:
+                price_sar = float(prod.get("price_sar", 0))
+                if price_sar > 0:
+                    price_usd = round(price_sar / 3.75, 2)
+                else:
+                    price_usd = 35.0
+
+            price_sar = float(prod.get("price_sar", 0)) or round(price_usd * 3.75, 2)
+            price_egp = float(prod.get("price_egp", 0)) or round(price_usd * 51.5, 2)
 
             calculated_total_sar += price_sar * qty
             calculated_total_usd += price_usd * qty
@@ -413,15 +415,13 @@ def create_app() -> FastAPI:
                 "quantity": qty
             })
 
-        if calculated_total_egp <= 0 and calculated_total_sar <= 0 and calculated_total_usd <= 0:
+        if calculated_total_usd <= 0 and calculated_total_sar <= 0:
             raise HTTPException(status_code=400, detail="إجمالي قيمة الطلب غير صالح")
 
         # Kashier strictly processes payments in Egyptian Pounds (EGP).
-        # We determine the exact EGP charge amount:
-        # 1) If customer is paying in EGP: use product's fixed Egyptian price (calculated_total_egp)
-        # 2) If customer is paying in USD/SAR/other: charge the exact equivalent of the store's basic USD/SAR price in EGP,
-        #    so when Kashier processes or converts it, it matches the store price (~$37 USD / 140 SAR) exactly without discrepancy.
-        requested_curr = str(req.currency or "SAR").strip().upper()
+        # USD is the store's authoritative base currency.
+        # We calculate the exact EGP charge amount based on the authoritative USD total and the USD->EGP exchange rate:
+        requested_curr = str(req.currency or "USD").strip().upper()
 
         settings_dict = StoreRepository.get_settings()
         custom_rates_raw = settings_dict.get("custom_rates", "{}")
@@ -432,22 +432,19 @@ def create_app() -> FastAPI:
             custom_rates = {}
 
         # USD to EGP conversion rate:
-        # Default is 51.55 (matches Kashier's official CBE exchange rate: 1,500 EGP = $29.10 USD -> 51.546 EGP/USD)
+        # Default is 51.5 (or custom rate / settings if configured)
         usd_to_egp_rate = float(
             settings_dict.get("kashier_usd_to_egp_rate")
             or custom_rates.get("EGP")
-            or 51.55
+            or 51.5
         )
         if usd_to_egp_rate <= 0:
-            usd_to_egp_rate = 51.55
+            usd_to_egp_rate = 51.5
 
         currency = "EGP"
 
-        if requested_curr == "EGP":
-            charge_amount = round(calculated_total_egp, 2)
-        else:
-            base_usd = calculated_total_usd if calculated_total_usd > 0 else (calculated_total_sar / 3.75)
-            charge_amount = round(base_usd * usd_to_egp_rate, 2)
+        base_usd = calculated_total_usd if calculated_total_usd > 0 else (calculated_total_sar / 3.75)
+        charge_amount = round(base_usd * usd_to_egp_rate, 2)
 
         amount_str = f"{charge_amount:.2f}"
         expected_egp = amount_str
