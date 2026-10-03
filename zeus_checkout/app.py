@@ -1109,7 +1109,7 @@ def create_app() -> FastAPI:
 
         return {
             "whatsapp": settings.get("whatsapp", ""),
-            "telegram": settings.get("telegram", "https://t.me/+5lDejdeKjEJjNTg0"),
+            "telegram": settings.get("telegram", "https://t.me/ABXC18"),
             "store_name_ar": settings.get("store_name_ar", "زيوس ستور"),
             "store_name_en": settings.get("store_name_en", "ZEUS STORE"),
             "announcement_active": settings.get("announcement_active", "true") in ("true", "1", True),

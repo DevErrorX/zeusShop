@@ -143,7 +143,7 @@
   // ==========================================
   let activeStoreSettings = {
     whatsapp: '',
-    telegram: 'https://t.me/+5lDejdeKjEJjNTg0'
+    telegram: 'https://t.me/ABXC18'
   };
 
   function applyPublicSettings(settings) {
@@ -160,7 +160,7 @@
     }
     if (settings.telegram) {
       const tgUrl = settings.telegram.startsWith('http') ? settings.telegram : `https://t.me/${settings.telegram.replace('@', '')}`;
-      document.querySelectorAll('a[aria-label="telegram"], a[title="Telegram"]').forEach(a => {
+      document.querySelectorAll('a[aria-label="telegram"], a[title="Telegram"], a[href*="t.me"]').forEach(a => {
         a.href = tgUrl;
       });
     }

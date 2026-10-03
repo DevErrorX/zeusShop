@@ -262,7 +262,7 @@ def get_settings(admin_user: str = Depends(require_admin)):
     settings = StoreRepository.get_settings()
     defaults = {
         "whatsapp": "",
-        "telegram": "https://t.me/+5lDejdeKjEJjNTg0",
+        "telegram": "https://t.me/ABXC18",
         "store_name_ar": "زيوس ستور",
         "store_name_en": "ZEUS STORE",
         "announcement_text": "ضمان استرجاع سعر الاشتراك كاملاً لمدة 14 يوماً (تطبق سياسة الاسترداد) ⚡️",
