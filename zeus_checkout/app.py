@@ -969,6 +969,10 @@ def create_app() -> FastAPI:
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
+    fonts_dir = os.path.join(BASE_DIR, "fonts")
+    if os.path.exists(fonts_dir):
+        app.mount("/fonts", StaticFiles(directory=fonts_dir), name="fonts")
+
     NO_CACHE_HEADERS = {
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         "Pragma": "no-cache",
