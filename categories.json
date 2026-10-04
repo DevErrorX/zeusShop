@@ -2,19 +2,23 @@
   {
     "id": "A",
     "slug": "A",
-    "name": "ايفون بدون جلبريك",
+    "name": "ايفون بدون جيلبريك",
     "name_en": "iPhone & iPad",
     "description": "اشتراكات ببجي لأجهزة الآيفون والآيباد بدون جلبريك بأعلى حماية",
     "icon": "fa-solid fa-mobile-screen-button",
-    "count": 2
+    "count": 2,
+    "animated_icon": "assets/apple_rainbow.webp",
+    "animated_icon_fallback": "assets/apple_rainbow.gif"
   },
   {
     "id": "A2",
     "slug": "A2",
-    "name": "ببجي أندرويد بدون روت",
+    "name": "اندرويد بدون روت",
     "name_en": "Android (No Root)",
     "description": "اشتراكات ببجي لأجهزة الأندرويد بدون روت مع تسليم فوري",
     "icon": "fa-brands fa-android",
-    "count": 2
+    "count": 2,
+    "animated_icon": "assets/android_rainbow.webp",
+    "animated_icon_fallback": "assets/android_rainbow.gif"
   }
 ]

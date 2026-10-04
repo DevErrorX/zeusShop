@@ -2149,6 +2149,11 @@
     Object.entries(catMap).forEach(([slug, cData]) => {
       if (!cData.products || cData.products.length === 0) return;
 
+      const isApple = slug === 'A' || slug.toLowerCase().includes('iphone') || (cData.name && (cData.name.includes('ايفون') || cData.name.includes('آيفون')));
+      const isAndroid = slug === 'A2' || slug.toLowerCase().includes('android') || (cData.name && cData.name.includes('اندرويد'));
+      const animIcon = isApple ? 'assets/apple_rainbow.webp' : (isAndroid ? 'assets/android_rainbow.webp' : (cData.animated_icon || ''));
+      const animIconFallback = isApple ? 'assets/apple_rainbow.gif' : (isAndroid ? 'assets/android_rainbow.gif' : (cData.animated_icon_fallback || animIcon));
+
       const sec = document.createElement('section');
       sec.className = 'ls-skip mb-8 zeus-dynamic-category-section';
       sec.setAttribute('dir', 'rtl');
@@ -2156,16 +2161,27 @@
       sec.setAttribute('data-cat', slug);
       sec.innerHTML = `
         <div dir="rtl" class="container mx-auto px-3 sm:px-4 max-w-7xl" style="direction: rtl;">
-          <div dir="rtl" class="flex items-center justify-between mb-4 border-b border-border/40 pb-3" style="direction: rtl;">
-            <div dir="rtl" class="flex items-center gap-2.5" style="direction: rtl;">
-              <span class="w-2.5 h-6 rounded-full bg-primary inline-block"></span>
-              <h2 class="text-lg sm:text-xl font-black text-foreground">${cData.name}</h2>
-              <span class="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold tabular-nums">${cData.products.length}</span>
+          <div dir="rtl" class="category-header-wrap relative flex flex-col items-center justify-center text-center mb-6 pt-2 pb-4 border-b border-border/40" style="direction: rtl;">
+            <div class="flex items-center justify-center gap-2.5 sm:gap-3.5 flex-wrap">
+              ${animIcon ? `
+              <div class="category-icon-box relative flex items-center justify-center w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-secondary/40 border border-border/60 shadow-sm p-1.5 transition-transform hover:scale-110">
+                <picture>
+                  <source srcset="${animIcon}" type="image/webp">
+                  <img src="${animIconFallback || animIcon}" alt="${cData.name}" class="w-full h-full object-contain filter drop-shadow(0 2px 6px rgba(0,0,0,0.2))" loading="eager" />
+                </picture>
+              </div>` : ''}
+              <h2 class="category-decorated-title text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+                ${cData.name}
+              </h2>
+              <span class="text-xs sm:text-sm px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold tabular-nums">${cData.products.length} منتجات</span>
             </div>
-            <a href="products.html?category=${encodeURIComponent(slug)}" class="text-xs sm:text-sm font-bold text-primary hover:underline flex items-center gap-1">
-              <span>عرض الكل</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </a>
+            <div class="w-24 sm:w-36 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full mt-2.5 opacity-80"></div>
+            <div class="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 mt-3 sm:mt-0">
+              <a href="products.html?category=${encodeURIComponent(slug)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-primary bg-primary/5 hover:bg-primary/15 border border-primary/20 transition-all hover:scale-105 active:scale-95">
+                <span>عرض الكل</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </a>
+            </div>
           </div>
           <div dir="rtl" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4" style="direction: rtl;">
             ${cData.products.map(createProductCardHtml).join('')}
