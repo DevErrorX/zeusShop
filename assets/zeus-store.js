@@ -2090,6 +2090,16 @@
     grid.innerHTML = filtered.map(createProductCardHtml).join('');
   }
 
+  function normalizeCategoryName(slug, name) {
+    if (slug === 'A' || slug === 'iphone' || (name && (name.includes('ايفون') || name.includes('آيفون')))) {
+      return 'ببجي ايفون بدون جيلبريك';
+    }
+    if (slug === 'A2' || slug === 'android' || (name && name.includes('اندرويد'))) {
+      return 'اندرويد بدون روت';
+    }
+    return name;
+  }
+
   function renderStorefrontHomepage(products, categories) {
     const mainEl = document.querySelector('main');
     if (!mainEl) return;
@@ -2107,7 +2117,8 @@
     const catMap = {};
     if (categories && Array.isArray(categories)) {
       categories.forEach(c => {
-        catMap[c.slug] = { name: c.name, icon: c.icon, products: [] };
+        const cName = normalizeCategoryName(c.slug, c.name);
+        catMap[c.slug] = { name: cName, icon: c.icon, products: [] };
       });
     }
 
@@ -2116,9 +2127,8 @@
       if (catMap[slug]) {
         catMap[slug].products.push(p);
       } else {
-        if (!catMap[slug]) {
-          catMap[slug] = { name: p.category_slug || 'اشتراكات مميزة', icon: 'fa-gamepad', products: [] };
-        }
+        const cName = normalizeCategoryName(slug, p.category_slug || 'اشتراكات مميزة');
+        catMap[slug] = { name: cName, icon: 'fa-gamepad', products: [] };
         catMap[slug].products.push(p);
       }
     });
@@ -2149,6 +2159,7 @@
     Object.entries(catMap).forEach(([slug, cData]) => {
       if (!cData.products || cData.products.length === 0) return;
 
+      const catDisplayName = normalizeCategoryName(slug, cData.name);
       const isApple = slug === 'A' || slug.toLowerCase().includes('iphone') || (cData.name && (cData.name.includes('ايفون') || cData.name.includes('آيفون')));
       const isAndroid = slug === 'A2' || slug.toLowerCase().includes('android') || (cData.name && cData.name.includes('اندرويد'));
       const animIcon = isApple ? 'assets/apple_rainbow.webp' : (isAndroid ? 'assets/android_rainbow.webp' : (cData.animated_icon || ''));
@@ -2162,19 +2173,19 @@
       sec.innerHTML = `
         <div dir="rtl" class="container mx-auto px-3 sm:px-4 max-w-7xl" style="direction: rtl;">
           <div dir="rtl" class="category-header-wrap mb-7 pt-2 pb-5 border-b border-border/30" style="direction: rtl;">
-            <a href="products.html?category=${encodeURIComponent(slug)}" class="group/cat block mx-auto text-center no-underline cursor-pointer transition-all duration-300 hover:-translate-y-0.5" title="اضغط لعرض كافة باقات ${cData.name}">
+            <a href="products.html?category=${encodeURIComponent(slug)}" class="group/cat block mx-auto text-center no-underline cursor-pointer transition-all duration-300 hover:-translate-y-0.5" title="اضغط لعرض كافة باقات ${catDisplayName}">
               <div class="inline-flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap">
                 ${animIcon ? `
                 <div class="category-icon-box relative flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-secondary/40 border border-border/60 shadow-sm p-1.5 transition-transform duration-300 group-hover/cat:scale-110 group-hover/cat:shadow-md">
                   <picture>
                     <source srcset="${animIcon}" type="image/webp">
-                    <img src="${animIconFallback || animIcon}" alt="${cData.name}" class="w-full h-full object-contain filter drop-shadow(0 2px 6px rgba(0,0,0,0.2))" loading="eager" />
+                    <img src="${animIconFallback || animIcon}" alt="${catDisplayName}" class="w-full h-full object-contain filter drop-shadow(0 2px 6px rgba(0,0,0,0.2))" loading="eager" />
                   </picture>
                 </div>` : ''}
                 <div class="flex items-center gap-2">
                   <span class="text-primary text-sm sm:text-base opacity-70 group-hover/cat:opacity-100 transition-opacity">✦</span>
                   <h2 class="category-decorated-title text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground group-hover/cat:text-primary transition-colors duration-300">
-                    ${cData.name}
+                    ${catDisplayName}
                   </h2>
                   <span class="text-primary text-sm sm:text-base opacity-70 group-hover/cat:opacity-100 transition-opacity">✦</span>
                 </div>
@@ -2215,6 +2226,7 @@
 
     grid.innerHTML = categories.map(c => {
       const pCount = (products || []).filter(p => p.category_slug === c.slug && (p.in_stock !== false && p.in_stock !== 0)).length;
+      const catDisplayName = normalizeCategoryName(c.slug, c.name);
       const isApple = c.slug === 'A' || c.slug.toLowerCase().includes('iphone') || (c.name && (c.name.includes('ايفون') || c.name.includes('آيفون')));
       const isAndroid = c.slug === 'A2' || c.slug.toLowerCase().includes('android') || (c.name && c.name.includes('اندرويد'));
       const catImg = c.image || (isApple ? 'assets/category_ios.webp' : (isAndroid ? 'assets/category_android.webp' : 'assets/logo-ar.webp'));
@@ -2224,11 +2236,11 @@
       <div class="ls-skip h-full">
         <a class="ls-skip group flex h-full flex-col rounded-2xl overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-xl hover:border-primary/40 transition-all duration-300 hover:-translate-y-1" href="products.html?category=${encodeURIComponent(c.slug)}">
           <div class="ls-skip relative w-full aspect-[16/10] overflow-hidden bg-slate-900">
-            <img src="${catImg}" alt="${c.name}" class="ls-skip absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy" onerror="this.src='assets/logo-ar.webp'" />
+            <img src="${catImg}" alt="${catDisplayName}" class="ls-skip absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy" onerror="this.src='assets/logo-ar.webp'" />
             <div class="ls-skip absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
             ${catAnimIcon ? `
             <div class="ls-skip absolute top-2.5 end-2.5 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shadow-lg">
-              <img src="${catAnimIcon}" alt="${c.name}" class="w-full h-full object-contain filter drop-shadow" />
+              <img src="${catAnimIcon}" alt="${catDisplayName}" class="w-full h-full object-contain filter drop-shadow" />
             </div>` : ''}
             <div class="ls-skip absolute bottom-2.5 start-3 end-3 z-10 flex items-center justify-between text-white">
               <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-primary text-primary-foreground shadow-sm">
@@ -2240,7 +2252,7 @@
             </div>
           </div>
           <div class="ls-skip flex flex-1 flex-col p-3.5 sm:p-4">
-            <h3 class="ls-skip text-base sm:text-lg font-black text-foreground group-hover:text-primary transition-colors" style="font-family: 'El Messiri', 'Cairo', sans-serif;">${c.name}</h3>
+            <h3 class="ls-skip text-base sm:text-lg font-black text-foreground group-hover:text-primary transition-colors" style="font-family: 'El Messiri', 'Cairo', sans-serif;">${catDisplayName}</h3>
             <p class="ls-skip text-xs text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed">${c.description || 'تصفح كافة الاشتراكات والمنتجات المتاحة في هذا القسم ⚡'}</p>
             <div class="ls-skip mt-auto pt-3 flex items-center justify-between border-t border-border/40">
               <span class="ls-skip inline-flex items-center gap-1.5 text-xs font-bold text-primary px-2.5 py-1 rounded-full bg-primary/10">
@@ -2267,10 +2279,12 @@
         path === '/' || path.endsWith('index.html') || path === ''
       );
 
-      // Fast-path: read cache first
+      // Fast-path: read cache first & bust old cache v2
       try {
-        const cachedProds = localStorage.getItem('zeus_catalog_cache_v2');
-        const cachedCats = localStorage.getItem('zeus_cats_cache_v2');
+        localStorage.removeItem('zeus_catalog_cache_v2');
+        localStorage.removeItem('zeus_cats_cache_v2');
+        const cachedProds = localStorage.getItem('zeus_catalog_cache_v3');
+        const cachedCats = localStorage.getItem('zeus_cats_cache_v3');
         if (cachedProds && (!catalogData || catalogData.length === 0)) {
           catalogData = JSON.parse(cachedProds);
         }
@@ -2286,11 +2300,11 @@
 
       if (prodsRes.status === 'fulfilled' && prodsRes.value.ok) {
         catalogData = await prodsRes.value.json();
-        try { localStorage.setItem('zeus_catalog_cache_v2', JSON.stringify(catalogData)); } catch(e) {}
+        try { localStorage.setItem('zeus_catalog_cache_v3', JSON.stringify(catalogData)); } catch(e) {}
       }
       if (catsRes.status === 'fulfilled' && catsRes.value.ok) {
         categoriesData = await catsRes.value.json();
-        try { localStorage.setItem('zeus_cats_cache_v2', JSON.stringify(categoriesData)); } catch(e) {}
+        try { localStorage.setItem('zeus_cats_cache_v3', JSON.stringify(categoriesData)); } catch(e) {}
       }
 
       if (isProductsPage) {

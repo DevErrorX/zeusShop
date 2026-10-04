@@ -24,5 +24,18 @@
     "image": "assets/category_android.webp",
     "image_fallback": "assets/category_android.jpg",
     "count": 2
+  },
+  {
+    "id": "PLUS",
+    "slug": "PLUS",
+    "name": "متجر بلس",
+    "name_en": "Plus Store",
+    "description": "اشتراكات وتطبيقات بلس وشهادات سنوية بأعلى ثبات",
+    "icon": "fa-solid fa-star",
+    "animated_icon": "",
+    "animated_icon_fallback": "",
+    "image": "assets/logo-ar.webp",
+    "image_fallback": "assets/logo-ar.webp",
+    "count": 2
   }
 ]
