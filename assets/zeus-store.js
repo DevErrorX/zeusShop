@@ -2161,27 +2161,41 @@
       sec.setAttribute('data-cat', slug);
       sec.innerHTML = `
         <div dir="rtl" class="container mx-auto px-3 sm:px-4 max-w-7xl" style="direction: rtl;">
-          <div dir="rtl" class="category-header-wrap relative flex flex-col items-center justify-center text-center mb-6 pt-2 pb-4 border-b border-border/40" style="direction: rtl;">
-            <div class="flex items-center justify-center gap-2.5 sm:gap-3.5 flex-wrap">
-              ${animIcon ? `
-              <div class="category-icon-box relative flex items-center justify-center w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-secondary/40 border border-border/60 shadow-sm p-1.5 transition-transform hover:scale-110">
-                <picture>
-                  <source srcset="${animIcon}" type="image/webp">
-                  <img src="${animIconFallback || animIcon}" alt="${cData.name}" class="w-full h-full object-contain filter drop-shadow(0 2px 6px rgba(0,0,0,0.2))" loading="eager" />
-                </picture>
-              </div>` : ''}
-              <h2 class="category-decorated-title text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-                ${cData.name}
-              </h2>
-              <span class="text-xs sm:text-sm px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold tabular-nums">${cData.products.length} منتجات</span>
-            </div>
-            <div class="w-24 sm:w-36 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full mt-2.5 opacity-80"></div>
-            <div class="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 mt-3 sm:mt-0">
-              <a href="products.html?category=${encodeURIComponent(slug)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold text-primary bg-primary/5 hover:bg-primary/15 border border-primary/20 transition-all hover:scale-105 active:scale-95">
-                <span>عرض الكل</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              </a>
-            </div>
+          <div dir="rtl" class="category-header-wrap mb-7 pt-2 pb-5 border-b border-border/30" style="direction: rtl;">
+            <a href="products.html?category=${encodeURIComponent(slug)}" class="group/cat block mx-auto text-center no-underline cursor-pointer transition-all duration-300 hover:-translate-y-0.5" title="اضغط لعرض كافة باقات ${cData.name}">
+              <div class="inline-flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap">
+                ${animIcon ? `
+                <div class="category-icon-box relative flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-secondary/40 border border-border/60 shadow-sm p-1.5 transition-transform duration-300 group-hover/cat:scale-110 group-hover/cat:shadow-md">
+                  <picture>
+                    <source srcset="${animIcon}" type="image/webp">
+                    <img src="${animIconFallback || animIcon}" alt="${cData.name}" class="w-full h-full object-contain filter drop-shadow(0 2px 6px rgba(0,0,0,0.2))" loading="eager" />
+                  </picture>
+                </div>` : ''}
+                <div class="flex items-center gap-2">
+                  <span class="text-primary text-sm sm:text-base opacity-70 group-hover/cat:opacity-100 transition-opacity">✦</span>
+                  <h2 class="category-decorated-title text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground group-hover/cat:text-primary transition-colors duration-300">
+                    ${cData.name}
+                  </h2>
+                  <span class="text-primary text-sm sm:text-base opacity-70 group-hover/cat:opacity-100 transition-opacity">✦</span>
+                </div>
+                <span class="text-xs sm:text-sm px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold tabular-nums transition-transform duration-300 group-hover/cat:scale-105">
+                  ${cData.products.length} منتجات
+                </span>
+              </div>
+              <div class="relative flex items-center justify-center mt-3 max-w-sm sm:max-w-md mx-auto px-4">
+                <div class="flex-1 h-[2px] bg-gradient-to-l from-primary via-primary/40 to-transparent rounded-full"></div>
+                <div class="mx-3 flex items-center gap-2 text-primary">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary/40"></span>
+                  <span class="w-2.5 h-2.5 rotate-45 border-2 border-primary bg-primary/20 group-hover/cat:rotate-90 group-hover/cat:bg-primary transition-all duration-500 shadow-sm"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary/40"></span>
+                </div>
+                <div class="flex-1 h-[2px] bg-gradient-to-r from-primary via-primary/40 to-transparent rounded-full"></div>
+              </div>
+              <p class="mt-2 text-[11px] sm:text-xs text-muted-foreground/80 font-semibold group-hover/cat:text-primary transition-colors flex items-center justify-center gap-1.5">
+                <span>اضغط هنا لتصفح باقات هذا القسم</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="inline-block transition-transform duration-300 group-hover/cat:-translate-x-1"><path d="m15 18-6-6 6-6"/></svg>
+              </p>
+            </a>
           </div>
           <div dir="rtl" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4" style="direction: rtl;">
             ${cData.products.map(createProductCardHtml).join('')}
