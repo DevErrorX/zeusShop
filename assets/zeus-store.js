@@ -2215,22 +2215,40 @@
 
     grid.innerHTML = categories.map(c => {
       const pCount = (products || []).filter(p => p.category_slug === c.slug && (p.in_stock !== false && p.in_stock !== 0)).length;
+      const isApple = c.slug === 'A' || c.slug.toLowerCase().includes('iphone') || (c.name && (c.name.includes('ايفون') || c.name.includes('آيفون')));
+      const isAndroid = c.slug === 'A2' || c.slug.toLowerCase().includes('android') || (c.name && c.name.includes('اندرويد'));
+      const catImg = c.image || (isApple ? 'assets/category_ios.webp' : (isAndroid ? 'assets/category_android.webp' : 'assets/logo-ar.webp'));
+      const catAnimIcon = isApple ? 'assets/apple_rainbow.webp' : (isAndroid ? 'assets/android_rainbow.webp' : '');
+
       return `
       <div class="ls-skip h-full">
-        <a class="ls-skip group flex h-full flex-col rounded-2xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover:-translate-y-1" href="products.html?category=${encodeURIComponent(c.slug)}">
-          <div class="ls-skip relative w-full aspect-[16/10] overflow-hidden bg-secondary/20 flex items-center justify-center">
-            <i class="${c.icon || 'fa-solid fa-gamepad'} text-4xl text-primary/70 group-hover:scale-110 transition-transform duration-300"></i>
-          </div>
-          <div class="ls-skip flex flex-1 flex-col p-3 sm:p-4">
-            <h3 class="ls-skip text-sm sm:text-base font-bold text-foreground group-hover:text-primary transition-colors">${c.name}</h3>
-            <p class="ls-skip text-xs text-muted-foreground line-clamp-2 mt-1">${c.description || 'تصفح كافة الاشتراكات والمنتجات المتاحة في هذا القسم ⚡'}</p>
-            <div class="ls-skip mt-auto pt-3 flex items-center justify-between border-t border-border/30">
-              <span class="ls-skip inline-flex items-center gap-1 text-[11px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">
-                <span>${pCount}</span> <span>منتج</span>
+        <a class="ls-skip group flex h-full flex-col rounded-2xl overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-xl hover:border-primary/40 transition-all duration-300 hover:-translate-y-1" href="products.html?category=${encodeURIComponent(c.slug)}">
+          <div class="ls-skip relative w-full aspect-[16/10] overflow-hidden bg-slate-900">
+            <img src="${catImg}" alt="${c.name}" class="ls-skip absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" loading="lazy" onerror="this.src='assets/logo-ar.webp'" />
+            <div class="ls-skip absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+            ${catAnimIcon ? `
+            <div class="ls-skip absolute top-2.5 end-2.5 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shadow-lg">
+              <img src="${catAnimIcon}" alt="${c.name}" class="w-full h-full object-contain filter drop-shadow" />
+            </div>` : ''}
+            <div class="ls-skip absolute bottom-2.5 start-3 end-3 z-10 flex items-center justify-between text-white">
+              <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-primary text-primary-foreground shadow-sm">
+                ${isApple ? 'IOS / IPAD' : (isAndroid ? 'ANDROID' : 'VIP')}
               </span>
-              <span class="ls-skip text-xs text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-0.5 font-bold">
-                <span>تصفح</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <span class="text-[11px] font-bold text-white/90 drop-shadow-sm">
+                ${pCount} باقات متوفرة
+              </span>
+            </div>
+          </div>
+          <div class="ls-skip flex flex-1 flex-col p-3.5 sm:p-4">
+            <h3 class="ls-skip text-base sm:text-lg font-black text-foreground group-hover:text-primary transition-colors" style="font-family: 'El Messiri', 'Cairo', sans-serif;">${c.name}</h3>
+            <p class="ls-skip text-xs text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed">${c.description || 'تصفح كافة الاشتراكات والمنتجات المتاحة في هذا القسم ⚡'}</p>
+            <div class="ls-skip mt-auto pt-3 flex items-center justify-between border-t border-border/40">
+              <span class="ls-skip inline-flex items-center gap-1.5 text-xs font-bold text-primary px-2.5 py-1 rounded-full bg-primary/10">
+                <span>تصفح القسم</span>
+              </span>
+              <span class="ls-skip text-xs text-primary font-extrabold group-hover:translate-x-[-3px] transition-transform flex items-center gap-1">
+                <span>عرض الكل</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </span>
             </div>
           </div>
