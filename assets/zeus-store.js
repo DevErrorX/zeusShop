@@ -2095,7 +2095,7 @@
       return 'ببجي ايفون بدون جيلبريك';
     }
     if (slug === 'A2' || slug === 'android' || (name && name.includes('اندرويد'))) {
-      return 'اندرويد بدون روت';
+      return 'ببجي اندرويد بدون روت';
     }
     return name;
   }
