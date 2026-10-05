@@ -154,15 +154,17 @@ class StoreRepository:
         )
 
     @staticmethod
-    def list_orders(limit: int = 100, status_filter: str | None = None) -> list[dict]:
+    def list_orders(limit: int = 100, status_filter: str | None = None, page: int = 1, page_size: int | None = None) -> list[dict]:
         with get_db_connection() as conn:
+            actual_limit = page_size if page_size is not None else limit
+            offset = max(0, (page - 1) * actual_limit) if page_size is not None else 0
             query = "SELECT * FROM orders"
             params = []
             if status_filter and status_filter != "all":
                 query += " WHERE status = ?"
                 params.append(status_filter)
-            query += " ORDER BY created_at DESC LIMIT ?"
-            params.append(limit)
+            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            params.extend([actual_limit, offset])
             
             rows = conn.execute(query, tuple(params)).fetchall()
             results = []
@@ -430,22 +432,96 @@ class StoreRepository:
             total_orders = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
             paid_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE status IN ('paid', 'completed', 'delivered')").fetchone()[0]
             pending_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE status = 'pending'").fetchone()[0]
+            cancelled_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE status = 'cancelled'").fetchone()[0]
 
             # Sum of revenues by currency from verified paid orders
+            currency_rows = conn.execute("""
+                SELECT currency, SUM(total_amount), COUNT(*)
+                FROM orders 
+                WHERE status IN ('paid', 'completed', 'delivered') 
+                GROUP BY currency
+            """).fetchall()
+
+            revenue_by_currency = {}
+            for r in currency_rows:
+                curr = str(r[0] or "SAR").upper()
+                amt = float(r[1] or 0.0)
+                cnt = int(r[2] or 0)
+                revenue_by_currency[curr] = {
+                    "amount": round(amt, 2),
+                    "count": cnt,
+                }
+
+            # Per-currency sums handling native column overrides
+            egp_row = conn.execute(
+                "SELECT SUM(COALESCE(amount_egp, total_amount)), COUNT(*) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'EGP'"
+            ).fetchone()
+            revenue_egp = round(float(egp_row[0] or 0.0), 2)
+            if revenue_egp > 0:
+                revenue_by_currency["EGP"] = {
+                    "amount": revenue_egp,
+                    "count": int(egp_row[1] or revenue_by_currency.get("EGP", {}).get("count", 0)),
+                }
+
             iqd_row = conn.execute(
-                "SELECT SUM(COALESCE(amount_iqd, total_amount)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'IQD'"
+                "SELECT SUM(COALESCE(amount_iqd, total_amount)), COUNT(*) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'IQD'"
             ).fetchone()
             revenue_iqd = int(iqd_row[0] or 0)
+            if revenue_iqd > 0:
+                revenue_by_currency["IQD"] = {
+                    "amount": revenue_iqd,
+                    "count": int(iqd_row[1] or revenue_by_currency.get("IQD", {}).get("count", 0)),
+                }
 
-            egp_row = conn.execute(
-                "SELECT SUM(COALESCE(amount_egp, total_amount)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'EGP'"
+            sar_row = conn.execute(
+                "SELECT SUM(total_amount), COUNT(*) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'SAR'"
             ).fetchone()
-            revenue_egp = float(egp_row[0] or 0.0)
+            revenue_sar = round(float(sar_row[0] or 0.0), 2)
+            if revenue_sar > 0 and "SAR" not in revenue_by_currency:
+                revenue_by_currency["SAR"] = {"amount": revenue_sar, "count": int(sar_row[1] or 0)}
+
+            usd_row = conn.execute(
+                "SELECT SUM(total_amount), COUNT(*) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND currency = 'USD'"
+            ).fetchone()
+            revenue_usd = round(float(usd_row[0] or 0.0), 2)
+            if revenue_usd > 0 and "USD" not in revenue_by_currency:
+                revenue_by_currency["USD"] = {"amount": revenue_usd, "count": int(usd_row[1] or 0)}
 
             usdt_row = conn.execute(
-                "SELECT SUM(CAST(expected_usdt AS REAL)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND expected_usdt IS NOT NULL"
+                "SELECT SUM(CAST(expected_usdt AS REAL)) FROM orders WHERE status IN ('paid', 'completed', 'delivered') AND (currency = 'USDT' OR expected_usdt IS NOT NULL)"
             ).fetchone()
             revenue_usdt = round(float(usdt_row[0] or 0.0), 2)
+
+            # Retrieve custom rates for unified SAR/USD estimate
+            custom_rates = {}
+            try:
+                rate_row = conn.execute("SELECT value FROM store_settings WHERE key = 'custom_rates'").fetchone()
+                if rate_row and rate_row[0]:
+                    custom_rates = json.loads(rate_row[0])
+            except Exception:
+                pass
+
+            usd_rate = float(custom_rates.get("USD", 1.0) or 1.0)
+            sar_rate = float(custom_rates.get("SAR", 3.75) or 3.75)
+            egp_rate = float(custom_rates.get("EGP", 51.5) or 51.5)
+            iqd_rate = float(custom_rates.get("IQD", 1310.0) or 1310.0)
+
+            calc_usd = 0.0
+            for curr, cdata in revenue_by_currency.items():
+                amt = cdata["amount"]
+                if curr in ("USD", "USDT"):
+                    calc_usd += amt
+                elif curr == "SAR" and sar_rate > 0:
+                    calc_usd += amt / sar_rate
+                elif curr == "EGP" and egp_rate > 0:
+                    calc_usd += amt / egp_rate
+                elif curr == "IQD" and iqd_rate > 0:
+                    calc_usd += amt / iqd_rate
+                else:
+                    calc_usd += amt / (sar_rate if sar_rate > 0 else 3.75)
+
+            calc_sar = round(calc_usd * sar_rate, 2)
+            calc_usd = round(calc_usd, 2)
 
             total_products = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
 
@@ -461,12 +537,24 @@ class StoreRepository:
                 "created_orders": total_orders,
                 "paid_orders": paid_orders,
                 "pending_orders": pending_orders,
-                "revenue_iqd": revenue_iqd,
-                "revenue_egp": revenue_egp,
-                "revenue_usdt": revenue_usdt,
+                "cancelled_orders": cancelled_orders,
                 "total_orders": total_orders,
                 "total_products": total_products,
-                "recent_orders": recent_orders
+                "revenue_by_currency": revenue_by_currency,
+                "revenue_egp": revenue_egp,
+                "revenue_iqd": revenue_iqd,
+                "revenue_sar": revenue_sar,
+                "revenue_usd": revenue_usd,
+                "revenue_usdt": revenue_usdt,
+                # Aliases for admin.html and frontend
+                "total_revenue_egp": revenue_egp,
+                "total_revenue_iqd": revenue_iqd,
+                "total_revenue_sar": revenue_sar,
+                "total_revenue_usd": revenue_usd,
+                "total_revenue_usdt": revenue_usdt,
+                "total_revenue_calculated_sar": calc_sar,
+                "total_revenue_calculated_usd": calc_usd,
+                "recent_orders": recent_orders,
             }
 
     # ------------------ STORE SETTINGS ------------------

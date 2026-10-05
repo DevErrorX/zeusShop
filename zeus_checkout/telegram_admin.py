@@ -189,12 +189,18 @@ class TelegramAdminBot:
         if amount_iqd and int(amount_iqd) > 0:
             price_text = f"{int(amount_iqd):,} د.ع"
         else:
-            tot = order.get("total_amount") or 0
-            curr = order.get("currency") or "USD"
+            tot = float(order.get("total_amount") or 0.0)
+            curr = str(order.get("currency") or "USD").upper()
             if curr == "IQD":
                 price_text = f"{int(tot):,} د.ع"
+            elif curr == "EGP":
+                price_text = f"{tot:,.2f} ج.م"
+            elif curr == "SAR":
+                price_text = f"{tot:,.2f} ر.س"
+            elif curr in ("USD", "USDT"):
+                price_text = f"${tot:,.2f} USD"
             else:
-                price_text = f"{tot} {curr}"
+                price_text = f"{tot:,.2f} {curr}"
 
         payment_method_raw = str(order.get("payment_method") or "").lower()
         if "kashier" in payment_method_raw:
@@ -427,30 +433,97 @@ class TelegramAdminBot:
 
     async def _stats_text(self) -> str:
         stats = await asyncio.to_thread(self.repository.get_stats)
+        created = int(stats.get("created_orders", 0))
+        paid = int(stats.get("paid_orders", 0))
+        pending = int(stats.get("pending_orders", 0))
+
+        rev_by_curr = stats.get("revenue_by_currency", {})
+        curr_symbols = {
+            "EGP": "ج.م",
+            "SAR": "ر.س",
+            "USD": "$",
+            "USDT": "USDT",
+            "IQD": "د.ع",
+            "AED": "د.إ",
+            "KWD": "د.ك",
+        }
+
+        rev_lines = []
+        for curr, data in rev_by_curr.items():
+            amt = data.get("amount", 0.0)
+            if amt <= 0:
+                continue
+            cnt = data.get("count", 0)
+            sym = curr_symbols.get(curr, curr)
+            cnt_text = f" ({cnt} طلب)" if cnt > 0 else ""
+            if sym == "$":
+                rev_lines.append(f"💵 <b>${amt:,.2f} USD</b>{cnt_text}")
+            elif curr == "IQD":
+                rev_lines.append(f"💵 <b>{int(amt):,} {sym}</b>{cnt_text}")
+            elif curr == "USDT":
+                rev_lines.append(f"💵 <b>{amt:,.2f} USDT</b>{cnt_text}")
+            else:
+                rev_lines.append(f"💵 <b>{amt:,.2f} {sym}</b>{cnt_text}")
+
+        # Fallback if rev_by_curr didn't capture legacy keys
+        if not rev_lines:
+            for key, curr, sym in [
+                ("revenue_egp", "EGP", "ج.م"),
+                ("revenue_sar", "SAR", "ر.س"),
+                ("revenue_usd", "USD", "$"),
+                ("revenue_iqd", "IQD", "د.ع"),
+                ("revenue_usdt", "USDT", "USDT"),
+            ]:
+                val = float(stats.get(key, 0) or 0)
+                if val > 0:
+                    if sym == "$":
+                        rev_lines.append(f"💵 <b>${val:,.2f} USD</b>")
+                    elif sym == "د.ع":
+                        rev_lines.append(f"💵 <b>{int(val):,} {sym}</b>")
+                    elif sym == "USDT":
+                        rev_lines.append(f"💵 <b>{val:,.2f} USDT</b>")
+                    else:
+                        rev_lines.append(f"💵 <b>{val:,.2f} {sym}</b>")
+
+        if rev_lines:
+            rev_str = "\n".join(rev_lines)
+            calc_sar = float(stats.get("total_revenue_calculated_sar", 0) or 0)
+            calc_usd = float(stats.get("total_revenue_calculated_usd", 0) or 0)
+            if calc_sar > 0 or calc_usd > 0:
+                rev_str += f"\n\n<i>≈ التقدير الإجمالي الموحّد: <b>{calc_sar:,.2f} ر.س</b> (~${calc_usd:,.2f})</i>"
+        else:
+            rev_str = "💵 <b>0.00</b> (لا توجد مبيعات مدفوعة بعد)"
+
         return (
-            "<b>إحصائيات متجر زيوس</b>\n\n"
-            f"إجمالي الطلبات: <b>{int(stats.get('created_orders', 0)):,}</b>\n"
-            f"الطلبات المدفوعة: <b>{int(stats.get('paid_orders', 0)):,}</b>\n"
-            f"إجمالي الإيرادات: <b>{int(stats.get('revenue_iqd', 0)):,} د.ع</b>\n"
-            f"الزوار النشطون: <b>{int(stats.get('unique_visitors', 0)):,}</b>"
+            "<b>📊 إحصائيات متجر زيوس — ZEUS STORE</b>\n\n"
+            f"📦 إجمالي الطلبات: <b>{created:,}</b>\n"
+            f"✅ الطلبات المدفوعة: <b>{paid:,}</b>\n"
+            f"⏳ طلبات بانتظار الدفع: <b>{pending:,}</b>\n\n"
+            f"<b>💰 إجمالي الإيرادات المؤكدة:</b>\n"
+            f"{rev_str}"
         )
 
     async def _orders_text(self) -> str:
-        page = await asyncio.to_thread(
+        orders_res = await asyncio.to_thread(
             self.repository.list_orders,
-            page=1,
-            page_size=8,
+            limit=8,
             status_filter=None,
         )
-        rows = page.get("orders", [])
+        rows = orders_res if isinstance(orders_res, list) else (orders_res.get("orders", []) if isinstance(orders_res, dict) else [])
         if not rows:
             return "<b>آخر الطلبات في ZEUS STORE</b>\nلا توجد طلبات مسجلة بعد."
-        lines = ["<b>آخر الطلبات المسجلة:</b>\n"]
+        lines = ["<b>📦 آخر الطلبات المسجلة:</b>\n"]
         for row in rows:
-            status_symbol = "✅" if row.get("status") == "paid" else "⏳"
+            status_symbol = "✅" if row.get("status") in ("paid", "completed", "delivered") else "⏳"
             code = html.escape(str(row.get("confirmation_code") or row.get("id") or "")[:14])
-            amt = int(row.get("amount_iqd") or row.get("total_amount") or 0)
-            lines.append(f"{status_symbol} <code>{code}</code> — {amt:,} — {html.escape(str(row.get('customer_name', 'عميل')))}")
+            curr = str(row.get("currency") or "SAR").upper()
+            curr_sym = "ج.م" if curr == "EGP" else ("ر.س" if curr == "SAR" else ("د.ع" if curr == "IQD" else curr))
+            tot = float(row.get("total_amount") or 0.0)
+            if curr == "IQD":
+                amt_str = f"{int(tot):,} {curr_sym}"
+            else:
+                amt_str = f"{tot:,.2f} {curr_sym}"
+            lines.append(f"{status_symbol} <code>{code}</code> — {amt_str} — {html.escape(str(row.get('customer_name', 'عميل')))}")
         return "\n".join(lines)
 
     async def _verification_code_text(self, code: str) -> str:
@@ -466,6 +539,8 @@ class TelegramAdminBot:
             )
         status_labels = {
             "paid": "✅ مدفوع",
+            "completed": "✅ مكتمل",
+            "delivered": "✅ تم التسليم",
             "pending": "⏳ قيد الدفع",
             "manual_review": "🔍 بانتظار مراجعة الإدارة",
             "cancelled": "❌ ملغي",
@@ -479,11 +554,17 @@ class TelegramAdminBot:
             price_text = f"{int(amount_iqd):,} د.ع"
         else:
             curr = str(order.get('currency', 'USD')).upper()
-            tot = order.get('total_amount', 0)
+            tot = float(order.get('total_amount', 0.0) or 0.0)
             if curr == 'IQD':
                 price_text = f"{int(tot):,} د.ع"
+            elif curr == 'EGP':
+                price_text = f"{tot:,.2f} ج.م"
+            elif curr == 'SAR':
+                price_text = f"{tot:,.2f} ر.س"
+            elif curr in ('USD', 'USDT'):
+                price_text = f"${tot:,.2f} USD"
             else:
-                price_text = f"{tot} {curr}"
+                price_text = f"{tot:,.2f} {curr}"
 
         try:
             items = json.loads(str(order.get("items_json") or "[]"))

@@ -939,7 +939,7 @@
                                 <i class="fa-solid fa-money-bill-wave"></i>
                             </div>
                         </div>
-                        <div class="stat-amount" id="stat-total-revenue">0 د.ع</div>
+                        <div class="stat-amount" id="stat-total-revenue">--</div>
                         <div class="stat-footer">
                             <span class="text-success"><i class="fa-solid fa-chart-line"></i> إجمالي الإيرادات الحقيقية</span>
                         </div>
@@ -1796,10 +1796,22 @@
             const totalOrders = stats.total_orders ?? state.orders.length;
             const pendingOrders = stats.pending_orders ?? state.orders.filter(o => o.status === 'pending').length;
             const paidOrders = stats.paid_orders ?? state.orders.filter(o => o.status === 'paid' || o.status === 'delivered').length;
-            const revIqd = stats.total_revenue_iqd ?? 0;
-            const revUsdt = stats.total_revenue_usdt ?? 0;
+            const revIqd = stats.total_revenue_iqd ?? stats.revenue_iqd ?? 0;
+            const revEgp = stats.total_revenue_egp ?? stats.revenue_egp ?? 0;
+            const revSar = stats.total_revenue_sar ?? stats.revenue_sar ?? 0;
+            const revUsd = stats.total_revenue_usd ?? stats.revenue_usd ?? 0;
+            const revUsdt = stats.total_revenue_usdt ?? stats.revenue_usdt ?? 0;
 
-            const revText = revIqd > 0 ? `${revIqd.toLocaleString('en-US')} د.ع` : (revUsdt > 0 ? `${revUsdt.toFixed(2)} USDT` : '0 د.ع');
+            let revText = '0.00';
+            if (revEgp > 0) {
+                revText = `${revEgp.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ج.م`;
+            } else if (revSar > 0) {
+                revText = `${revSar.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ر.س`;
+            } else if (revIqd > 0) {
+                revText = `${revIqd.toLocaleString('en-US')} د.ع`;
+            } else if (revUsdt > 0 || revUsd > 0) {
+                revText = `${(revUsdt || revUsd).toFixed(2)} USDT`;
+            }
 
             const revEl = document.getElementById('stat-total-revenue');
             if (revEl) revEl.textContent = revText;
