@@ -340,7 +340,14 @@ class StoreRepository:
                 SELECT c.id, c.name, c.slug, c.icon,
                        (SELECT COUNT(*) FROM products p WHERE p.category_slug = c.slug AND p.in_stock = 1) as count
                 FROM categories c
-                ORDER BY count DESC, c.name ASC
+                ORDER BY 
+                    CASE 
+                        WHEN c.slug = 'A' OR c.id = 'A' THEN 1
+                        WHEN c.slug = 'A2' OR c.id = 'A2' THEN 2
+                        WHEN c.slug = 'PLUS' OR c.id = 'PLUS' THEN 3
+                        ELSE 4
+                    END,
+                    count DESC, c.name ASC
             """).fetchall()
             return [dict(r) for r in rows]
 

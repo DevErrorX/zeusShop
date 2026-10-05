@@ -2100,6 +2100,15 @@
     return name;
   }
 
+  function getCategoryOrderWeight(slug, name) {
+    const s = (slug || '').toLowerCase();
+    const n = (name || '').toLowerCase();
+    if (s === 'a' || s.includes('iphone') || n.includes('ايفون') || n.includes('آيفون')) return 1;
+    if (s === 'a2' || s.includes('android') || n.includes('اندرويد')) return 2;
+    if (s === 'plus' || n.includes('بلس')) return 3;
+    return 10;
+  }
+
   function renderStorefrontHomepage(products, categories) {
     const mainEl = document.querySelector('main');
     if (!mainEl) return;
@@ -2135,11 +2144,16 @@
 
     // 3. If DOM already has matching pre-rendered sections, do not touch DOM
     const existingSections = mainEl.querySelectorAll('.zeus-dynamic-category-section');
-    const activeCats = Object.entries(catMap).filter(([_, c]) => c.products && c.products.length > 0);
-    if (existingSections.length === activeCats.length && existingSections.length > 0) {
+    const sortedCats = Object.entries(catMap)
+      .filter(([_, c]) => c.products && c.products.length > 0)
+      .sort(([slugA, cA], [slugB, cB]) => getCategoryOrderWeight(slugA, cA.name) - getCategoryOrderWeight(slugB, cB.name));
+
+    if (existingSections.length === sortedCats.length && existingSections.length > 0) {
       let allMatch = true;
-      existingSections.forEach(sec => {
+      existingSections.forEach((sec, idx) => {
         const catSlug = sec.getAttribute('data-cat');
+        const expectedSlug = sortedCats[idx] ? sortedCats[idx][0] : null;
+        if (catSlug !== expectedSlug) { allMatch = false; return; }
         const cData = catMap[catSlug];
         if (!cData) { allMatch = false; return; }
         const currentPids = Array.from(sec.querySelectorAll('.product-card-item')).map(el => el.getAttribute('data-product-id'));
@@ -2149,14 +2163,14 @@
         }
       });
       if (allMatch) {
-        return; // Exact match! No flicker, no DOM recreation!
+        return; // Exact match in both content AND order! No flicker, no DOM recreation!
       }
     }
 
-    // 4. Otherwise re-render dynamic sections
+    // 4. Otherwise re-render dynamic sections in guaranteed order (iPhone first, Android second)
     mainEl.querySelectorAll('.zeus-dynamic-category-section').forEach(el => el.remove());
 
-    Object.entries(catMap).forEach(([slug, cData]) => {
+    sortedCats.forEach(([slug, cData]) => {
       if (!cData.products || cData.products.length === 0) return;
 
       const catDisplayName = normalizeCategoryName(slug, cData.name);
@@ -2222,9 +2236,9 @@
                  document.querySelector('.grid.grid-cols-2.lg\\:grid-cols-4');
     if (!grid || !categories || categories.length === 0) return;
     grid.setAttribute('dir', 'rtl');
-    grid.style.direction = 'rtl';
+    const sortedCategories = categories.slice().sort((a, b) => getCategoryOrderWeight(a.slug, a.name) - getCategoryOrderWeight(b.slug, b.name));
 
-    grid.innerHTML = categories.map(c => {
+    grid.innerHTML = sortedCategories.map(c => {
       const pCount = (products || []).filter(p => p.category_slug === c.slug && (p.in_stock !== false && p.in_stock !== 0)).length;
       const catDisplayName = normalizeCategoryName(c.slug, c.name);
       const isApple = c.slug === 'A' || c.slug.toLowerCase().includes('iphone') || (c.name && (c.name.includes('ايفون') || c.name.includes('آيفون')));
