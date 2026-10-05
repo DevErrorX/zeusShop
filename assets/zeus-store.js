@@ -1991,10 +1991,6 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-heart h-4 w-4 transition-transform"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"></path></svg>
               </button>
             </div>
-            ${!outOfStock ? `
-            <button type="button" aria-label="أضف للسلة" data-product-id="${p.id}" class="ls-skip pcv-press absolute z-30 end-2.5 bottom-0 translate-y-1/2 inline-flex items-center justify-center rounded-full h-[clamp(30px,16cqw,40px)] w-[clamp(30px,16cqw,40px)] text-primary-foreground ring-[3px] ring-card shadow-[0_6px_16px_-4px_color-mix(in_oklab,var(--primary)_70%,transparent)] bg-primary cursor-pointer hover:scale-110 active:scale-95 transition-transform" title="أضف للسلة">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-shopping-cart w-[clamp(14px,7.5cqw,18px)] h-[clamp(14px,7.5cqw,18px)]"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
-            </button>` : ''}
           </div>
         </div>
         <div class="ls-skip flex flex-1 flex-col px-2.5 pt-2 pb-3">
@@ -2002,7 +1998,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ls-skip lucide lucide-zap w-3 h-3 shrink-0 fill-current"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
             ${p.duration || 'تسليم فوري'}
           </span>
-          <h3 class="ls-skip text-[12.5px] sm:text-[13px] font-bold text-foreground line-clamp-2 leading-snug min-h-[2.6em] pe-[clamp(26px,14cqw,36px)]">${p.title}</h3>
+          <h3 class="ls-skip text-[12.5px] sm:text-[13px] font-bold text-foreground line-clamp-2 leading-snug min-h-[2.6em]">${p.title}</h3>
           <div class="ls-skip mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
             <span class="ls-skip">${p.platform || 'الكل'}</span>
             <span class="ls-skip opacity-50">·</span>
@@ -2021,11 +2017,11 @@
           </div>
           <div class="mt-2.5">
             ${!outOfStock ? `
-            <button type="button" data-product-id="${p.id}" class="w-full py-2 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
-              <span>شراء الآن</span>
+            <button type="button" aria-label="أضف للسلة" data-action="add-to-cart" data-product-id="${p.id}" class="btn-add-to-cart w-full py-2.5 px-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-[13.5px] font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98">
+              <span>أضف للسلة</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart shrink-0"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
             </button>` : `
-            <button type="button" disabled class="w-full py-2 px-3 rounded-lg bg-secondary text-muted-foreground text-xs font-bold opacity-60 cursor-not-allowed flex items-center justify-center gap-1.5">
+            <button type="button" disabled class="w-full py-2.5 px-3 rounded-xl bg-secondary text-muted-foreground text-xs font-bold opacity-60 cursor-not-allowed flex items-center justify-center gap-1.5">
               <span>نفد من المخزون</span>
             </button>`}
           </div>
@@ -2364,7 +2360,7 @@
       }
 
       // Add to Cart buttons
-      const addCartBtn = e.target.closest('[aria-label="أضف للسلة"]');
+      const addCartBtn = e.target.closest('[aria-label="أضف للسلة"], .btn-add-to-cart, [data-action="add-to-cart"]');
       if (addCartBtn) {
         handleAddToCart(e, addCartBtn);
         return;
