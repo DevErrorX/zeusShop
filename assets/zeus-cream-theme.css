@@ -420,6 +420,70 @@ button.btn-add-to-cart,
   transform: scale(0.98) !important;
 }
 
+/* Transformed Direct Checkout Button - 'اضغط للشراء' */
+.btn-checkout-now,
+button.btn-checkout-now,
+.pcv-flash .btn-checkout-now,
+.product-card-item .btn-checkout-now {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  color: #FFFFFF !important;
+  font-family: 'Cairo', 'Tajawal', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.35), 0 0 0 1px rgba(16, 185, 129, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  padding: 8px 12px !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: optimizeLegibility !important;
+  animation: pulse-checkout 2.2s infinite ease-in-out !important;
+}
+
+@keyframes pulse-checkout {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.35);
+  }
+  50% {
+    box-shadow: 0 6px 22px rgba(16, 185, 129, 0.55), 0 0 0 2px rgba(16, 185, 129, 0.3);
+  }
+}
+
+.btn-checkout-now span {
+  color: #FFFFFF !important;
+  font-family: 'Cairo', 'Tajawal', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  letter-spacing: -0.01em !important;
+}
+
+.btn-checkout-now svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+  fill: #FFFFFF !important;
+  width: 15px !important;
+  height: 15px !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-checkout-now:hover {
+  filter: brightness(1.12) !important;
+  transform: translateY(-1px) scale(1.01) !important;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.5) !important;
+}
+
+.btn-checkout-now:active {
+  transform: scale(0.98) !important;
+}
+
+
 /* Hide redundant floating circle cart button on product cards */
 .pcv-flash .pcv-press[aria-label="أضف للسلة"],
 .product-card-item .pcv-press[aria-label="أضف للسلة"] {
@@ -692,23 +756,122 @@ input:user-invalid,
   font-weight: 700 !important;
 }
 
+/* ==========================================================================
+   ZEUS TOAST NOTIFICATIONS - PROMINENT TOP-CENTER GLASS SYSTEM
+   ========================================================================== */
 #zeus-toast-container {
   position: fixed !important;
-  bottom: 2.5rem !important;
+  top: 1.25rem !important;
+  bottom: auto !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  z-index: 999999 !important;
+  z-index: 9999999 !important;
   pointer-events: none !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  width: auto !important;
-  max-width: 90vw !important;
+  gap: 0.65rem !important;
+  width: calc(100% - 2rem) !important;
+  max-width: 440px !important;
 }
+
 @media (max-width: 640px) {
   #zeus-toast-container {
-    bottom: 5.5rem !important;
+    top: 0.85rem !important;
+    bottom: auto !important;
+    width: calc(100% - 1.5rem) !important;
   }
+}
+
+.zeus-toast {
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 11px 16px !important;
+  border-radius: 16px !important;
+  font-family: 'Cairo', 'Tajawal', sans-serif !important;
+  direction: rtl !important;
+  width: 100% !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.55), 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.zeus-toast-success {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.65) !important;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.6), 0 0 0 1px rgba(16, 185, 129, 0.25), 0 8px 24px -4px rgba(16, 185, 129, 0.35) !important;
+}
+
+.zeus-toast-success .zeus-toast-icon {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.55) !important;
+  color: #34D399 !important;
+}
+
+.zeus-toast-success span,
+.zeus-toast-success p {
+  color: #FFFFFF !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+.zeus-toast-error {
+  background: linear-gradient(135deg, #7F1D1D 0%, #4C0519 100%) !important;
+  border: 1.5px solid rgba(244, 63, 94, 0.7) !important;
+  box-shadow: 0 20px 45px -10px rgba(127, 29, 29, 0.6), 0 8px 24px -4px rgba(244, 63, 94, 0.35) !important;
+}
+
+.zeus-toast-error .zeus-toast-icon {
+  background: rgba(244, 63, 94, 0.2) !important;
+  border: 1.5px solid rgba(244, 63, 94, 0.55) !important;
+  color: #FDA4AF !important;
+}
+
+.zeus-toast-error span,
+.zeus-toast-error p {
+  color: #FFFFFF !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+.zeus-toast-info {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important;
+  border: 1.5px solid rgba(217, 119, 6, 0.7) !important;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.6), 0 8px 24px -4px rgba(217, 119, 6, 0.35) !important;
+}
+
+.zeus-toast-info .zeus-toast-icon {
+  background: rgba(217, 119, 6, 0.2) !important;
+  border: 1.5px solid rgba(217, 119, 6, 0.55) !important;
+  color: #FBBF24 !important;
+}
+
+.zeus-toast-info span,
+.zeus-toast-info p {
+  color: #FFFFFF !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+.zeus-toast-enter {
+  transform: translateY(-24px) scale(0.94) !important;
+  opacity: 0 !important;
+}
+
+.zeus-toast-show {
+  transform: translateY(0) scale(1) !important;
+  opacity: 1 !important;
+}
+
+.zeus-toast-exit {
+  transform: translateY(-20px) scale(0.94) !important;
+  opacity: 0 !important;
 }
 
 /* ==========================================================================

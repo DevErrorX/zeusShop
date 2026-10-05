@@ -238,6 +238,7 @@
     } catch(e) {}
     updateCartBadges();
     renderCartDrawer();
+    updateProductButtonsState();
   }
 
   function getCurrency() {
@@ -283,65 +284,120 @@
     if (!container) {
       container = document.createElement('div');
       container.id = 'zeus-toast-container';
-      container.className = 'fixed bottom-20 sm:bottom-6 start-1/2 -translate-x-1/2 z-[99999] flex flex-col gap-2.5 pointer-events-none items-center w-full max-w-md px-4';
       document.body.appendChild(container);
     }
 
-    const toast = document.createElement('div');
     const isError = type === 'error' || type === 'danger';
     const isSuccess = type === 'success';
 
-    // Rich luxury burgundy red for errors as requested by user
-    let styleClass = '';
-    let iconSvg = '';
+    let typeClass = 'zeus-toast-success';
+    let iconSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>`;
+
     if (isError) {
-      styleClass = 'zeus-toast-error';
+      typeClass = 'zeus-toast-error';
       iconSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-rose-200">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-      `;
-    } else if (isSuccess) {
-      styleClass = 'bg-slate-900/95 text-white ring-emerald-500/40 border border-emerald-500/30 shadow-2xl';
+        </svg>`;
+    } else if (!isSuccess) {
+      typeClass = 'zeus-toast-info';
       iconSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-emerald-400">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      `;
-    } else {
-      styleClass = 'bg-slate-900/95 text-white ring-amber-500/40 border border-amber-500/30 shadow-2xl';
-      iconSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-amber-400">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="12" y1="16" x2="12" y2="12"></line>
           <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-      `;
+        </svg>`;
     }
 
-    toast.className = `pointer-events-auto flex items-center gap-3 px-4.5 py-3.5 rounded-2xl backdrop-blur-xl transition-all duration-300 transform translate-y-4 opacity-0 w-full sm:w-auto min-w-[280px] sm:min-w-[320px] text-start ${styleClass}`;
+    const toast = document.createElement('div');
+    toast.className = `zeus-toast ${typeClass} zeus-toast-enter`;
     toast.innerHTML = `
-      <div class="flex items-center gap-3 font-medium text-xs sm:text-sm leading-snug w-full">
+      <div class="zeus-toast-icon w-8 h-8 rounded-full flex items-center justify-center shrink-0">
         ${iconSvg}
-        <span class="flex-1">${message}</span>
       </div>
+      <div class="flex-1 min-w-0">
+        <span class="block">${message}</span>
+      </div>
+      ${isSuccess ? `
+      <a href="checkout.html" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shrink-0 whitespace-nowrap shadow-sm hover:scale-105 active:scale-95 flex items-center gap-1">
+        <span>شراء</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </a>` : ''}
+      <button type="button" aria-label="إغلاق" class="p-1 text-white/60 hover:text-white transition-colors cursor-pointer shrink-0" onclick="this.closest('.zeus-toast').remove()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     `;
+
     container.appendChild(toast);
 
     requestAnimationFrame(() => {
-      toast.classList.remove('translate-y-4', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
+      toast.classList.remove('zeus-toast-enter');
+      toast.classList.add('zeus-toast-show');
     });
 
     setTimeout(() => {
-      toast.classList.add('opacity-0', '-translate-y-2');
-      setTimeout(() => toast.remove(), 300);
+      toast.classList.remove('zeus-toast-show');
+      toast.classList.add('zeus-toast-exit');
+      setTimeout(() => toast.remove(), 350);
     }, 3800);
   }
   window.showToast = showToast;
+
+  // ==========================================
+  // PRODUCT BUTTON STATE: ADD TO CART <-> CLICK TO BUY
+  // ==========================================
+  function setButtonToCheckoutState(btn) {
+    if (!btn) return;
+    btn.setAttribute('data-state', 'checkout');
+    btn.setAttribute('data-action', 'checkout');
+    btn.setAttribute('aria-label', 'اضغط للشراء');
+    btn.classList.remove('btn-add-to-cart');
+    btn.classList.add('btn-checkout-now');
+    btn.innerHTML = `
+      <span>اضغط للشراء</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="lucide lucide-zap shrink-0"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    `;
+  }
+
+  function setButtonToAddState(btn, pid) {
+    if (!btn) return;
+    btn.setAttribute('data-state', 'add');
+    btn.setAttribute('data-action', 'add-to-cart');
+    btn.setAttribute('aria-label', 'أضف للسلة');
+    btn.classList.remove('btn-checkout-now');
+    btn.classList.add('btn-add-to-cart');
+    btn.innerHTML = `
+      <span>أضف للسلة</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart shrink-0"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+    `;
+  }
+
+  function updateProductButtonsState() {
+    const cart = getCart();
+    const cartProductIds = new Set(cart.map(item => item.id).filter(Boolean));
+    const cartTitles = new Set(cart.map(item => item.title).filter(Boolean));
+
+    document.querySelectorAll('.btn-add-to-cart, .btn-checkout-now, [data-action="add-to-cart"], [data-action="checkout"]').forEach(btn => {
+      const card = btn.closest('.product-card-item, .pcv-flash, [class*="product"]');
+      const pid = btn.getAttribute('data-product-id') || (card ? card.getAttribute('data-product-id') : null);
+      const titleEl = card ? card.querySelector('h3, [class*="font-bold"]') : null;
+      const title = titleEl ? titleEl.textContent.trim() : '';
+
+      const isInCart = (pid && cartProductIds.has(pid)) || (title && cartTitles.has(title));
+      if (isInCart) {
+        setButtonToCheckoutState(btn);
+      } else {
+        setButtonToAddState(btn, pid);
+      }
+    });
+  }
+  window.updateProductButtonsState = updateProductButtonsState;
+
 
   // ==========================================
   // 4. CART DRAWER & BADGES
@@ -2016,11 +2072,17 @@
             </div>
           </div>
           <div class="mt-2.5">
-            ${!outOfStock ? `
-            <button type="button" aria-label="أضف للسلة" data-action="add-to-cart" data-product-id="${p.id}" class="btn-add-to-cart w-full py-2.5 px-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-[13.5px] font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98">
-              <span>أضف للسلة</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart shrink-0"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-            </button>` : `
+            ${!outOfStock ? (
+              getCart().some(it => (it.id && it.id === p.id) || (it.title && it.title === p.title)) ? `
+              <button type="button" aria-label="اضغط للشراء" data-state="checkout" data-action="checkout" data-product-id="${p.id}" class="btn-checkout-now w-full py-2.5 px-3 rounded-xl text-white text-[13.5px] font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98">
+                <span>اضغط للشراء</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="lucide lucide-zap shrink-0"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </button>` : `
+              <button type="button" aria-label="أضف للسلة" data-state="add" data-action="add-to-cart" data-product-id="${p.id}" class="btn-add-to-cart w-full py-2.5 px-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-[13.5px] font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98">
+                <span>أضف للسلة</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart shrink-0"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+              </button>`
+            ) : `
             <button type="button" disabled class="w-full py-2.5 px-3 rounded-xl bg-secondary text-muted-foreground text-xs font-bold opacity-60 cursor-not-allowed flex items-center justify-center gap-1.5">
               <span>نفد من المخزون</span>
             </button>`}
@@ -2359,6 +2421,15 @@
         return;
       }
 
+      // Direct Checkout / Buy Now from button transformed to "اضغط للشراء"
+      const checkoutBtn = e.target.closest('.btn-checkout-now, [data-state="checkout"], [data-action="checkout"], [aria-label="اضغط للشراء"]');
+      if (checkoutBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.href = 'checkout.html';
+        return;
+      }
+
       // Add to Cart buttons
       const addCartBtn = e.target.closest('[aria-label="أضف للسلة"], .btn-add-to-cart, [data-action="add-to-cart"]');
       if (addCartBtn) {
@@ -2420,6 +2491,7 @@
     });
     setInterval(checkLiveVersion, 90000);
 
+    updateProductButtonsState();
     console.log('⚡ ZEUS STORE Engine loaded and fully active.');
   }
 
